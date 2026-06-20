@@ -175,6 +175,80 @@ body{font-family:var(--font);background:var(--gray);color:var(--text);min-height
 .action-due { font-size:11.5px;color:var(--muted); }
 .section-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 6px; }
 
+/* ── HELP / USER GUIDE ── */
+.help-section { margin-bottom:24px; }
+.help-card {
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  margin-bottom:12px;
+}
+.help-card-header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 18px;
+  cursor:pointer;
+  background:var(--white);
+  transition:background .15s;
+  border-bottom:1px solid transparent;
+}
+.help-card-header:hover { background:var(--blue-lt); }
+.help-card-header.open { border-bottom-color:var(--border); background:var(--blue-lt); }
+.help-card-icon { font-size:20px; width:32px; text-align:center; flex-shrink:0; }
+.help-card-title { font-size:14px; font-weight:600; flex:1; }
+.help-card-chevron { font-size:12px; color:var(--muted); transition:transform .2s; }
+.help-card-header.open .help-card-chevron { transform:rotate(180deg); }
+.help-card-body { padding:16px 18px 18px; display:none; }
+.help-card-body.open { display:block; }
+.help-step {
+  display:flex;
+  gap:12px;
+  padding:10px 0;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+  line-height:1.6;
+}
+.help-step:last-child { border-bottom:none; }
+.help-step-num {
+  width:24px; height:24px;
+  background:var(--blue);
+  color:#fff;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700;
+  flex-shrink:0; margin-top:1px;
+}
+.help-step-content { flex:1; }
+.help-step-title { font-weight:600; margin-bottom:2px; }
+.help-step-desc { color:var(--muted); font-size:12.5px; }
+.help-tip {
+  background:var(--gold-lt);
+  border:1px solid #f0d060;
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:12.5px;
+  color:#7a5c00;
+  margin-top:10px;
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+}
+.help-role-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:4px; }
+.help-role-card {
+  background:var(--gray);
+  border-radius:8px;
+  padding:12px;
+  text-align:center;
+  font-size:12px;
+}
+.help-role-card .role-icon { font-size:24px; margin-bottom:6px; }
+.help-role-card .role-name { font-weight:700; margin-bottom:4px; }
+.help-role-card .role-desc { color:var(--muted); font-size:11px; line-height:1.5; }
+.help-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; margin:1px; }
+@media(max-width:768px) { .help-role-grid { grid-template-columns:1fr; } }
+
 /* ── MODULE PLACEHOLDER ── */
 .module-placeholder {
   display:flex;
@@ -665,6 +739,10 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="sidebar-item" onclick="switchSidebar('documents')" id="sb-documents">
           <span class="sb-icon">📁</span><span class="sb-label" data-en="Documents" data-th="เอกสาร">Documents</span>
         </div>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-item" onclick="switchSidebar('help')" id="sb-help">
+          <span class="sb-icon">📖</span><span class="sb-label" data-en="User Guide" data-th="คู่มือการใช้งาน">User Guide</span>
+        </div>
       </nav>
     </aside>
 
@@ -857,6 +935,21 @@ tbody tr:hover{background:var(--blue-lt)}
         <p data-en="Store and access HR policies, forms, and documents" data-th="จัดเก็บและเข้าถึงนโยบาย แบบฟอร์ม และเอกสาร HR">Store and access HR policies, forms, and documents</p>
         <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
       </div>
+    </div>
+
+    <!-- HELP PAGE -->
+    <div class="page hr-module" id="page-help">
+      <div class="section-header">
+        <div>
+          <h2 data-en="User Guide" data-th="คู่มือการใช้งาน">User Guide</h2>
+          <p style="font-size:13px;color:var(--muted);margin-top:2px" data-en="Akara HR Task Management — How to use" data-th="ระบบจัดการงาน HR อาคารา — วิธีการใช้งาน">Akara HR Task Management — How to use</p>
+        </div>
+        <div class="lang-toggle" style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <button class="lang-btn" onclick="setHelpLang('en')" id="help-lang-en">EN</button>
+          <button class="lang-btn active" onclick="setHelpLang('th')" id="help-lang-th">TH</button>
+        </div>
+      </div>
+      <div id="help-content"></div>
     </div>
 
     </div><!-- /content -->
@@ -1052,7 +1145,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -1487,7 +1580,7 @@ function toggleSidebar() {
   }
 }
 
-const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','documents'];
+const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','documents','help'];
 const TASK_TABS = ['my-tasks','dept-overview','all-tasks'];
 
 function switchSidebar(page) {
@@ -1510,6 +1603,7 @@ function switchSidebar(page) {
       applyModuleLang(pageEl);
       if (page==='announcements') renderAnnouncements();
       if (page==='meetings') renderMeetings();
+      if (page==='help') { renderHelp(); setHelpLang(lang); }
     }
   } else {
     // Show task management page and sync tabs
@@ -2320,6 +2414,317 @@ function showNotifPopup(alertTasks) {
 function closeNotifPopup() {
   const popup = document.getElementById('notif-popup');
   if (popup) popup.style.display = 'none';
+}
+
+// ── HELP / USER GUIDE ──
+let helpLang = localStorage.getItem('ak_lang') || 'th';
+
+function setHelpLang(l) {
+  helpLang = l;
+  document.getElementById('help-lang-en').classList.toggle('active', l==='en');
+  document.getElementById('help-lang-th').classList.toggle('active', l==='th');
+  renderHelp();
+}
+
+function toggleHelpCard(id) {
+  const header = document.getElementById('help-h-'+id);
+  const body = document.getElementById('help-b-'+id);
+  if (!header||!body) return;
+  const isOpen = header.classList.contains('open');
+  header.classList.toggle('open', !isOpen);
+  body.classList.toggle('open', !isOpen);
+}
+
+function renderHelp() {
+  const el = document.getElementById('help-content');
+  if (!el) return;
+  const th = helpLang === 'th';
+
+  el.innerHTML = `
+  <!-- GETTING STARTED -->
+  <div class="help-section">
+    <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      ${th?'เริ่มต้นใช้งาน':'Getting Started'}
+    </h3>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-login" onclick="toggleHelpCard('login')">
+        <span class="help-card-icon">🔐</span>
+        <span class="help-card-title">${th?'การเข้าสู่ระบบ':'Login & Account'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-login">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'เปิด URL':'Open URL'}</div>
+          <div class="help-step-desc"><code style="background:var(--gray);padding:2px 6px;border-radius:4px;font-size:12px">https://hrakararesources.github.io/akara-hr/</code></div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'กรอก Email และรหัสผ่าน':'Enter Email & Password'}</div>
+          <div class="help-step-desc">${th?'ใช้ email บริษัทที่ได้รับจาก Admin':'Use your company email provided by Admin'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'เปลี่ยนรหัสผ่านครั้งแรก':'Change password on first login'}</div>
+          <div class="help-step-desc">${th?'กดปุ่ม 🔑 Change Password มุมขวาบน':'Click 🔑 Change Password at top right'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ลืมรหัสผ่าน':'Forgot Password'}</div>
+          <div class="help-step-desc">${th?'กด "ลืมรหัสผ่าน?" แล้วรับลิงก์รีเซ็ตทาง email':'Click "Forgot password?" to receive a reset link via email'}</div>
+        </div></div>
+        <div class="help-tip">💡 ${th?'แนะนำให้ Add to Home Screen บนมือถือ เพื่อใช้งานได้เร็วขึ้น':'Tip: Add to Home Screen on mobile for quick access'}</div>
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-roles" onclick="toggleHelpCard('roles')">
+        <span class="help-card-icon">👥</span>
+        <span class="help-card-title">${th?'สิทธิ์การใช้งาน':'User Roles & Permissions'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-roles">
+        <div class="help-role-grid">
+          <div class="help-role-card">
+            <div class="role-icon">👤</div>
+            <div class="role-name" style="color:var(--blue)">Member</div>
+            <div class="role-desc">${th?'สร้างและแก้ไขงานของตัวเอง ดูภาพรวมแผนก':'Create & edit own tasks, view department overview'}</div>
+          </div>
+          <div class="help-role-card">
+            <div class="role-icon">👔</div>
+            <div class="role-name" style="color:#a07800">Manager</div>
+            <div class="role-desc">${th?'Assign งานให้ทีม แก้ไขงานทุกคน จัดการสมาชิก':'Assign tasks, edit all tasks, manage members'}</div>
+          </div>
+          <div class="help-role-card">
+            <div class="role-icon">⚡</div>
+            <div class="role-name" style="color:#7c3aed">Admin</div>
+            <div class="role-desc">${th?'สิทธิ์สูงสุด เปลี่ยน Role สมาชิกได้ จัดการทุกอย่าง':'Full access, change member roles, manage everything'}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASK MANAGEMENT -->
+  <div class="help-section">
+    <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      ${th?'การจัดการงาน':'Task Management'}
+    </h3>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-task" onclick="toggleHelpCard('task')">
+        <span class="help-card-icon">✅</span>
+        <span class="help-card-title">${th?'การเพิ่มและจัดการงาน':'Adding & Managing Tasks'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-task">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'เพิ่มงานใหม่':'Add New Task'}</div>
+          <div class="help-step-desc">${th?'กดปุ่ม "+ เพิ่มงาน" มุมขวาบนในหน้า "งานของฉัน"':'Click "+ Add Task" button on "My Tasks" page'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'กรอกรายละเอียด':'Fill in Details'}</div>
+          <div class="help-step-desc">${th?'ระบุชื่องาน ความสำคัญ สถานะ กำหนดส่ง และความคืบหน้า (%)':'Enter title, priority, status, due date, and progress (%)'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'สถานะงาน 4 ระดับ':'4 Task Statuses'}</div>
+          <div class="help-step-desc">
+            <span class="help-badge" style="background:#f2f4f8;color:var(--muted)">${th?'รอดำเนินการ':'Pending'}</span>
+            <span class="help-badge" style="background:var(--blue-lt);color:var(--blue)">${th?'กำลังดำเนินการ':'In Progress'}</span>
+            <span class="help-badge" style="background:var(--gold-lt);color:#a07800">${th?'รอตรวจสอบ':'Review'}</span>
+            <span class="help-badge" style="background:var(--green-lt);color:var(--green)">${th?'เสร็จสิ้น':'Done'}</span>
+          </div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ความสำคัญ 4 ระดับ':'4 Priority Levels'}</div>
+          <div class="help-step-desc">
+            <span class="help-badge" style="background:var(--red-lt);color:var(--red)">${th?'เร่งด่วน':'Urgent'}</span>
+            <span class="help-badge" style="background:var(--orange-lt);color:var(--orange)">${th?'สูง':'High'}</span>
+            <span class="help-badge" style="background:var(--blue-lt);color:var(--blue)">${th?'ปานกลาง':'Medium'}</span>
+            <span class="help-badge" style="background:#f2f4f8;color:var(--muted)">${th?'ต่ำ':'Low'}</span>
+          </div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">5</div><div class="help-step-content">
+          <div class="help-step-title">${th?'แก้ไขหรือลบงาน':'Edit or Delete Task'}</div>
+          <div class="help-step-desc">${th?'คลิกที่การ์ดงานเพื่อแก้ไข กดปุ่ม ✕ เพื่อลบ':'Click task card to edit, press ✕ to delete'}</div>
+        </div></div>
+        <div class="help-tip">💡 ${th?'Manager/Admin สามารถ Assign งานให้สมาชิกคนอื่นได้โดยเลือกจากช่อง "Assign To"':'Manager/Admin can assign tasks to others using the "Assign To" field'}</div>
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-kanban" onclick="toggleHelpCard('kanban')">
+        <span class="help-card-icon">📊</span>
+        <span class="help-card-title">${th?'Kanban Board และ List View':'Kanban Board & List View'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-kanban">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">Kanban Board</div>
+          <div class="help-step-desc">${th?'แสดงงานแบบ 4 คอลัมน์ตามสถานะ เห็นภาพรวมได้รวดเร็ว':'Shows tasks in 4 columns by status for quick overview'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">List View</div>
+          <div class="help-step-desc">${th?'แสดงงานแบบตาราง เรียงตามกำหนดส่ง เหมาะสำหรับงานจำนวนมาก':'Table view sorted by due date, suitable for many tasks'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'งานเกินกำหนด':'Overdue Tasks'}</div>
+          <div class="help-step-desc">${th?'การ์ดสีแดงด้านซ้าย พร้อมไอคอน ⚠ แสดงงานที่เกินกำหนด':'Red left border with ⚠ icon indicates overdue tasks'}</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPT OVERVIEW -->
+  <div class="help-section">
+    <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      ${th?'ภาพรวมและการสื่อสาร':'Overview & Communication'}
+    </h3>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-overview" onclick="toggleHelpCard('overview')">
+        <span class="help-card-icon">🏢</span>
+        <span class="help-card-title">${th?'ภาพรวมแผนก':'Department Overview'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-overview">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'KPI Cards':'KPI Summary Cards'}</div>
+          <div class="help-step-desc">${th?'แสดงสถิติรวม เช่น จำนวนสมาชิก งานทั้งหมด งานเสร็จ งานเกินกำหนด และความคืบหน้าเฉลี่ย':'Shows total stats: members, total tasks, done, overdue, avg progress'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'กราฟ 4 แบบ':'4 Charts'}</div>
+          <div class="help-step-desc">${th?'งานแยกตามสถานะ / ความสำคัญ / รายคน / ความคืบหน้ารายคน':'Tasks by status / priority / per member / progress per member'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'Member Cards':'Member Cards'}</div>
+          <div class="help-step-desc">${th?'แสดงสถิติและงานที่กำลังดำเนินการของแต่ละคน':'Shows stats and active tasks for each member'}</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-ann" onclick="toggleHelpCard('ann')">
+        <span class="help-card-icon">📢</span>
+        <span class="help-card-title">${th?'ประกาศ (Announcements)':'Announcements'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-ann">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'โพสต์ประกาศ':'Post Announcement'}</div>
+          <div class="help-step-desc">${th?'ทุกคนโพสต์ได้ กด "+ Post Announcement" แล้วกรอกหัวข้อและเนื้อหา':'Everyone can post. Click "+ Post Announcement", fill in title and content'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ระดับความสำคัญ':'Priority Levels'}</div>
+          <div class="help-step-desc">
+            <span class="help-badge" style="background:var(--red-lt);color:var(--red)">High</span>
+            <span class="help-badge" style="background:var(--blue-lt);color:var(--blue)">Normal</span>
+            <span class="help-badge" style="background:#f2f4f8;color:var(--muted)">Low</span>
+          </div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'วันหมดอายุ':'Expiry Date'}</div>
+          <div class="help-step-desc">${th?'ตั้งวันหมดอายุได้ ประกาศที่หมดอายุจะแสดงแบบจางลง':'Set expiry date. Expired announcements appear faded'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-content">
+          <div class="help-step-title">${th?'การลบประกาศ':'Deleting Announcements'}</div>
+          <div class="help-step-desc">${th?'ลบได้เฉพาะประกาศของตัวเอง Manager/Admin ลบได้ทุกประกาศ':'Delete own announcements only. Manager/Admin can delete all'}</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-meet" onclick="toggleHelpCard('meet')">
+        <span class="help-card-icon">📝</span>
+        <span class="help-card-title">${th?'บันทึกประชุม (Meeting Notes)':'Meeting Notes'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-meet">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'สร้างบันทึกประชุม':'Create Meeting Note'}</div>
+          <div class="help-step-desc">${th?'กด "+ New Meeting" กรอกชื่อการประชุม วันที่ ผู้เข้าร่วม และรายงานการประชุม':'Click "+ New Meeting", fill in title, date, attendees and minutes'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'เพิ่ม Action Items':'Add Action Items'}</div>
+          <div class="help-step-desc">${th?'ระบุรายการที่ต้องทำ เลือกผู้รับผิดชอบ และกำหนดส่ง กด "+" เพื่อเพิ่ม':'Add tasks, assign responsible person, set due date, press "+" to add'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ติดตาม Action Items':'Track Action Items'}</div>
+          <div class="help-step-desc">${th?'กด checkbox หน้า Action Item เพื่อทำเครื่องหมายว่าเสร็จแล้ว':'Check the checkbox next to action item to mark as done'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ดูรายละเอียด':'View Details'}</div>
+          <div class="help-step-desc">${th?'คลิกหัวข้อการประชุมเพื่อ expand/collapse ดูรายละเอียด':'Click meeting title to expand/collapse details'}</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="help-section">
+    <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      ${th?'การแจ้งเตือน':'Notifications'}
+    </h3>
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-notif" onclick="toggleHelpCard('notif')">
+        <span class="help-card-icon">🔔</span>
+        <span class="help-card-title">${th?'ระบบแจ้งเตือน':'Notification System'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-notif">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'Badge แดงใน Sidebar':'Red Badge in Sidebar'}</div>
+          <div class="help-step-desc">${th?'ตัวเลขสีแดงบนเมนู "งานของฉัน" แสดงจำนวนงานที่ต้องเร่ง (เกินกำหนด + ครบวันนี้ + พรุ่งนี้)':'Red number on "My Tasks" shows tasks needing attention (overdue + today + tomorrow)'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'Popup แจ้งเตือน':'Notification Popup'}</div>
+          <div class="help-step-desc">${th?'แสดงอัตโนมัติเมื่อ login แต่ละวัน หายไปเองใน 8 วินาที หรือกด ✕ เพื่อปิด':'Shows automatically on daily login, disappears in 8 seconds or press ✕ to close'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'Email แจ้งเตือน':'Email Notification'}</div>
+          <div class="help-step-desc">${th?'ส่ง email ทุกเช้า 08:00 น. สำหรับงานที่ครบกำหนดพรุ่งนี้และงานที่เกินกำหนดแล้ว':'Email sent every morning at 8:00 AM for tasks due tomorrow and overdue tasks'}</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE -->
+  <div class="help-section">
+    <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      ${th?'การใช้งานบนมือถือ':'Mobile Usage'}
+    </h3>
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-mobile" onclick="toggleHelpCard('mobile')">
+        <span class="help-card-icon">📱</span>
+        <span class="help-card-title">${th?'Add to Home Screen (PWA)':'Add to Home Screen (PWA)'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-mobile">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">Android (Chrome)</div>
+          <div class="help-step-desc">${th?'เปิดใน Chrome → กดเมนู 3 จุด (⋮) → "Add to Home screen" → "Add"':'Open in Chrome → tap 3-dot menu (⋮) → "Add to Home screen" → "Add"'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">iPhone (Safari)</div>
+          <div class="help-step-desc">${th?'เปิดใน Safari → กดปุ่ม Share (□↑) → "Add to Home Screen" → "Add"':'Open in Safari → tap Share button (□↑) → "Add to Home Screen" → "Add"'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ใช้งานบนมือถือ':'Using on Mobile'}</div>
+          <div class="help-step-desc">${th?'มี Bottom Navigation Bar ด้านล่าง กดปุ่ม ☰ "More" เพื่อเปิด Sidebar เมนู HR เพิ่มเติม':'Bottom Navigation Bar appears. Tap ☰ "More" to open Sidebar for more HR menus'}</div>
+        </div></div>
+        <div class="help-tip">💡 ${th?'แอปจะทำงานแบบ Offline ได้บางส่วน หากเคยโหลดหน้าเว็บไว้แล้ว':'The app works partially offline if the page was previously loaded'}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="help-card" style="margin-bottom:0">
+    <div class="help-card-body open" style="display:block">
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:28px;margin-bottom:8px">🙋</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">${th?'ต้องการความช่วยเหลือเพิ่มเติม?':'Need more help?'}</div>
+        <div style="font-size:12.5px;color:var(--muted)">${th?'ติดต่อ Admin ระบบ:':'Contact System Admin:'} <a href="mailto:amnaj@akararesources.com" style="color:var(--blue)">amnaj@akararesources.com</a></div>
+      </div>
+    </div>
+  </div>
+  `;
 }
 
 // ── RESET PASSWORD HANDLER ──
