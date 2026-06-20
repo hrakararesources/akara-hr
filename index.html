@@ -76,11 +76,6 @@ body{font-family:var(--font);background:var(--gray);color:var(--text);min-height
   flex-shrink: 0;
 }
 .sidebar.collapsed { width:52px; min-width:52px; }
-.sidebar .lang-btn { color: rgba(255,255,255,.6) !important; }
-.sidebar .lang-btn.active { background:var(--blue) !important; color:#fff !important; }
-.sidebar.collapsed .sidebar-lang { display:none; }
-.sidebar.collapsed .sb-lang-label { display:none; }
-.sidebar.collapsed .sb-icon { display:flex; }
 .sidebar.collapsed .sb-label,
 .sidebar.collapsed .sidebar-section-label,
 .sidebar.collapsed .sidebar-divider { display:none; }
@@ -315,8 +310,9 @@ body{font-family:var(--font);background:var(--gray);color:var(--text);min-height
 .topbar-user .urole{font-size:11px;color:var(--muted)}
 .topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
 .lang-toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.lang-btn{padding:4px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:var(--font)}
-.lang-btn.active{background:var(--blue);color:#fff}
+.lang-btn{padding:4px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--white);color:var(--muted);font-family:var(--font)}
+.lang-btn.active{background:var(--blue);color:#fff !important}
+.lang-btn:hover{background:var(--blue-lt);color:var(--blue)}
 
 .tabs{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:0 24px}
 .tab{padding:13px 18px;font-size:13.5px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;transition:all .15s}
@@ -752,9 +748,9 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="sidebar-divider"></div>
         <div style="padding:10px 16px;display:flex;align-items:center;gap:10px">
           <span class="sb-icon">🌐</span>
-          <div class="lang-toggle sidebar-lang" style="border:1px solid rgba(255,255,255,.25);border-radius:6px;overflow:hidden;flex-shrink:0">
-            <button class="lang-btn" id="lang-en-sidebar" onclick="setLang('en')" style="color:rgba(255,255,255,.7)">EN</button>
-            <button class="lang-btn active" id="lang-th-sidebar" onclick="setLang('th')" style="color:rgba(255,255,255,.7)">TH</button>
+          <div style="display:flex;border:1px solid rgba(255,255,255,.3);border-radius:6px;overflow:hidden;flex-shrink:0">
+            <button id="lang-en-sidebar" onclick="setLang('en')" style="padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);background:transparent;color:rgba(255,255,255,.6);transition:all .15s">EN</button>
+            <button id="lang-th-sidebar" onclick="setLang('th')" style="padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);background:var(--gold);color:var(--blue-dk);transition:all .15s">TH</button>
           </div>
           <span class="sb-label" style="font-size:12px;color:rgba(255,255,255,.5)" id="sb-lang-label">ภาษา</span>
         </div>
@@ -1160,7 +1156,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -1283,17 +1279,32 @@ function applyLang() {
   document.getElementById('btn-reset').textContent = T('btnReset');
   document.getElementById('lbl-back-login').textContent = T('backLogin');
   // lang buttons
-  // Sync all lang buttons
-  ['login','app','sidebar'].forEach(ctx => {
-    const en = document.getElementById('lang-en-'+ctx);
-    const th = document.getElementById('lang-th-'+ctx);
-    if (en) { en.classList.toggle('active', lang==='en'); en.style.color = lang==='en' ? '#fff' : 'rgba(255,255,255,.6)'; }
-    if (th) { th.classList.toggle('active', lang==='th'); th.style.color = lang==='th' ? '#fff' : 'rgba(255,255,255,.6)'; }
-  });
-  // Login page buttons (white background)
+  // Topbar lang buttons (on white background)
+  const enApp = document.getElementById('lang-en-app');
+  const thApp = document.getElementById('lang-th-app');
+  if (enApp) { enApp.classList.toggle('active', lang==='en'); }
+  if (thApp) { thApp.classList.toggle('active', lang==='th'); }
+
+  // Login page lang buttons
   const enLogin = document.getElementById('lang-en-login');
   const thLogin = document.getElementById('lang-th-login');
-  if (enLogin) { enLogin.style.color = ''; thLogin.style.color = ''; }
+  if (enLogin) { enLogin.classList.toggle('active', lang==='en'); }
+  if (thLogin) { thLogin.classList.toggle('active', lang==='th'); }
+
+  // Sidebar lang buttons (on dark background - use inline styles)
+  const enSb = document.getElementById('lang-en-sidebar');
+  const thSb = document.getElementById('lang-th-sidebar');
+  if (enSb) {
+    enSb.style.background = lang==='en' ? 'var(--gold)' : 'transparent';
+    enSb.style.color = lang==='en' ? 'var(--blue-dk)' : 'rgba(255,255,255,.6)';
+    enSb.style.fontWeight = lang==='en' ? '700' : '500';
+  }
+  if (thSb) {
+    thSb.style.background = lang==='th' ? 'var(--gold)' : 'transparent';
+    thSb.style.color = lang==='th' ? 'var(--blue-dk)' : 'rgba(255,255,255,.6)';
+    thSb.style.fontWeight = lang==='th' ? '700' : '500';
+  }
+
   // Sidebar lang label
   const sbLangLabel = document.getElementById('sb-lang-label');
   if (sbLangLabel) sbLangLabel.textContent = lang==='th' ? 'ภาษา' : 'Language';
