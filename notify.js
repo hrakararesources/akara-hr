@@ -2,7 +2,7 @@
 // รันโดย GitHub Actions ทุกเช้า 08:00 น.
 
 const https = require('https');
-const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer/lib/nodemailer');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
