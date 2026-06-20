@@ -1548,12 +1548,22 @@ let editTaskId = null;
 function openAddTask() {
   editTaskId = null;
   document.getElementById('task-modal-title').textContent = T('taskModalAdd');
-  ['tf-title','tf-desc','tf-note'].for
-  editTaskId=null;
+  ['tf-title','tf-desc','tf-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('tf-prio').value='ปานกลาง';
   document.getElementById('tf-status').value='รอดำเนินการ';
   document.getElementById('tf-due').value='';
   document.getElementById('tf-prog').value='0';
+  // Show assignee field for manager/admin
+  const wrap = document.getElementById('tf-assignee-wrap');
+  if (isManagerOrAdmin()) {
+    wrap.style.display='';
+    const sel = document.getElementById('tf-assignee');
+    sel.innerHTML = `<option value="">${lang==='th'?'— เลือกสมาชิก —':'— Select member —'}</option>`
+      + members.map(m=>`<option value="${m.id}" ${m.id===currentMember.id?'selected':''}>${m.name} · ${m.pos}</option>`).join('');
+  } else {
+    wrap.style.display='none';
+    document.getElementById('tf-assignee').value = currentMember.id;
+  }
   openModal('modal-task');
 }
 
