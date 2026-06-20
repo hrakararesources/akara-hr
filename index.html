@@ -76,6 +76,11 @@ body{font-family:var(--font);background:var(--gray);color:var(--text);min-height
   flex-shrink: 0;
 }
 .sidebar.collapsed { width:52px; min-width:52px; }
+.sidebar .lang-btn { color: rgba(255,255,255,.6) !important; }
+.sidebar .lang-btn.active { background:var(--blue) !important; color:#fff !important; }
+.sidebar.collapsed .sidebar-lang { display:none; }
+.sidebar.collapsed .sb-lang-label { display:none; }
+.sidebar.collapsed .sb-icon { display:flex; }
 .sidebar.collapsed .sb-label,
 .sidebar.collapsed .sidebar-section-label,
 .sidebar.collapsed .sidebar-divider { display:none; }
@@ -743,6 +748,16 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="sidebar-item" onclick="switchSidebar('help')" id="sb-help">
           <span class="sb-icon">📖</span><span class="sb-label" data-en="User Guide" data-th="คู่มือการใช้งาน">User Guide</span>
         </div>
+
+        <div class="sidebar-divider"></div>
+        <div style="padding:10px 16px;display:flex;align-items:center;gap:10px">
+          <span class="sb-icon">🌐</span>
+          <div class="lang-toggle sidebar-lang" style="border:1px solid rgba(255,255,255,.25);border-radius:6px;overflow:hidden;flex-shrink:0">
+            <button class="lang-btn" id="lang-en-sidebar" onclick="setLang('en')" style="color:rgba(255,255,255,.7)">EN</button>
+            <button class="lang-btn active" id="lang-th-sidebar" onclick="setLang('th')" style="color:rgba(255,255,255,.7)">TH</button>
+          </div>
+          <span class="sb-label" style="font-size:12px;color:rgba(255,255,255,.5)" id="sb-lang-label">ภาษา</span>
+        </div>
       </nav>
     </aside>
 
@@ -1145,7 +1160,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -1268,13 +1283,20 @@ function applyLang() {
   document.getElementById('btn-reset').textContent = T('btnReset');
   document.getElementById('lbl-back-login').textContent = T('backLogin');
   // lang buttons
-  ['en','th'].forEach(l => {
-    const active = l === lang;
-    document.getElementById('lang-en-login').classList.toggle('active', lang==='en');
-    document.getElementById('lang-th-login').classList.toggle('active', lang==='th');
-    document.getElementById('lang-en-app').classList.toggle('active', lang==='en');
-    document.getElementById('lang-th-app').classList.toggle('active', lang==='th');
+  // Sync all lang buttons
+  ['login','app','sidebar'].forEach(ctx => {
+    const en = document.getElementById('lang-en-'+ctx);
+    const th = document.getElementById('lang-th-'+ctx);
+    if (en) { en.classList.toggle('active', lang==='en'); en.style.color = lang==='en' ? '#fff' : 'rgba(255,255,255,.6)'; }
+    if (th) { th.classList.toggle('active', lang==='th'); th.style.color = lang==='th' ? '#fff' : 'rgba(255,255,255,.6)'; }
   });
+  // Login page buttons (white background)
+  const enLogin = document.getElementById('lang-en-login');
+  const thLogin = document.getElementById('lang-th-login');
+  if (enLogin) { enLogin.style.color = ''; thLogin.style.color = ''; }
+  // Sidebar lang label
+  const sbLangLabel = document.getElementById('sb-lang-label');
+  if (sbLangLabel) sbLangLabel.textContent = lang==='th' ? 'ภาษา' : 'Language';
   // topbar
   document.querySelectorAll('#btn-changepw').forEach(el => el && (el.textContent = T('btnChangePw')));
   document.querySelectorAll('#btn-logout').forEach(el => el && (el.textContent = T('btnLogout')));
@@ -1328,6 +1350,14 @@ function applyLang() {
   // Apply lang to active HR module
   const activeMod = document.querySelector('.page.active.hr-module');
   if (activeMod) applyModuleLang(activeMod);
+  // Re-render help if active
+  if (document.getElementById('page-help')?.classList.contains('active')) {
+    renderHelp();
+    const enBtn = document.getElementById('help-lang-en');
+    const thBtn = document.getElementById('help-lang-th');
+    if (enBtn) enBtn.classList.toggle('active', lang==='en');
+    if (thBtn) thBtn.classList.toggle('active', lang==='th');
+  }
 }
 
 function safeSet(id, val) {
@@ -1603,7 +1633,13 @@ function switchSidebar(page) {
       applyModuleLang(pageEl);
       if (page==='announcements') renderAnnouncements();
       if (page==='meetings') renderMeetings();
-      if (page==='help') { renderHelp(); setHelpLang(lang); }
+      if (page==='help') {
+        renderHelp();
+        const enBtn = document.getElementById('help-lang-en');
+        const thBtn = document.getElementById('help-lang-th');
+        if (enBtn) enBtn.classList.toggle('active', lang==='en');
+        if (thBtn) thBtn.classList.toggle('active', lang==='th');
+      }
     }
   } else {
     // Show task management page and sync tabs
@@ -2417,12 +2453,8 @@ function closeNotifPopup() {
 }
 
 // ── HELP / USER GUIDE ──
-let helpLang = localStorage.getItem('ak_lang') || 'th';
-
 function setHelpLang(l) {
-  helpLang = l;
-  document.getElementById('help-lang-en').classList.toggle('active', l==='en');
-  document.getElementById('help-lang-th').classList.toggle('active', l==='th');
+  setLang(l);
   renderHelp();
 }
 
@@ -2438,7 +2470,7 @@ function toggleHelpCard(id) {
 function renderHelp() {
   const el = document.getElementById('help-content');
   if (!el) return;
-  const th = helpLang === 'th';
+  const th = lang === 'th';
 
   el.innerHTML = `
   <!-- GETTING STARTED -->
