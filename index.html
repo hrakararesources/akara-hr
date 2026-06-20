@@ -76,6 +76,60 @@ body{font-family:var(--font);background:var(--gray);color:var(--text);min-height
 }
 .sidebar-toggle-btn:hover { background:var(--gray); color:var(--text); }
 
+/* ── ANNOUNCEMENTS ── */
+.ann-card {
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 20px;
+  margin-bottom:12px;
+  border-left:4px solid var(--card-left,var(--blue));
+}
+.ann-card-header { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px; }
+.ann-title { font-size:15px;font-weight:600; }
+.ann-content { font-size:13.5px;color:var(--text);line-height:1.6;margin-bottom:10px;white-space:pre-wrap; }
+.ann-meta { display:flex;align-items:center;gap:12px;font-size:11.5px;color:var(--muted); }
+.ann-priority-high { --card-left:var(--red); }
+.ann-priority-normal { --card-left:var(--blue); }
+.ann-priority-low { --card-left:var(--muted); }
+.prio-badge { display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600; }
+.prio-high { background:var(--red-lt);color:var(--red); }
+.prio-normal { background:var(--blue-lt);color:var(--blue); }
+.prio-low { background:#f2f4f8;color:var(--muted); }
+
+/* ── MEETING NOTES ── */
+.meet-card {
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:14px;
+  overflow:hidden;
+}
+.meet-card-header {
+  padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  cursor:pointer;
+  transition:background .15s;
+}
+.meet-card-header:hover { background:var(--blue-lt); }
+.meet-title { font-size:14px;font-weight:600; }
+.meet-meta { font-size:12px;color:var(--muted);margin-top:2px; }
+.meet-body { padding:0 20px 16px;border-top:1px solid var(--border); }
+.meet-content { font-size:13px;color:var(--text);line-height:1.6;padding:12px 0;white-space:pre-wrap; }
+.action-item-row {
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.action-item-row:last-child { border-bottom:none; }
+.action-check { width:18px;height:18px;accent-color:var(--blue);cursor:pointer;flex-shrink:0; }
+.action-title { flex:1; }
+.action-title.done { text-decoration:line-through;color:var(--muted); }
+.action-assignee { font-size:11.5px;color:var(--muted); }
+.action-due { font-size:11.5px;color:var(--muted); }
+.section-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 6px; }
+
 /* ── MODULE PLACEHOLDER ── */
 .module-placeholder {
   display:flex;
@@ -599,20 +653,24 @@ tbody tr:hover{background:var(--blue-lt)}
       </div>
     </div>
     <div class="page hr-module" id="page-announcements">
-      <div class="module-placeholder">
-        <div class="module-icon">📢</div>
-        <h2 data-en="Announcements" data-th="ประกาศ">Announcements</h2>
-        <p data-en="Post and view company and HR announcements" data-th="โพสต์และดูประกาศของบริษัทและฝ่าย HR">Post and view company and HR announcements</p>
-        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      <div class="section-header">
+        <div>
+          <h2 id="h-ann" data-en="Announcements" data-th="ประกาศ">Announcements</h2>
+          <p id="ann-sub" data-en="Company and HR announcements" data-th="ประกาศของบริษัทและฝ่าย HR" style="font-size:13px;color:var(--muted);margin-top:2px">Company and HR announcements</p>
+        </div>
+        <button class="btn btn-gold" onclick="openAddAnn()" id="btn-add-ann">+ Post Announcement</button>
       </div>
+      <div id="ann-list"></div>
     </div>
     <div class="page hr-module" id="page-meetings">
-      <div class="module-placeholder">
-        <div class="module-icon">📝</div>
-        <h2 data-en="Meeting Notes" data-th="บันทึกประชุม">Meeting Notes</h2>
-        <p data-en="Record and share meeting minutes and action items" data-th="บันทึกและแชร์รายงานการประชุมและรายการติดตาม">Record and share meeting minutes and action items</p>
-        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      <div class="section-header">
+        <div>
+          <h2 id="h-meet" data-en="Meeting Notes" data-th="บันทึกประชุม">Meeting Notes</h2>
+          <p id="meet-sub" data-en="Meeting minutes and action items" data-th="รายงานการประชุมและรายการติดตาม" style="font-size:13px;color:var(--muted);margin-top:2px">Meeting minutes and action items</p>
+        </div>
+        <button class="btn btn-gold" onclick="openAddMeeting()" id="btn-add-meet">+ New Meeting</button>
       </div>
+      <div id="meet-list"></div>
     </div>
     <div class="page hr-module" id="page-documents">
       <div class="module-placeholder">
@@ -712,10 +770,72 @@ tbody tr:hover{background:var(--blue-lt)}
   </div>
 </div>
 
+<!-- ANNOUNCEMENT MODAL -->
+<div class="overlay" id="modal-ann">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3 id="ann-modal-title">Post Announcement</h3>
+      <button class="modal-close" onclick="closeModal('modal-ann')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg full"><label>Title *</label><input id="af-title" placeholder="Announcement title"></div>
+        <div class="fg full"><label>Content *</label><textarea id="af-content" placeholder="Announcement content..." style="min-height:100px"></textarea></div>
+        <div class="fg"><label>Priority</label>
+          <select id="af-prio">
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="fg"><label>Expires On</label><input id="af-expires" type="date"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-ann')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAnn()">Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEETING MODAL -->
+<div class="overlay" id="modal-meeting">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head">
+      <h3 id="meet-modal-title">New Meeting Note</h3>
+      <button class="modal-close" onclick="closeModal('modal-meeting')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg full"><label>Meeting Title *</label><input id="mf-title" placeholder="Meeting title"></div>
+        <div class="fg"><label>Date</label><input id="mf-date" type="date"></div>
+        <div class="fg"><label>Attendees</label><input id="mf-attendees" placeholder="e.g. Amnaj, Gantida..."></div>
+        <div class="fg full"><label>Minutes / Notes</label><textarea id="mf-content" placeholder="Meeting minutes..." style="min-height:100px"></textarea></div>
+      </div>
+      <div class="section-label">Action Items</div>
+      <div id="action-items-builder">
+        <div class="action-builder-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+          <input id="ai-title" placeholder="Action item..." style="flex:2;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;outline:none">
+          <select id="ai-assignee" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;outline:none;background:var(--white)">
+            <option value="">Assignee</option>
+          </select>
+          <input id="ai-due" type="date" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:12px;outline:none">
+          <button class="btn btn-primary btn-sm" onclick="addActionItem()">+</button>
+        </div>
+        <div id="ai-list"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-meeting')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMeeting()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -1046,6 +1166,7 @@ async function loadData() {
 async function loadDataAndEnter() {
   showLoading('Loading...');
   await loadData();
+  await Promise.all([loadAnnouncements(), loadMeetings()]);
   // find currentMember by user_id
   const uid = currentUser.user.id;
   currentMember = members.find(m => m.user_id === uid) || null;
@@ -1155,8 +1276,9 @@ function switchSidebar(page) {
     const pageEl = document.getElementById('page-'+page);
     if (pageEl) {
       pageEl.classList.add('active');
-      // Apply lang to module page
       applyModuleLang(pageEl);
+      if (page==='announcements') renderAnnouncements();
+      if (page==='meetings') renderMeetings();
     }
   } else {
     // Show task management page and sync tabs
@@ -1518,6 +1640,269 @@ document.querySelectorAll('.overlay').forEach(el=>{
   el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') doLogin(); });
+
+// ── ANNOUNCEMENTS ──
+let announcements = [];
+let annEditId = null;
+let tempActionItems = [];
+
+async function loadAnnouncements() {
+  try {
+    const data = await sbFetch('announcements?select=*&order=created_at.desc');
+    announcements = data || [];
+  } catch(e) { announcements = []; }
+}
+
+function renderAnnouncements() {
+  const container = document.getElementById('ann-list');
+  if (!container) return;
+  if (!announcements.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📢</div><p>${lang==='th'?'ยังไม่มีประกาศ':'No announcements yet'}</p></div>`;
+    return;
+  }
+  const now = new Date();
+  container.innerHTML = announcements.map(a => {
+    const expired = a.expires_at && new Date(a.expires_at) < now;
+    const poster = members.find(m=>m.id===a.member_id);
+    const prioLabel = {high: lang==='th'?'สำคัญมาก':'High', normal: lang==='th'?'ปกติ':'Normal', low: lang==='th'?'ทั่วไป':'Low'}[a.priority||'normal'];
+    const canDelete = isManager() || a.member_id === currentMember?.id;
+    return `<div class="ann-card ann-priority-${a.priority||'normal'}" style="${expired?'opacity:.6':''}">
+      <div class="ann-card-header">
+        <div>
+          <div class="ann-title">${a.title} ${expired?`<span style="font-size:11px;color:var(--muted);font-weight:400">(${lang==='th'?'หมดอายุ':'Expired'})</span>`:''}</div>
+          <div style="margin-top:4px"><span class="prio-badge prio-${a.priority||'normal'}">${prioLabel}</span></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          ${canDelete?`<button class="btn btn-danger btn-xs" onclick="delAnn('${a.id}')">✕</button>`:''}
+        </div>
+      </div>
+      <div class="ann-content">${a.content||''}</div>
+      <div class="ann-meta">
+        <span>📌 ${poster?poster.name:'—'}</span>
+        <span>🕐 ${fmtDate(a.created_at?.slice(0,10))}</span>
+        ${a.expires_at?`<span>⏰ ${lang==='th'?'หมดอายุ':'Expires'}: ${fmtDate(a.expires_at)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddAnn() {
+  annEditId = null;
+  document.getElementById('ann-modal-title').textContent = lang==='th'?'โพสต์ประกาศ':'Post Announcement';
+  document.getElementById('af-title').value='';
+  document.getElementById('af-content').value='';
+  document.getElementById('af-prio').value='normal';
+  document.getElementById('af-expires').value='';
+  openModal('modal-ann');
+}
+
+async function saveAnn() {
+  const title = document.getElementById('af-title').value.trim();
+  const content = document.getElementById('af-content').value.trim();
+  if (!title||!content) { alert('กรุณากรอกหัวข้อและเนื้อหา'); return; }
+  const row = {
+    id: uid(), title, content,
+    priority: document.getElementById('af-prio').value,
+    expires_at: document.getElementById('af-expires').value||null,
+    member_id: currentMember.id
+  };
+  try {
+    await sbFetch('announcements', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
+    announcements.unshift(row);
+    closeModal('modal-ann');
+    renderAnnouncements();
+    toast(lang==='th'?'โพสต์ประกาศแล้ว':'Announcement posted');
+  } catch(e) { toast('❌ '+e.message); }
+}
+
+async function delAnn(id) {
+  const a = announcements.find(x=>x.id===id);
+  if (!a) return;
+  if (!isManager() && a.member_id !== currentMember?.id) { toast('🔒 '+T('cannotEdit')); return; }
+  if (!confirm(lang==='th'?'ลบประกาศนี้?':'Delete this announcement?')) return;
+  try {
+    await sbFetch('announcements?id=eq.'+id, {method:'DELETE'});
+    announcements = announcements.filter(x=>x.id!==id);
+    renderAnnouncements();
+    toast(lang==='th'?'ลบประกาศแล้ว':'Announcement deleted');
+  } catch(e) { toast('❌ '+e.message); }
+}
+
+// ── MEETING NOTES ──
+let meetings = [];
+let meetEditId = null;
+
+async function loadMeetings() {
+  try {
+    const [mData, aData] = await Promise.all([
+      sbFetch('meeting_notes?select=*&order=meeting_date.desc,created_at.desc'),
+      sbFetch('action_items?select=*&order=created_at')
+    ]);
+    meetings = (mData||[]).map(m => ({
+      ...m,
+      actionItems: (aData||[]).filter(a=>a.meeting_id===m.id)
+    }));
+  } catch(e) { meetings = []; }
+}
+
+function renderMeetings() {
+  const container = document.getElementById('meet-list');
+  if (!container) return;
+  if (!meetings.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📝</div><p>${lang==='th'?'ยังไม่มีบันทึกประชุม':'No meeting notes yet'}</p></div>`;
+    return;
+  }
+  container.innerHTML = meetings.map(m => {
+    const poster = members.find(x=>x.id===m.member_id);
+    const aiDone = (m.actionItems||[]).filter(a=>a.status==='done').length;
+    const aiTotal = (m.actionItems||[]).length;
+    return `<div class="meet-card">
+      <div class="meet-card-header" onclick="toggleMeeting('${m.id}')">
+        <div>
+          <div class="meet-title">${m.title}</div>
+          <div class="meet-meta">
+            📅 ${fmtDate(m.meeting_date)} &nbsp;·&nbsp; 
+            👤 ${poster?poster.name:'—'} &nbsp;·&nbsp;
+            ${m.attendees?`👥 ${m.attendees} &nbsp;·&nbsp;`:''}
+            ✅ ${aiDone}/${aiTotal} Action Items
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-danger btn-xs" onclick="event.stopPropagation();delMeeting('${m.id}')">✕</button>
+          <span id="meet-chevron-${m.id}" style="color:var(--muted);font-size:12px">▼</span>
+        </div>
+      </div>
+      <div class="meet-body" id="meet-body-${m.id}" style="display:none">
+        ${m.content?`<div class="meet-content">${m.content}</div>`:''}
+        ${aiTotal?`
+          <div class="section-label">${lang==='th'?'รายการติดตาม':'Action Items'}</div>
+          ${(m.actionItems||[]).map(ai => {
+            const assignee = members.find(x=>x.id===ai.assignee_id);
+            const late = ai.due_date && new Date(ai.due_date)<new Date() && ai.status!=='done';
+            return `<div class="action-item-row">
+              <input type="checkbox" class="action-check" ${ai.status==='done'?'checked':''} onchange="toggleActionItem('${ai.id}','${m.id}',this.checked)">
+              <span class="action-title ${ai.status==='done'?'done':''}">${ai.title}</span>
+              ${assignee?`<span class="action-assignee">👤 ${assignee.name}</span>`:''}
+              ${ai.due_date?`<span class="action-due ${late?'tc-due-late':''}">📅 ${fmtDate(ai.due_date)}</span>`:''}
+            </div>`;
+          }).join('')}
+        `:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMeeting(id) {
+  const body = document.getElementById('meet-body-'+id);
+  const chevron = document.getElementById('meet-chevron-'+id);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.textContent = open ? '▼' : '▲';
+}
+
+async function toggleActionItem(aiId, meetId, done) {
+  try {
+    await sbFetch('action_items?id=eq.'+aiId, {
+      method:'PATCH', prefer:'resolution=merge-duplicates',
+      body: JSON.stringify({status: done?'done':'pending'})
+    });
+    const meet = meetings.find(m=>m.id===meetId);
+    if (meet) {
+      const ai = meet.actionItems.find(a=>a.id===aiId);
+      if (ai) ai.status = done?'done':'pending';
+    }
+    renderMeetings();
+    // Re-open the toggled meeting
+    setTimeout(()=>toggleMeeting(meetId),50);
+  } catch(e) { toast('❌ '+e.message); }
+}
+
+function openAddMeeting() {
+  meetEditId = null;
+  tempActionItems = [];
+  document.getElementById('meet-modal-title').textContent = lang==='th'?'บันทึกประชุม':'New Meeting Note';
+  document.getElementById('mf-title').value='';
+  document.getElementById('mf-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('mf-attendees').value='';
+  document.getElementById('mf-content').value='';
+  document.getElementById('ai-title').value='';
+  document.getElementById('ai-due').value='';
+  // populate assignee select
+  const sel = document.getElementById('ai-assignee');
+  sel.innerHTML='<option value="">Assignee</option>'+members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  renderTempActionItems();
+  openModal('modal-meeting');
+}
+
+function addActionItem() {
+  const title = document.getElementById('ai-title').value.trim();
+  if (!title) return;
+  tempActionItems.push({
+    id: uid(), title,
+    assignee_id: document.getElementById('ai-assignee').value||null,
+    due_date: document.getElementById('ai-due').value||null,
+    status: 'pending'
+  });
+  document.getElementById('ai-title').value='';
+  document.getElementById('ai-due').value='';
+  document.getElementById('ai-assignee').value='';
+  renderTempActionItems();
+}
+
+function renderTempActionItems() {
+  const container = document.getElementById('ai-list');
+  if (!container) return;
+  container.innerHTML = tempActionItems.map((ai,i) => {
+    const assignee = members.find(m=>m.id===ai.assignee_id);
+    return `<div class="action-item-row">
+      <span style="color:var(--blue);font-size:12px">▸</span>
+      <span class="action-title">${ai.title}</span>
+      ${assignee?`<span class="action-assignee">👤 ${assignee.name}</span>`:''}
+      ${ai.due_date?`<span class="action-due">📅 ${fmtDate(ai.due_date)}</span>`:''}
+      <button class="btn btn-danger btn-xs" onclick="removeTempAI(${i})">✕</button>
+    </div>`;
+  }).join('') || `<div style="font-size:12px;color:var(--muted);padding:4px 0">${lang==='th'?'ยังไม่มี Action Items':'No action items yet'}</div>`;
+}
+
+function removeTempAI(i) {
+  tempActionItems.splice(i,1);
+  renderTempActionItems();
+}
+
+async function saveMeeting() {
+  const title = document.getElementById('mf-title').value.trim();
+  if (!title) { alert('กรุณาระบุชื่อการประชุม'); return; }
+  const meetId = uid();
+  const meetRow = {
+    id: meetId, title,
+    meeting_date: document.getElementById('mf-date').value||null,
+    attendees: document.getElementById('mf-attendees').value.trim()||null,
+    content: document.getElementById('mf-content').value.trim()||null,
+    member_id: currentMember.id
+  };
+  try {
+    await sbFetch('meeting_notes', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(meetRow)});
+    // Save action items
+    for (const ai of tempActionItems) {
+      await sbFetch('action_items', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify({...ai, meeting_id:meetId})});
+    }
+    meetings.unshift({...meetRow, actionItems:[...tempActionItems]});
+    closeModal('modal-meeting');
+    renderMeetings();
+    toast(lang==='th'?'บันทึกประชุมแล้ว':'Meeting note saved');
+  } catch(e) { toast('❌ '+e.message); }
+}
+
+async function delMeeting(id) {
+  if (!confirm(lang==='th'?'ลบบันทึกประชุมนี้?':'Delete this meeting note?')) return;
+  try {
+    await sbFetch('meeting_notes?id=eq.'+id, {method:'DELETE'});
+    meetings = meetings.filter(m=>m.id!==id);
+    renderMeetings();
+    toast(lang==='th'?'ลบบันทึกประชุมแล้ว':'Meeting note deleted');
+  } catch(e) { toast('❌ '+e.message); }
+}
 
 // ── RESET PASSWORD HANDLER ──
 async function handleResetToken() {
