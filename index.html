@@ -2,8 +2,14 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Akara Resources — HR Task Board</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Akara HR — Task Management</title>
+<meta name="description" content="Akara Resources Human Resources Task Management">
+<meta name="theme-color" content="#2B5BAE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Akara HR">
+<link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -376,6 +382,139 @@ tbody tr:hover{background:var(--blue-lt)}
 .section-header h2{font-size:18px;font-weight:700}
 .section-header p{font-size:13px;color:var(--muted);margin-top:2px}
 
+/* ── MOBILE RESPONSIVE ── */
+@media(max-width:768px){
+  /* Sidebar overlay mode */
+  .sidebar {
+    position:fixed;
+    top:0; left:0; bottom:0;
+    z-index:200;
+    transform:translateX(-100%);
+    transition:transform .25s ease;
+    width:260px !important;
+    min-width:260px !important;
+    box-shadow:4px 0 24px rgba(0,0,0,.3);
+  }
+  .sidebar.mobile-open {
+    transform:translateX(0);
+  }
+  .sidebar-overlay {
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    z-index:199;
+  }
+  .sidebar-overlay.show { display:block; }
+  .main-content { width:100% !important; }
+  .app-body { position:relative; }
+
+  /* Topbar */
+  .topbar { padding:0 12px; gap:8px; height:52px; }
+  .topbar-brand .brand-text { display:none; }
+  .topbar-user .uname { font-size:13px; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .topbar-user .urole { display:none; }
+  .lang-toggle { display:none; }
+
+  /* Topbar right - compact */
+  .topbar-right { gap:4px; }
+  #btn-changepw { display:none; }
+  #btn-logout { padding:5px 8px; font-size:11px; }
+  #btn-logout::before { content:'↩'; }
+
+  /* Content */
+  .content { padding:14px; }
+
+  /* KPI Cards */
+  .kpi-row { grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:14px; }
+  .kpi-val { font-size:24px; }
+
+  /* Kanban - 1 column swipeable */
+  .kanban { grid-template-columns:1fr; gap:10px; }
+  .kanban-col { border-radius:8px; }
+
+  /* Section header */
+  .section-header { flex-direction:column; align-items:flex-start; gap:8px; margin-bottom:14px; }
+  .section-header h2 { font-size:16px; }
+
+  /* Filter row */
+  .filter-row { gap:6px; }
+  .filter-row input,.filter-row select { font-size:12px; padding:6px 10px; }
+  .search-box input { min-width:140px; }
+
+  /* Tables - hide some columns */
+  .table-col-hide { display:none; }
+  table { font-size:12px; }
+  thead th { padding:8px 10px; }
+  tbody td { padding:8px 10px; }
+
+  /* Charts */
+  .chart-grid { grid-template-columns:1fr; gap:14px; }
+  .chart-wrap { height:180px; }
+
+  /* Member cards */
+  .dept-member-grid { grid-template-columns:1fr; }
+
+  /* Modal */
+  .modal { max-width:100% !important; margin:8px; border-radius:12px; max-height:95vh; }
+  .form-grid { grid-template-columns:1fr; }
+  .modal-body { padding:16px; }
+
+  /* Login */
+  .login-card { padding:28px 20px; }
+
+  /* Announcement cards */
+  .ann-card { padding:14px; }
+
+  /* Bottom nav for mobile */
+  .mobile-bottom-nav {
+    display:flex;
+    position:fixed;
+    bottom:0; left:0; right:0;
+    background:var(--white);
+    border-top:2px solid var(--gold);
+    z-index:100;
+    box-shadow:0 -4px 16px rgba(0,0,0,.1);
+  }
+  .mobile-nav-item {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:8px 4px;
+    cursor:pointer;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:500;
+    gap:3px;
+    transition:color .15s;
+    position:relative;
+  }
+  .mobile-nav-item.active { color:var(--blue); }
+  .mobile-nav-item .nav-icon { font-size:20px; }
+  .mobile-nav-badge {
+    position:absolute;
+    top:4px; right:calc(50% - 18px);
+    background:var(--red);
+    color:#fff;
+    font-size:9px;
+    font-weight:700;
+    min-width:15px;
+    height:15px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 3px;
+  }
+  /* Add padding bottom so content not hidden by bottom nav */
+  .content { padding-bottom:72px; }
+
+  /* Notif popup */
+  .notif-popup { bottom:72px; width:calc(100% - 32px); }
+}
+
 @media(max-width:800px){
   .kanban{grid-template-columns:1fr 1fr}
   .kpi-row{grid-template-columns:repeat(2,1fr)}
@@ -723,6 +862,34 @@ tbody tr:hover{background:var(--blue-lt)}
     </div><!-- /content -->
     </div><!-- /main-content -->
   </div><!-- /app-body -->
+
+  <!-- Mobile Bottom Nav -->
+  <div class="mobile-bottom-nav" id="mobile-bottom-nav" style="display:none">
+    <div class="mobile-nav-item active" onclick="switchSidebar('my-tasks')" id="mob-my-tasks">
+      <span class="nav-icon">✅</span>
+      <span class="t-my-tasks">My Tasks</span>
+      <span class="mobile-nav-badge" id="mob-badge" style="display:none"></span>
+    </div>
+    <div class="mobile-nav-item" onclick="switchSidebar('dept-overview')" id="mob-dept-overview">
+      <span class="nav-icon">🏢</span>
+      <span class="t-overview">Overview</span>
+    </div>
+    <div class="mobile-nav-item" onclick="switchSidebar('all-tasks')" id="mob-all-tasks">
+      <span class="nav-icon">📋</span>
+      <span class="t-all-tasks">All Tasks</span>
+    </div>
+    <div class="mobile-nav-item" onclick="switchSidebar('announcements')" id="mob-announcements">
+      <span class="nav-icon">📢</span>
+      <span>Announce</span>
+    </div>
+    <div class="mobile-nav-item" onclick="toggleMobileSidebar()" id="mob-more">
+      <span class="nav-icon">☰</span>
+      <span>More</span>
+    </div>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 </div><!-- /app -->
 
 <!-- MODALS -->
@@ -1243,6 +1410,7 @@ function enterApp() {
   renderMyTasks();
   renderMyKpi();
   updateNotifBadge();
+  setupMobile();
 }
 
 // ── SESSION RESTORE ──
@@ -1312,7 +1480,11 @@ function hideLoading() { const el=document.getElementById('loading-overlay'); if
 
 // ── TABS ──
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('collapsed');
+  if (isMobile()) {
+    toggleMobileSidebar();
+  } else {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+  }
 }
 
 const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','documents'];
@@ -1327,6 +1499,9 @@ function switchSidebar(page) {
   // Hide all pages
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
 
+  // Close mobile sidebar when navigating
+  if (isMobile()) closeMobileSidebar();
+  updateMobileNav(page);
   if (HR_MODULES.includes(page)) {
     // Show HR module page
     const pageEl = document.getElementById('page-'+page);
@@ -1744,6 +1919,44 @@ async function changeRole(memberId, newRole) {
   } catch(e) { toast('❌ '+e.message); }
 }
 
+// ── MOBILE ──
+function isMobile() { return window.innerWidth <= 768; }
+
+function toggleMobileSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  const isOpen = sb.classList.contains('mobile-open');
+  if (isOpen) {
+    sb.classList.remove('mobile-open');
+    ov.classList.remove('show');
+  } else {
+    sb.classList.add('mobile-open');
+    ov.classList.add('show');
+  }
+}
+
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+function updateMobileNav(page) {
+  if (!isMobile()) return;
+  document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('mob-'+page);
+  if (el) el.classList.add('active');
+}
+
+function setupMobile() {
+  const nav = document.getElementById('mobile-bottom-nav');
+  if (nav) nav.style.display = isMobile() ? 'flex' : 'none';
+  // sidebar toggle button visibility
+  const toggleBtn = document.getElementById('sidebar-toggle-btn');
+  if (toggleBtn) toggleBtn.style.display = isMobile() ? '' : '';
+}
+
+window.addEventListener('resize', setupMobile);
+
 // ── MODAL HELPERS ──
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -2052,6 +2265,12 @@ function updateNotifBadge() {
     badge.textContent = count;
     badge.style.display = count > 0 ? '' : 'none';
   }
+  // Mobile badge
+  const mobBadge = document.getElementById('mob-badge');
+  if (mobBadge) {
+    mobBadge.textContent = count;
+    mobBadge.style.display = count > 0 ? '' : 'none';
+  }
 
   // Show popup if has overdue/urgent tasks (only once per session)
   if (count > 0 && !sessionStorage.getItem('notif_shown')) {
@@ -2178,6 +2397,15 @@ async function init() {
     document.getElementById('login-screen').style.display='';
   }
 }
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(() => {});
+  });
+}
+
 init();
 </script>
 </body>
