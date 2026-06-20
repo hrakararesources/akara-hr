@@ -3,413 +3,276 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Akara Resources — Team Task Board</title>
+<title>Akara Resources — HR Task Board</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --blue:    #2B5BAE;
-  --blue-dk: #1a3d7a;
-  --blue-lt: #e8eef8;
-  --gold:    #F5C02B;
-  --gold-lt: #fff8e0;
-  --gray:    #f2f4f8;
-  --border:  #dce3f0;
-  --text:    #1a1e2e;
-  --muted:   #6b7899;
-  --white:   #ffffff;
-  --green:   #1e9e6b;
-  --green-lt:#e4f7ef;
-  --orange:  #e07b10;
-  --orange-lt:#fff3e0;
-  --red:     #d44;
-  --red-lt:  #ffeaea;
-  --radius:  10px;
-  --font: 'IBM Plex Sans Thai', sans-serif;
-  --mono: 'IBM Plex Mono', monospace;
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2B5BAE;--blue-dk:#1a3d7a;--blue-lt:#e8eef8;
+  --gold:#F5C02B;--gold-lt:#fff8e0;
+  --gray:#f2f4f8;--border:#dce3f0;--text:#1a1e2e;--muted:#6b7899;
+  --white:#ffffff;--green:#1e9e6b;--green-lt:#e4f7ef;
+  --orange:#e07b10;--orange-lt:#fff3e0;--red:#d44;--red-lt:#ffeaea;
+  --radius:10px;--font:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
 }
+body{font-family:var(--font);background:var(--gray);color:var(--text);min-height:100vh;font-size:14px}
 
-body { font-family: var(--font); background: var(--gray); color: var(--text); min-height: 100vh; font-size: 14px; }
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--blue-dk) 0%,var(--blue) 60%,#3d70cc 100%);padding:24px}
+.login-card{background:var(--white);border-radius:16px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .brand-name{font-size:22px;font-weight:700;color:var(--blue);letter-spacing:.08em}
+.login-logo .brand-sub{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
+.login-logo .gold-bar{width:36px;height:3px;background:var(--gold);border-radius:2px;margin:10px auto 0}
+.login-card h2{font-size:17px;font-weight:600;margin-bottom:6px}
+.login-card p{font-size:13px;color:var(--muted);margin-bottom:24px}
+.form-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.form-field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.form-field input{padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font);font-size:14px;color:var(--text);outline:none;transition:border-color .15s}
+.form-field input:focus{border-color:var(--blue)}
+.btn-enter{width:100%;padding:13px;background:var(--blue);color:var(--white);border:none;border-radius:var(--radius);font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:6px}
+.btn-enter:hover{background:var(--blue-dk)}
+.login-error{background:var(--red-lt);color:var(--red);border:1px solid #ffcccc;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;display:none}
+.forgot-link{text-align:center;margin-top:14px;font-size:12px;color:var(--muted)}
+.forgot-link a{color:var(--blue);cursor:pointer}
 
-/* ─── LOGIN SCREEN ─── */
-#login-screen {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--blue-dk) 0%, var(--blue) 60%, #3d70cc 100%);
-  padding: 24px;
+/* ── RESET PASSWORD SCREEN ── */
+#reset-screen{min-height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--blue-dk) 0%,var(--blue) 60%,#3d70cc 100%);padding:24px}
+
+/* ── APP ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.visible{display:flex}
+.topbar{background:var(--white);border-bottom:3px solid var(--gold);height:56px;display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(43,91,174,.08)}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.topbar-brand .brand-box{width:32px;height:32px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--white);font-weight:700}
+.topbar-brand .brand-text{font-size:13px;font-weight:700;color:var(--blue);letter-spacing:.06em}
+.topbar-brand .brand-text span{color:var(--gold)}
+.topbar-divider{width:1px;height:24px;background:var(--border)}
+.topbar-user{display:flex;align-items:center;gap:8px;flex:1}
+.topbar-user .avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--white);flex-shrink:0}
+.topbar-user .uname{font-size:14px;font-weight:600}
+.topbar-user .urole{font-size:11px;color:var(--muted)}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.lang-toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.lang-btn{padding:4px 10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:var(--font)}
+.lang-btn.active{background:var(--blue);color:#fff}
+
+.tabs{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:0 24px}
+.tab{padding:13px 18px;font-size:13.5px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab:hover{color:var(--blue)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+
+.content{flex:1;padding:24px;max-width:1100px;margin:0 auto;width:100%}
+.page{display:none}
+.page.active{display:block}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--blue);color:var(--white)}
+.btn-primary:hover{background:var(--blue-dk)}
+.btn-ghost{background:var(--white);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+.btn-gold{background:var(--gold);color:var(--blue-dk);font-weight:700}
+.btn-gold:hover{background:#e6b020}
+.btn-danger{background:var(--red-lt);color:var(--red);border:1px solid #ffcccc}
+.btn-danger:hover{background:#ffdddd}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius)}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-header h3{font-size:14px;font-weight:600}
+.card-body{padding:20px}
+
+/* ── KPI ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+.kpi-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;border-top:3px solid var(--card-top,var(--blue))}
+.kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:8px}
+.kpi-val{font-size:30px;font-weight:700;font-family:var(--mono);line-height:1;color:var(--card-color,var(--text))}
+.kpi-sub{font-size:11.5px;color:var(--muted);margin-top:5px}
+
+/* ── PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:500}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.pill-todo{background:#f2f4f8;color:var(--muted)}
+.pill-doing{background:var(--blue-lt);color:var(--blue)}
+.pill-done{background:var(--green-lt);color:var(--green)}
+.pill-late{background:var(--red-lt);color:var(--red)}
+.pill-review{background:var(--gold-lt);color:#a07800}
+.priority-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.p-urgent{background:var(--red-lt);color:var(--red)}
+.p-high{background:var(--orange-lt);color:var(--orange)}
+.p-normal{background:var(--blue-lt);color:var(--blue)}
+.p-low{background:#f2f4f8;color:var(--muted)}
+.role-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.role-manager{background:var(--gold-lt);color:#a07800}
+.role-member{background:var(--blue-lt);color:var(--blue)}
+
+/* ── FILTERS ── */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filter-row input,.filter-row select{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--white);outline:none}
+.filter-row input:focus,.filter-row select:focus{border-color:var(--blue)}
+.search-box{position:relative}
+.search-box input{padding-left:30px;min-width:200px}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+
+/* ── KANBAN ── */
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.kanban-col{background:var(--gray);border-radius:var(--radius);overflow:hidden}
+.kanban-head{padding:12px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;justify-content:space-between}
+.kanban-head .col-count{font-size:11px;font-family:var(--mono);padding:1px 7px;border-radius:20px;font-weight:600}
+.kanban-body{padding:10px;min-height:120px;display:flex;flex-direction:column;gap:8px}
+.task-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:box-shadow .15s,transform .1s;border-left:3px solid var(--card-left,var(--border))}
+.task-card:hover{box-shadow:0 4px 16px rgba(43,91,174,.12);transform:translateY(-1px)}
+.tc-title{font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.4}
+.tc-desc{font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tc-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tc-meta-item{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px}
+.tc-due-late{color:var(--red)!important;font-weight:600}
+.locked-badge{font-size:10px;color:var(--muted);background:#f2f4f8;padding:1px 6px;border-radius:4px}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--blue-lt)}
+.avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--white);flex-shrink:0}
+.avatar-row{display:flex;align-items:center;gap:8px}
+
+/* ── PROGRESS ── */
+.prog-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:80px}
+.prog-fill{height:100%;border-radius:3px}
+
+/* ── DEPT OVERVIEW ── */
+.dept-member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.member-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:box-shadow .15s}
+.member-card:hover{box-shadow:0 4px 16px rgba(43,91,174,.1)}
+.mc-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.mc-name{font-size:14px;font-weight:600}
+.mc-pos{font-size:11.5px;color:var(--muted)}
+.mc-stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.mc-stat{text-align:center;padding:6px 4px;background:var(--gray);border-radius:6px}
+.mc-stat .val{font-size:16px;font-weight:700;font-family:var(--mono)}
+.mc-stat .lbl{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* ── CHARTS ── */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.chart-card h3{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text)}
+.chart-wrap{position:relative;height:220px}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(26,30,46,.5);z-index:100;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:var(--white);border-radius:14px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2)}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;padding:4px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:22px}
+.modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.fg input,.fg select,.fg textarea{padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--white);outline:none;transition:border-color .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue)}
+.fg textarea{resize:vertical;min-height:72px}
+
+/* ── CHANGE PASSWORD MODAL ── */
+#modal-change-pw .modal{max-width:380px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--blue-dk);color:var(--white);padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:200;border-left:4px solid var(--gold)}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* ── LOADING ── */
+#loading-overlay{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#1a3d7a,#2B5BAE);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.2);border-top-color:#F5C02B;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.section-header h2{font-size:18px;font-weight:700}
+.section-header p{font-size:13px;color:var(--muted);margin-top:2px}
+
+@media(max-width:800px){
+  .kanban{grid-template-columns:1fr 1fr}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .dept-member-grid{grid-template-columns:1fr}
+  .chart-grid{grid-template-columns:1fr}
 }
-.login-card {
-  background: var(--white);
-  border-radius: 16px;
-  padding: 40px 36px;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.25);
-}
-.login-logo { text-align: center; margin-bottom: 28px; }
-.login-logo .brand-name { font-size: 22px; font-weight: 700; color: var(--blue); letter-spacing: .08em; }
-.login-logo .brand-sub  { font-size: 11px; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; margin-top: 2px; }
-.login-logo .gold-bar   { width: 36px; height: 3px; background: var(--gold); border-radius: 2px; margin: 10px auto 0; }
-.login-card h2 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-.login-card p  { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-
-.dept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-.dept-btn {
-  padding: 12px 10px;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--white);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: center;
-  transition: all .15s;
-}
-.dept-btn:hover, .dept-btn.selected { border-color: var(--blue); background: var(--blue-lt); color: var(--blue); }
-.dept-btn.selected { font-weight: 600; }
-
-.emp-select-wrap { margin-bottom: 20px; }
-.emp-select-wrap label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 8px; }
-select.emp-picker {
-  width: 100%;
-  padding: 12px 14px;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  font-family: var(--font);
-  font-size: 14px;
-  color: var(--text);
-  background: var(--white);
-  cursor: pointer;
-  outline: none;
-  transition: border-color .15s;
-}
-select.emp-picker:focus { border-color: var(--blue); }
-
-.btn-enter {
-  width: 100%;
-  padding: 13px;
-  background: var(--blue);
-  color: var(--white);
-  border: none;
-  border-radius: var(--radius);
-  font-family: var(--font);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s;
-  letter-spacing: .02em;
-}
-.btn-enter:hover { background: var(--blue-dk); }
-.btn-enter:disabled { opacity: .4; cursor: not-allowed; }
-
-/* ─── MAIN APP ─── */
-#app { display: none; min-height: 100vh; flex-direction: column; }
-#app.visible { display: flex; }
-
-/* TOPBAR */
-.topbar {
-  background: var(--white);
-  border-bottom: 3px solid var(--gold);
-  height: 56px;
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  gap: 16px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  box-shadow: 0 2px 8px rgba(43,91,174,.08);
-}
-.topbar-brand { display: flex; align-items: center; gap: 10px; }
-.topbar-brand .brand-box {
-  width: 32px; height: 32px;
-  background: var(--blue);
-  border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; color: var(--white); font-weight: 700;
-}
-.topbar-brand .brand-text { font-size: 13px; font-weight: 700; color: var(--blue); letter-spacing: .06em; }
-.topbar-brand .brand-text span { color: var(--gold); }
-.topbar-divider { width: 1px; height: 24px; background: var(--border); }
-.topbar-user { display: flex; align-items: center; gap: 8px; flex: 1; }
-.topbar-user .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--white); flex-shrink: 0; }
-.topbar-user .uname { font-size: 14px; font-weight: 600; color: var(--text); }
-.topbar-user .udept { font-size: 11px; color: var(--muted); }
-.topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-
-/* TABS */
-.tabs { background: var(--white); border-bottom: 1px solid var(--border); display: flex; padding: 0 24px; }
-.tab {
-  padding: 13px 18px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--muted);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -1px;
-  transition: all .15s;
-  display: flex; align-items: center; gap: 6px;
-}
-.tab:hover { color: var(--blue); }
-.tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
-
-/* CONTENT */
-.content { flex: 1; padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
-
-/* PAGE */
-.page { display: none; }
-.page.active { display: block; }
-
-/* ─── BUTTONS ─── */
-.btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: var(--font); font-size: 13px; font-weight: 500; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
-.btn-primary { background: var(--blue); color: var(--white); }
-.btn-primary:hover { background: var(--blue-dk); }
-.btn-ghost { background: var(--white); color: var(--text); border: 1px solid var(--border); }
-.btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
-.btn-gold { background: var(--gold); color: var(--blue-dk); font-weight: 700; }
-.btn-gold:hover { background: #e6b020; }
-.btn-danger { background: var(--red-lt); color: var(--red); border: 1px solid #ffcccc; }
-.btn-danger:hover { background: #ffdddd; }
-.btn-sm { padding: 5px 11px; font-size: 12px; }
-.btn-xs { padding: 3px 8px; font-size: 11px; }
-
-/* ─── CARDS ─── */
-.card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); }
-.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.card-header h3 { font-size: 14px; font-weight: 600; }
-.card-body { padding: 20px; }
-
-/* ─── KPI ROW ─── */
-.kpi-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 14px; margin-bottom: 22px; }
-.kpi-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 18px;
-  border-top: 3px solid var(--card-top, var(--blue));
-}
-.kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
-.kpi-val { font-size: 30px; font-weight: 700; font-family: var(--mono); line-height: 1; color: var(--card-color, var(--text)); }
-.kpi-sub { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
-
-/* ─── PILLS ─── */
-.pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 500; }
-.pill::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
-.pill-todo    { background: #f2f4f8; color: var(--muted); }
-.pill-doing   { background: var(--blue-lt); color: var(--blue); }
-.pill-done    { background: var(--green-lt); color: var(--green); }
-.pill-late    { background: var(--red-lt); color: var(--red); }
-.pill-review  { background: var(--gold-lt); color: #a07800; }
-
-.priority-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-.p-urgent { background: var(--red-lt);    color: var(--red); }
-.p-high   { background: var(--orange-lt); color: var(--orange); }
-.p-normal { background: var(--blue-lt);   color: var(--blue); }
-.p-low    { background: #f2f4f8;          color: var(--muted); }
-
-/* ─── MY TASKS ─── */
-.filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-.filter-row input, .filter-row select {
-  padding: 7px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-family: var(--font);
-  font-size: 13px;
-  color: var(--text);
-  background: var(--white);
-  outline: none;
-}
-.filter-row input:focus, .filter-row select:focus { border-color: var(--blue); }
-.search-box { position: relative; }
-.search-box input { padding-left: 30px; min-width: 200px; }
-.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
-
-/* KANBAN */
-.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.kanban-col { background: var(--gray); border-radius: var(--radius); overflow: hidden; }
-.kanban-head {
-  padding: 12px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.kanban-head .col-count {
-  font-size: 11px;
-  font-family: var(--mono);
-  padding: 1px 7px;
-  border-radius: 20px;
-  font-weight: 600;
-}
-.kanban-body { padding: 10px; min-height: 120px; display: flex; flex-direction: column; gap: 8px; }
-
-/* TASK CARD */
-.task-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  cursor: pointer;
-  transition: box-shadow .15s, transform .1s;
-  border-left: 3px solid var(--card-left, var(--border));
-}
-.task-card:hover { box-shadow: 0 4px 16px rgba(43,91,174,.12); transform: translateY(-1px); }
-.tc-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; line-height: 1.4; }
-.tc-desc  { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.tc-meta  { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-.tc-meta-item { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; }
-.tc-due-late { color: var(--red) !important; font-weight: 600; }
-
-/* TABLE */
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th { text-align:left; padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 2px solid var(--border); white-space: nowrap; }
-tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover { background: var(--blue-lt); }
-.avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--white); flex-shrink: 0; }
-.avatar-row { display: flex; align-items: center; gap: 8px; }
-
-/* PROGRESS */
-.prog-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; min-width: 80px; }
-.prog-fill { height: 100%; border-radius: 3px; }
-
-/* DEPT OVERVIEW */
-.dept-member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; }
-.member-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  transition: box-shadow .15s;
-}
-.member-card:hover { box-shadow: 0 4px 16px rgba(43,91,174,.1); }
-.mc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.mc-name { font-size: 14px; font-weight: 600; }
-.mc-pos  { font-size: 11.5px; color: var(--muted); }
-.mc-stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px; }
-.mc-stat { text-align: center; padding: 6px 4px; background: var(--gray); border-radius: 6px; }
-.mc-stat .val { font-size: 16px; font-weight: 700; font-family: var(--mono); }
-.mc-stat .lbl { font-size: 10px; color: var(--muted); margin-top: 1px; }
-.mc-tasks-preview { display: flex; flex-direction: column; gap: 4px; }
-.mc-task-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 12px; }
-.mc-task-row .tc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* MODAL */
-.overlay { display: none; position: fixed; inset: 0; background: rgba(26,30,46,.5); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
-.overlay.open { display: flex; }
-.modal { background: var(--white); border-radius: 14px; width: 100%; max-width: 500px; max-height: 92vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,.2); }
-.modal-head { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.modal-head h3 { font-size: 15px; font-weight: 700; }
-.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; padding: 4px; }
-.modal-close:hover { color: var(--text); }
-.modal-body { padding: 22px; }
-.modal-foot { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
-
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.fg { display: flex; flex-direction: column; gap: 5px; }
-.fg.full { grid-column: 1/-1; }
-.fg label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-.fg input, .fg select, .fg textarea {
-  padding: 9px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-family: var(--font);
-  font-size: 13px;
-  color: var(--text);
-  background: var(--white);
-  outline: none;
-  transition: border-color .15s;
-}
-.fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--blue); }
-.fg textarea { resize: vertical; min-height: 72px; }
-
-/* TOAST */
-#toast {
-  position: fixed;
-  bottom: 24px; right: 24px;
-  background: var(--blue-dk);
-  color: var(--white);
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  box-shadow: 0 8px 24px rgba(0,0,0,.2);
-  transform: translateY(80px);
-  opacity: 0;
-  transition: all .3s;
-  z-index: 200;
-  border-left: 4px solid var(--gold);
-}
-#toast.show { transform: translateY(0); opacity: 1; }
-
-/* EMPTY STATE */
-.empty { text-align: center; padding: 40px 20px; color: var(--muted); }
-.empty-icon { font-size: 36px; margin-bottom: 10px; }
-.empty p { font-size: 13px; }
-
-/* STATUS QUICK CHANGE */
-.status-select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: var(--font); color: var(--text); background: var(--white); cursor: pointer; outline: none; }
-
-@media(max-width:800px) {
-  .kanban { grid-template-columns: 1fr 1fr; }
-  .kpi-row { grid-template-columns: repeat(2,1fr); }
-  .form-grid { grid-template-columns: 1fr; }
-  .dept-member-grid { grid-template-columns: 1fr; }
-}
-@media(max-width:480px) {
-  .kanban { grid-template-columns: 1fr; }
-}
+@media(max-width:480px){.kanban{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<!-- LOADING OVERLAY -->
+<!-- LOADING -->
 <div id="loading-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#1a3d7a,#2B5BAE);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
-  <div style="width:44px;height:44px;border:4px solid rgba(255,255,255,.2);border-top-color:#F5C02B;border-radius:50%;animation:spin .8s linear infinite"></div>
-  <div style="color:#fff;font-size:14px;font-weight:500">กำลังโหลดข้อมูล...</div>
+  <div class="spinner"></div>
+  <div style="color:#fff;font-size:14px;font-weight:500" id="loading-text">Loading...</div>
 </div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
-<!-- ══ LOGIN ══ -->
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
       <div class="brand-name">AKARA RESOURCES</div>
-      <div class="brand-sub">ฝ่าย HR · Task Board</div>
+      <div class="brand-sub">HR Task Board</div>
       <div class="gold-bar"></div>
     </div>
-    <h2>เริ่มต้นใช้งาน</h2>
-    <p>เลือกชื่อของคุณเพื่อเข้าสู่ระบบ</p>
-
-    <div class="emp-select-wrap" style="margin-bottom:20px">
-      <label>ชื่อ-นามสกุล</label>
-      <select class="emp-picker" id="emp-picker" onchange="document.getElementById('btn-enter').disabled=!this.value">
-        <option value="">— เลือกชื่อ —</option>
-      </select>
+    <h2 id="login-title">Sign In</h2>
+    <p id="login-sub">Enter your email and password</p>
+    <div class="login-error" id="login-error"></div>
+    <div class="form-field">
+      <label id="lbl-email">Email</label>
+      <input type="email" id="login-email" placeholder="email@akararesources.com">
     </div>
-
-    <button class="btn-enter" id="btn-enter" disabled onclick="enterApp()">เข้าสู่ระบบ →</button>
-
-    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--muted)">
-      ไม่พบชื่อ? <a href="#" style="color:var(--blue)" onclick="openManageTeam()">จัดการทีม</a>
+    <div class="form-field">
+      <label id="lbl-password">Password</label>
+      <input type="password" id="login-password" placeholder="••••••••">
+    </div>
+    <button class="btn-enter" onclick="doLogin()" id="btn-login">Sign In →</button>
+    <div class="forgot-link">
+      <a onclick="showForgot()" id="lbl-forgot">Forgot password?</a>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:16px">
+      <button class="lang-btn active" onclick="setLang('en')" id="lang-en-login">EN</button>
+      <button class="lang-btn" onclick="setLang('th')" id="lang-th-login">TH</button>
     </div>
   </div>
 </div>
 
-<!-- ══ APP ══ -->
+<!-- RESET PASSWORD -->
+<div id="reset-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand-name">AKARA RESOURCES</div>
+      <div class="brand-sub">HR Task Board</div>
+      <div class="gold-bar"></div>
+    </div>
+    <h2 id="reset-title">Reset Password</h2>
+    <p id="reset-sub">Enter your email to receive a reset link</p>
+    <div class="login-error" id="reset-error"></div>
+    <div class="form-field">
+      <label>Email</label>
+      <input type="email" id="reset-email" placeholder="email@akararesources.com">
+    </div>
+    <button class="btn-enter" onclick="doReset()" id="btn-reset">Send Reset Link →</button>
+    <div class="forgot-link" style="margin-top:12px">
+      <a onclick="showLogin()" id="lbl-back-login">← Back to Sign In</a>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
 <div id="app">
-  <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-brand">
       <div class="brand-box">A</div>
@@ -420,333 +283,634 @@ tbody tr:hover { background: var(--blue-lt); }
       <div class="avatar" id="tb-avatar"></div>
       <div>
         <div class="uname" id="tb-name"></div>
-        <div class="udept" id="tb-dept"></div>
+        <div class="urole" id="tb-role"></div>
       </div>
     </div>
     <div class="topbar-right">
-      <button class="btn btn-ghost btn-sm" onclick="logout()">↩ เปลี่ยนผู้ใช้</button>
+      <div class="lang-toggle">
+        <button class="lang-btn" id="lang-en-app" onclick="setLang('en')">EN</button>
+        <button class="lang-btn active" id="lang-th-app" onclick="setLang('th')">TH</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openChangePw()" id="btn-changepw">🔑 Change Password</button>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()" id="btn-logout">↩ Sign Out</button>
     </div>
   </div>
 
-  <!-- Tabs -->
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('my-tasks')" id="tab-my-tasks">✅ งานของฉัน</div>
-    <div class="tab" onclick="switchTab('dept-overview')" id="tab-dept-overview">🏢 ภาพรวมแผนก</div>
-    <div class="tab" onclick="switchTab('all-tasks')" id="tab-all-tasks">📋 งานทั้งหมด</div>
+    <div class="tab active" onclick="switchTab('my-tasks')" id="tab-my-tasks">✅ <span class="t-my-tasks">My Tasks</span></div>
+    <div class="tab" onclick="switchTab('dept-overview')" id="tab-dept-overview">🏢 <span class="t-overview">Department Overview</span></div>
+    <div class="tab" onclick="switchTab('all-tasks')" id="tab-all-tasks">📋 <span class="t-all-tasks">All Tasks</span></div>
   </div>
 
   <div class="content">
 
-    <!-- ── MY TASKS ── -->
+    <!-- MY TASKS -->
     <div class="page active" id="page-my-tasks">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div class="section-header">
         <div>
-          <h2 style="font-size:18px;font-weight:700">งานของฉัน</h2>
-          <p style="font-size:13px;color:var(--muted);margin-top:2px" id="my-task-subtitle"></p>
+          <h2 id="h-my-tasks">My Tasks</h2>
+          <p id="my-task-subtitle"></p>
         </div>
-        <button class="btn btn-gold" onclick="openAddTask()">+ เพิ่มงาน</button>
+        <button class="btn btn-gold" onclick="openAddTask()" id="btn-add-task">+ Add Task</button>
       </div>
-
-      <!-- KPI -->
       <div class="kpi-row" id="my-kpi"></div>
-
-      <!-- Filter -->
       <div class="filter-row">
         <div class="search-box">
           <span class="search-icon">🔍</span>
-          <input type="text" id="my-search" placeholder="ค้นหางาน..." oninput="renderMyTasks()">
+          <input type="text" id="my-search" placeholder="Search..." oninput="renderMyTasks()">
         </div>
         <select id="my-prio-filter" onchange="renderMyTasks()">
-          <option value="">ทุกความสำคัญ</option>
-          <option value="เร่งด่วน">เร่งด่วน</option>
-          <option value="สูง">สูง</option>
-          <option value="ปานกลาง">ปานกลาง</option>
-          <option value="ต่ำ">ต่ำ</option>
+          <option value="" data-th="ทุกความสำคัญ" data-en="All Priority">All Priority</option>
+          <option value="เร่งด่วน" data-th="เร่งด่วน" data-en="Urgent">Urgent</option>
+          <option value="สูง" data-th="สูง" data-en="High">High</option>
+          <option value="ปานกลาง" data-th="ปานกลาง" data-en="Medium">Medium</option>
+          <option value="ต่ำ" data-th="ต่ำ" data-en="Low">Low</option>
         </select>
         <select id="my-view" onchange="renderMyTasks()">
-          <option value="kanban">แบบ Kanban</option>
-          <option value="list">แบบ List</option>
+          <option value="kanban" data-th="แบบ Kanban" data-en="Kanban View">Kanban View</option>
+          <option value="list" data-th="แบบ List" data-en="List View">List View</option>
         </select>
       </div>
-
-      <!-- Kanban -->
       <div id="my-kanban"></div>
-      <!-- List -->
       <div id="my-list-wrap" style="display:none" class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>ชื่องาน</th><th>ความสำคัญ</th><th>สถานะ</th><th>กำหนดส่ง</th><th></th></tr></thead>
+            <thead><tr>
+              <th id="th-title">Title</th>
+              <th id="th-prio">Priority</th>
+              <th id="th-status">Status</th>
+              <th id="th-due">Due Date</th>
+              <th></th>
+            </tr></thead>
             <tbody id="my-list-tbody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- ── DEPT OVERVIEW ── -->
+    <!-- DEPT OVERVIEW -->
     <div class="page" id="page-dept-overview">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div class="section-header">
         <div>
-          <h2 style="font-size:18px;font-weight:700" id="dept-title">ภาพรวมแผนก</h2>
-          <p style="font-size:13px;color:var(--muted);margin-top:2px">สรุปงานและความคืบหน้าของทุกคนในแผนก</p>
+          <h2 id="h-overview">Department Overview</h2>
+          <p id="overview-sub">Summary of tasks and progress for all team members</p>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="openManageTeam()">⚙ จัดการทีม</button>
+        <button class="btn btn-ghost btn-sm" onclick="openManageTeam()" id="btn-manage-team">⚙ Manage Team</button>
       </div>
-
-      <!-- Dept KPI -->
       <div class="kpi-row" id="dept-kpi"></div>
-
-      <!-- Members -->
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h3 id="chart-status-title">Tasks by Status</h3>
+          <div class="chart-wrap"><canvas id="chart-status"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 id="chart-prio-title">Tasks by Priority</h3>
+          <div class="chart-wrap"><canvas id="chart-prio"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 id="chart-member-title">Tasks per Member</h3>
+          <div class="chart-wrap"><canvas id="chart-member"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 id="chart-prog-title">Average Progress per Member</h3>
+          <div class="chart-wrap"><canvas id="chart-prog"></canvas></div>
+        </div>
+      </div>
       <div class="dept-member-grid" id="dept-members"></div>
     </div>
 
-    <!-- ── ALL TASKS ── -->
+    <!-- ALL TASKS -->
     <div class="page" id="page-all-tasks">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div class="section-header">
         <div>
-          <h2 style="font-size:18px;font-weight:700">งานทั้งหมดในแผนก</h2>
-          <p style="font-size:13px;color:var(--muted);margin-top:2px">รายการงานของทุกคน เรียงตามกำหนดส่ง</p>
+          <h2 id="h-all-tasks">All Tasks</h2>
+          <p id="all-tasks-sub">All tasks sorted by due date</p>
         </div>
       </div>
       <div class="filter-row">
         <div class="search-box">
           <span class="search-icon">🔍</span>
-          <input type="text" id="all-search" placeholder="ค้นหางาน..." oninput="renderAllTasks()">
+          <input type="text" id="all-search" placeholder="Search..." oninput="renderAllTasks()">
         </div>
-        <select id="all-emp-filter" onchange="renderAllTasks()">
-          <option value="">ทุกคน</option>
-        </select>
+        <select id="all-emp-filter" onchange="renderAllTasks()"><option value="">All Members</option></select>
         <select id="all-status-filter" onchange="renderAllTasks()">
-          <option value="">ทุกสถานะ</option>
-          <option value="รอดำเนินการ">รอดำเนินการ</option>
-          <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-          <option value="รอตรวจสอบ">รอตรวจสอบ</option>
-          <option value="เสร็จสิ้น">เสร็จสิ้น</option>
-          <option value="เกินกำหนด">เกินกำหนด</option>
+          <option value="">All Status</option>
+          <option value="รอดำเนินการ">Pending</option>
+          <option value="กำลังดำเนินการ">In Progress</option>
+          <option value="รอตรวจสอบ">Review</option>
+          <option value="เสร็จสิ้น">Done</option>
+          <option value="เกินกำหนด">Overdue</option>
         </select>
         <select id="all-prio-filter" onchange="renderAllTasks()">
-          <option value="">ทุกความสำคัญ</option>
-          <option value="เร่งด่วน">เร่งด่วน</option>
-          <option value="สูง">สูง</option>
-          <option value="ปานกลาง">ปานกลาง</option>
-          <option value="ต่ำ">ต่ำ</option>
+          <option value="">All Priority</option>
+          <option value="เร่งด่วน">Urgent</option>
+          <option value="สูง">High</option>
+          <option value="ปานกลาง">Medium</option>
+          <option value="ต่ำ">Low</option>
         </select>
       </div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>ชื่องาน</th><th>ผู้รับผิดชอบ</th><th>ความสำคัญ</th><th>สถานะ</th><th>กำหนดส่ง</th><th>ความคืบหน้า</th></tr></thead>
+            <thead><tr>
+              <th>Title</th><th>Assigned To</th><th>Priority</th>
+              <th>Status</th><th>Due Date</th><th>Progress</th><th></th>
+            </tr></thead>
             <tbody id="all-tbody"></tbody>
           </table>
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- ══ MODALS ══ -->
-
-<!-- TASK MODAL -->
+<!-- MODALS -->
 <div class="overlay" id="modal-task">
   <div class="modal">
     <div class="modal-head">
-      <h3 id="task-modal-title">เพิ่มงานใหม่</h3>
+      <h3 id="task-modal-title">Add Task</h3>
       <button class="modal-close" onclick="closeModal('modal-task')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="fg full"><label>ชื่องาน *</label><input id="tf-title" placeholder="ระบุชื่องาน"></div>
-        <div class="fg full"><label>รายละเอียด</label><textarea id="tf-desc" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>
-        <div class="fg"><label>ความสำคัญ</label>
+        <div class="fg full"><label id="lbl-task-title">Title *</label><input id="tf-title" placeholder="Task title"></div>
+        <div class="fg full"><label id="lbl-task-desc">Description</label><textarea id="tf-desc" placeholder="Details..."></textarea></div>
+        <div class="fg"><label id="lbl-task-prio">Priority</label>
           <select id="tf-prio">
-            <option value="ปานกลาง">ปานกลาง</option>
-            <option value="สูง">สูง</option>
-            <option value="เร่งด่วน">เร่งด่วน</option>
-            <option value="ต่ำ">ต่ำ</option>
+            <option value="ปานกลาง">Medium</option>
+            <option value="สูง">High</option>
+            <option value="เร่งด่วน">Urgent</option>
+            <option value="ต่ำ">Low</option>
           </select>
         </div>
-        <div class="fg"><label>สถานะ</label>
+        <div class="fg"><label id="lbl-task-status">Status</label>
           <select id="tf-status">
-            <option value="รอดำเนินการ">รอดำเนินการ</option>
-            <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-            <option value="รอตรวจสอบ">รอตรวจสอบ</option>
-            <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+            <option value="รอดำเนินการ">Pending</option>
+            <option value="กำลังดำเนินการ">In Progress</option>
+            <option value="รอตรวจสอบ">Review</option>
+            <option value="เสร็จสิ้น">Done</option>
           </select>
         </div>
-        <div class="fg"><label>กำหนดส่ง</label><input id="tf-due" type="date"></div>
-        <div class="fg"><label>ความคืบหน้า (%)</label><input id="tf-prog" type="number" min="0" max="100" value="0" placeholder="0-100"></div>
-        <div class="fg full"><label>หมายเหตุ</label><input id="tf-note" placeholder="หมายเหตุ (ถ้ามี)"></div>
+        <div class="fg"><label id="lbl-task-due">Due Date</label><input id="tf-due" type="date"></div>
+        <div class="fg"><label id="lbl-task-prog">Progress (%)</label><input id="tf-prog" type="number" min="0" max="100" value="0"></div>
+        <div class="fg full"><label id="lbl-task-note">Note</label><input id="tf-note" placeholder="Additional note..."></div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('modal-task')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="saveTask()">บันทึก</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-task')" id="btn-cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()" id="btn-save">Save</button>
     </div>
   </div>
 </div>
 
-<!-- MANAGE TEAM MODAL -->
 <div class="overlay" id="modal-team">
   <div class="modal" style="max-width:520px">
     <div class="modal-head">
-      <h3>จัดการทีมและแผนก</h3>
+      <h3 id="team-modal-title">Manage Team</h3>
       <button class="modal-close" onclick="closeModal('modal-team')">✕</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">สมาชิกฝ่าย HR</div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px" id="lbl-hr-members">HR Team Members</div>
       <div class="form-grid" style="margin-bottom:12px">
-        <div class="fg"><label>ชื่อ-นามสกุล</label><input id="new-mem-name" placeholder="ชื่อ นามสกุล"></div>
-        <div class="fg"><label>ตำแหน่ง</label><input id="new-mem-pos" placeholder="ตำแหน่งงาน"></div>
+        <div class="fg"><label>Name</label><input id="new-mem-name" placeholder="Full name"></div>
+        <div class="fg"><label>Position</label><input id="new-mem-pos" placeholder="Job title"></div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="addMember()" style="margin-bottom:16px">+ เพิ่มสมาชิก</button>
+      <button class="btn btn-primary btn-sm" onclick="addMember()" style="margin-bottom:16px" id="btn-add-member">+ Add Member</button>
       <div id="member-manage-list"></div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('modal-team')">ปิด</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-team')" id="btn-close">Close</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
+<div class="overlay" id="modal-change-pw">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head">
+      <h3 id="changepw-title">Change Password</h3>
+      <button class="modal-close" onclick="closeModal('modal-change-pw')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="login-error" id="changepw-error"></div>
+      <div class="fg" style="margin-bottom:14px">
+        <label id="lbl-new-pw">New Password</label>
+        <input type="password" id="new-pw" placeholder="Min 6 characters">
+      </div>
+      <div class="fg">
+        <label id="lbl-confirm-pw">Confirm Password</label>
+        <input type="password" id="confirm-pw" placeholder="Repeat password">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-change-pw')" id="btn-cancel-pw">Cancel</button>
+      <button class="btn btn-primary" onclick="doChangePw()" id="btn-save-pw">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════
-//  DATA
-// ══════════════════════════════════════════
-// ── SUPABASE CONFIG ──
   const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_BBlFosIvCVzLOjMgbBbRjw_DHZbMFSL';
 
-  async function sbFetch(path, opts={}) {
-    const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-      ...opts,
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': opts.prefer || '',
-        ...(opts.headers||{})
-      }
-    });
-    if (!res.ok) { const err = await res.text(); throw new Error('Supabase: ' + err); }
-    if (res.status === 204 || res.status === 201) return null;
-    const text = await res.text();
-    return text ? JSON.parse(text) : null;
+// ── LANGUAGE ──
+const LANGS = {
+  en: {
+    loginTitle:'Sign In', loginSub:'Enter your email and password',
+    lblEmail:'Email', lblPassword:'Password', lblForgot:'Forgot password?',
+    btnLogin:'Sign In →', resetTitle:'Reset Password',
+    resetSub:'Enter your email to receive a reset link',
+    btnReset:'Send Reset Link →', backLogin:'← Back to Sign In',
+    myTasks:'My Tasks', overview:'Department Overview', allTasks:'All Tasks',
+    btnAddTask:'+ Add Task', btnManageTeam:'⚙ Manage Team',
+    btnChangePw:'🔑 Change Password', btnLogout:'↩ Sign Out',
+    hMyTasks:'My Tasks', hOverview:'Department Overview', hAllTasks:'All Tasks',
+    overviewSub:'Summary of tasks and progress for all team members',
+    allTasksSub:'All tasks sorted by due date',
+    chartStatus:'Tasks by Status', chartPrio:'Tasks by Priority',
+    chartMember:'Tasks per Member', chartProg:'Average Progress per Member',
+    thTitle:'Title', thPrio:'Priority', thStatus:'Status', thDue:'Due Date',
+    lblTaskTitle:'Title *', lblTaskDesc:'Description', lblTaskPrio:'Priority',
+    lblTaskStatus:'Status', lblTaskDue:'Due Date', lblTaskProg:'Progress (%)',
+    lblTaskNote:'Note', btnCancel:'Cancel', btnSave:'Save',
+    taskModalAdd:'Add Task', taskModalEdit:'Edit Task',
+    lblHrMembers:'HR Team Members', btnAddMember:'+ Add Member', btnClose:'Close',
+    changePwTitle:'Change Password', lblNewPw:'New Password', lblConfirmPw:'Confirm Password',
+    btnCancelPw:'Cancel', btnSavePw:'Save',
+    kpiTotal:'Total Tasks', kpiDone:'Completed', kpiDoing:'In Progress',
+    kpiLate:'Overdue', kpiProgress:'Avg. Progress', kpiMembers:'Team Members',
+    statusTodo:'Pending', statusDoing:'In Progress', statusReview:'Review',
+    statusDone:'Done', statusLate:'Overdue',
+    prioUrgent:'Urgent', prioHigh:'High', prioNormal:'Medium', prioLow:'Low',
+    roleManager:'Manager', roleMember:'Member',
+    toastAdded:'Task added', toastEdited:'Task updated', toastDeleted:'Task deleted',
+    toastMemberAdded:'Member added', toastMemberDeleted:'Member deleted',
+    toastPwChanged:'Password changed successfully',
+    errPwMismatch:'Passwords do not match', errPwShort:'Password must be at least 6 characters',
+    errLoginFail:'Invalid email or password',
+    errResetSent:'Reset link sent to your email',
+    noTasks:'No tasks found', searchPlaceholder:'Search...',
+    allPriority:'All Priority', allStatus:'All Status', allMembers:'All Members',
+    kanbanView:'Kanban View', listView:'List View',
+    myTaskSubtitle:'HR Department',
+    managerLabel:'Manager', cannotEdit:'You can only edit your own tasks',
+    lockMsg:'This task belongs to another member',
+    progress:'Progress', activeTasks:'Active tasks',
+    noActiveTasks:'No pending tasks',
+  },
+  th: {
+    loginTitle:'เข้าสู่ระบบ', loginSub:'กรอก email และรหัสผ่าน',
+    lblEmail:'อีเมล', lblPassword:'รหัสผ่าน', lblForgot:'ลืมรหัสผ่าน?',
+    btnLogin:'เข้าสู่ระบบ →', resetTitle:'รีเซ็ตรหัสผ่าน',
+    resetSub:'กรอก email เพื่อรับลิงก์รีเซ็ต',
+    btnReset:'ส่งลิงก์รีเซ็ต →', backLogin:'← กลับหน้าเข้าสู่ระบบ',
+    myTasks:'งานของฉัน', overview:'ภาพรวมแผนก', allTasks:'งานทั้งหมด',
+    btnAddTask:'+ เพิ่มงาน', btnManageTeam:'⚙ จัดการทีม',
+    btnChangePw:'🔑 เปลี่ยนรหัสผ่าน', btnLogout:'↩ ออกจากระบบ',
+    hMyTasks:'งานของฉัน', hOverview:'ภาพรวมแผนก', hAllTasks:'งานทั้งหมด',
+    overviewSub:'สรุปงานและความคืบหน้าของทุกคนในแผนก',
+    allTasksSub:'รายการงานทั้งหมด เรียงตามกำหนดส่ง',
+    chartStatus:'งานแยกตามสถานะ', chartPrio:'งานแยกตามความสำคัญ',
+    chartMember:'งานแยกตามสมาชิก', chartProg:'ความคืบหน้าเฉลี่ยรายคน',
+    thTitle:'ชื่องาน', thPrio:'ความสำคัญ', thStatus:'สถานะ', thDue:'กำหนดส่ง',
+    lblTaskTitle:'ชื่องาน *', lblTaskDesc:'รายละเอียด', lblTaskPrio:'ความสำคัญ',
+    lblTaskStatus:'สถานะ', lblTaskDue:'กำหนดส่ง', lblTaskProg:'ความคืบหน้า (%)',
+    lblTaskNote:'หมายเหตุ', btnCancel:'ยกเลิก', btnSave:'บันทึก',
+    taskModalAdd:'เพิ่มงาน', taskModalEdit:'แก้ไขงาน',
+    lblHrMembers:'สมาชิกฝ่าย HR', btnAddMember:'+ เพิ่มสมาชิก', btnClose:'ปิด',
+    changePwTitle:'เปลี่ยนรหัสผ่าน', lblNewPw:'รหัสผ่านใหม่', lblConfirmPw:'ยืนยันรหัสผ่าน',
+    btnCancelPw:'ยกเลิก', btnSavePw:'บันทึก',
+    kpiTotal:'งานทั้งหมด', kpiDone:'เสร็จสิ้น', kpiDoing:'กำลังดำเนินการ',
+    kpiLate:'เกินกำหนด', kpiProgress:'ความคืบหน้าเฉลี่ย', kpiMembers:'สมาชิกทีม',
+    statusTodo:'รอดำเนินการ', statusDoing:'กำลังดำเนินการ', statusReview:'รอตรวจสอบ',
+    statusDone:'เสร็จสิ้น', statusLate:'เกินกำหนด',
+    prioUrgent:'เร่งด่วน', prioHigh:'สูง', prioNormal:'ปานกลาง', prioLow:'ต่ำ',
+    roleManager:'ผู้จัดการ', roleMember:'พนักงาน',
+    toastAdded:'เพิ่มงานแล้ว', toastEdited:'แก้ไขงานแล้ว', toastDeleted:'ลบงานแล้ว',
+    toastMemberAdded:'เพิ่มสมาชิกแล้ว', toastMemberDeleted:'ลบสมาชิกแล้ว',
+    toastPwChanged:'เปลี่ยนรหัสผ่านสำเร็จ',
+    errPwMismatch:'รหัสผ่านไม่ตรงกัน', errPwShort:'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+    errLoginFail:'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+    errResetSent:'ส่งลิงก์รีเซ็ตไปยังอีเมลของคุณแล้ว',
+    noTasks:'ไม่พบงาน', searchPlaceholder:'ค้นหา...',
+    allPriority:'ทุกความสำคัญ', allStatus:'ทุกสถานะ', allMembers:'ทุกคน',
+    kanbanView:'แบบ Kanban', listView:'แบบ List',
+    myTaskSubtitle:'ฝ่าย HR',
+    managerLabel:'ผู้จัดการ', cannotEdit:'คุณแก้ไขได้เฉพาะงานของตัวเองเท่านั้น',
+    lockMsg:'งานนี้เป็นของสมาชิกคนอื่น',
+    progress:'ความคืบหน้า', activeTasks:'งานที่กำลังดำเนินการ',
+    noActiveTasks:'ไม่มีงานค้างอยู่',
   }
+};
 
-// ── AVATAR ──
+let lang = localStorage.getItem('ak_lang') || 'th';
+let currentUser = null; // Supabase auth user
+let currentMember = null;
+let members = [];
+let tasks = [];
+let charts = {};
+
+function T(key) { return LANGS[lang][key] || LANGS['en'][key] || key; }
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('ak_lang', l);
+  applyLang();
+}
+
+function applyLang() {
+  // login
+  document.getElementById('login-title').textContent = T('loginTitle');
+  document.getElementById('login-sub').textContent = T('loginSub');
+  document.getElementById('lbl-email').textContent = T('lblEmail');
+  document.getElementById('lbl-password').textContent = T('lblPassword');
+  document.getElementById('lbl-forgot').textContent = T('lblForgot');
+  document.getElementById('btn-login').textContent = T('btnLogin');
+  document.getElementById('reset-title').textContent = T('resetTitle');
+  document.getElementById('reset-sub').textContent = T('resetSub');
+  document.getElementById('btn-reset').textContent = T('btnReset');
+  document.getElementById('lbl-back-login').textContent = T('backLogin');
+  // lang buttons
+  ['en','th'].forEach(l => {
+    const active = l === lang;
+    document.getElementById('lang-en-login').classList.toggle('active', lang==='en');
+    document.getElementById('lang-th-login').classList.toggle('active', lang==='th');
+    document.getElementById('lang-en-app').classList.toggle('active', lang==='en');
+    document.getElementById('lang-th-app').classList.toggle('active', lang==='th');
+  });
+  // topbar
+  document.querySelectorAll('#btn-changepw').forEach(el => el && (el.textContent = T('btnChangePw')));
+  document.querySelectorAll('#btn-logout').forEach(el => el && (el.textContent = T('btnLogout')));
+  // tabs
+  document.querySelector('.t-my-tasks').textContent = T('myTasks');
+  document.querySelector('.t-overview').textContent = T('overview');
+  document.querySelector('.t-all-tasks').textContent = T('allTasks');
+  // pages
+  safeSet('btn-add-task', T('btnAddTask'));
+  safeSet('h-my-tasks', T('hMyTasks'));
+  safeSet('h-overview', T('hOverview'));
+  safeSet('h-all-tasks', T('hAllTasks'));
+  safeSet('overview-sub', T('overviewSub'));
+  safeSet('all-tasks-sub', T('allTasksSub'));
+  safeSet('btn-manage-team', T('btnManageTeam'));
+  safeSet('chart-status-title', T('chartStatus'));
+  safeSet('chart-prio-title', T('chartPrio'));
+  safeSet('chart-member-title', T('chartMember'));
+  safeSet('chart-prog-title', T('chartProg'));
+  safeSet('th-title', T('thTitle'));
+  safeSet('th-prio', T('thPrio'));
+  safeSet('th-status', T('thStatus'));
+  safeSet('th-due', T('thDue'));
+  safeSet('lbl-task-title', T('lblTaskTitle'));
+  safeSet('lbl-task-desc', T('lblTaskDesc'));
+  safeSet('lbl-task-prio', T('lblTaskPrio'));
+  safeSet('lbl-task-status', T('lblTaskStatus'));
+  safeSet('lbl-task-due', T('lblTaskDue'));
+  safeSet('lbl-task-prog', T('lblTaskProg'));
+  safeSet('lbl-task-note', T('lblTaskNote'));
+  safeSet('btn-cancel', T('btnCancel'));
+  safeSet('btn-save', T('btnSave'));
+  safeSet('lbl-hr-members', T('lblHrMembers'));
+  safeSet('btn-add-member', T('btnAddMember'));
+  safeSet('btn-close', T('btnClose'));
+  safeSet('changepw-title', T('changePwTitle'));
+  safeSet('lbl-new-pw', T('lblNewPw'));
+  safeSet('lbl-confirm-pw', T('lblConfirmPw'));
+  safeSet('btn-cancel-pw', T('btnCancelPw'));
+  safeSet('btn-save-pw', T('btnSavePw'));
+  safeSet('my-task-subtitle', currentMember ? currentMember.pos + ' · ' + T('myTaskSubtitle') : '');
+  // search placeholders
+  document.querySelectorAll('#my-search,#all-search').forEach(el => el && (el.placeholder = T('searchPlaceholder')));
+  // re-render if logged in
+  if (currentMember) { renderMyTasks(); renderMyKpi(); }
+}
+
+function safeSet(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ── SUPABASE ──
+async function sbFetch(path, opts={}) {
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + (currentUser?.access_token || SUPABASE_KEY),
+    'Content-Type': 'application/json',
+    'Prefer': opts.prefer || '',
+    ...(opts.headers||{})
+  };
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, { ...opts, headers });
+  if (!res.ok) { const err = await res.text(); throw new Error('Supabase: ' + err); }
+  if (res.status === 204 || res.status === 201) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function sbAuth(action, body) {
+  const res = await fetch(SUPABASE_URL + '/auth/v1/' + action, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || 'Auth error');
+  return data;
+}
+
+// ── AUTH ──
+function showLogin() {
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('reset-screen').style.display = 'none';
+}
+function showForgot() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('reset-screen').style.display = 'flex';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email || !pw) return;
+  showLoading(T('loginTitle') + '...');
+  try {
+    const data = await sbAuth('token?grant_type=password', { email, password: pw });
+    currentUser = { access_token: data.access_token, user: data.user };
+    localStorage.setItem('ak_token', data.access_token);
+    localStorage.setItem('ak_refresh', data.refresh_token);
+    await loadDataAndEnter();
+  } catch(e) {
+    errEl.textContent = T('errLoginFail');
+    errEl.style.display = 'block';
+  } finally {
+    hideLoading();
+  }
+}
+
+async function doReset() {
+  const email = document.getElementById('reset-email').value.trim();
+  const errEl = document.getElementById('reset-error');
+  errEl.style.display = 'none';
+  if (!email) return;
+  try {
+    await sbAuth('recover', { email });
+    errEl.style.cssText = 'display:block;background:var(--green-lt);color:var(--green);border-color:var(--green)';
+    errEl.textContent = T('errResetSent');
+  } catch(e) {
+    errEl.style.display = 'block';
+    errEl.textContent = e.message;
+  }
+}
+
+async function doLogout() {
+  try {
+    await fetch(SUPABASE_URL + '/auth/v1/logout', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + currentUser?.access_token }
+    });
+  } catch(e) {}
+  currentUser = null; currentMember = null; members = []; tasks = [];
+  localStorage.removeItem('ak_token');
+  localStorage.removeItem('ak_refresh');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = '';
+  switchTab('my-tasks');
+  destroyCharts();
+}
+
+async function openChangePw() { openModal('modal-change-pw'); }
+
+async function doChangePw() {
+  const pw1 = document.getElementById('new-pw').value;
+  const pw2 = document.getElementById('confirm-pw').value;
+  const errEl = document.getElementById('changepw-error');
+  errEl.style.display = 'none';
+  if (pw1 !== pw2) { errEl.textContent = T('errPwMismatch'); errEl.style.display = 'block'; return; }
+  if (pw1.length < 6) { errEl.textContent = T('errPwShort'); errEl.style.display = 'block'; return; }
+  try {
+    const res = await fetch(SUPABASE_URL + '/auth/v1/user', {
+      method: 'PUT',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + currentUser.access_token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw1 })
+    });
+    if (!res.ok) throw new Error('Failed');
+    closeModal('modal-change-pw');
+    document.getElementById('new-pw').value = '';
+    document.getElementById('confirm-pw').value = '';
+    toast(T('toastPwChanged'));
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+// ── DATA ──
+async function loadData() {
+  const [mems, tsks] = await Promise.all([
+    sbFetch('members?select=*&order=name'),
+    sbFetch('tasks?select=*&order=created_at')
+  ]);
+  members = (mems||[]).map(m => ({ id:m.id, name:m.name, pos:m.pos, email:m.email, role:m.role||'member', user_id:m.user_id }));
+  tasks = (tsks||[]).map(t => ({
+    id:t.id, memberId:t.member_id, title:t.title,
+    desc:t.description||'', prio:t.prio||'ปานกลาง',
+    status:t.status||'รอดำเนินการ', due:t.due||'', prog:t.prog||0, note:t.note||''
+  }));
+}
+
+async function loadDataAndEnter() {
+  showLoading('Loading...');
+  await loadData();
+  // find currentMember by user_id
+  const uid = currentUser.user.id;
+  currentMember = members.find(m => m.user_id === uid) || null;
+  hideLoading();
+  if (!currentMember) { alert('User not linked to any member. Contact admin.'); return; }
+  enterApp();
+}
+
+function enterApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  const av = document.getElementById('tb-avatar');
+  av.style.background = avatarColor(currentMember.name);
+  av.textContent = currentMember.name.slice(0,2);
+  document.getElementById('tb-name').textContent = currentMember.name;
+  const roleLabel = currentMember.role === 'manager' ? T('roleManager') : T('roleMember');
+  document.getElementById('tb-role').textContent = currentMember.pos + ' · ' + roleLabel;
+  document.getElementById('my-task-subtitle').textContent = currentMember.pos + ' · ' + T('myTaskSubtitle');
+  populateAllEmpFilter();
+  applyLang();
+  renderMyTasks();
+  renderMyKpi();
+}
+
+// ── SESSION RESTORE ──
+async function tryRestoreSession() {
+  const token = localStorage.getItem('ak_token');
+  const refresh = localStorage.getItem('ak_refresh');
+  if (!token) return false;
+  try {
+    showLoading('Loading...');
+    // Try to refresh token
+    const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refresh })
+    });
+    if (!res.ok) { hideLoading(); return false; }
+    const data = await res.json();
+    currentUser = { access_token: data.access_token, user: data.user };
+    localStorage.setItem('ak_token', data.access_token);
+    localStorage.setItem('ak_refresh', data.refresh_token);
+    await loadDataAndEnter();
+    return true;
+  } catch(e) {
+    hideLoading();
+    return false;
+  }
+}
+
+// ── HELPERS ──
 const AVATAR_COLORS = ['#2B5BAE','#1a6e5a','#8e3d8e','#c0562a','#1a7a7a','#a04a1a','#2c6b2f','#7a3b6e'];
 function avatarColor(name) {
   let h = 0; for (let c of name) h = (h+c.charCodeAt(0)) % AVATAR_COLORS.length;
   return AVATAR_COLORS[h];
 }
-
-function loadSession() { try { return JSON.parse(localStorage.getItem('ak_session')); } catch { return null; } }
-function saveSession(v) { localStorage.setItem('ak_session', JSON.stringify(v)); }
-
-let members = [];
-let tasks   = [];
-
-async function loadData() {
-  try {
-    showLoading(true);
-    const [mems, tsks] = await Promise.all([
-      sbFetch('members?select=*&order=name'),
-      sbFetch('tasks?select=*&order=created_at')
-    ]);
-    members = (mems||[]).map(m => ({id:m.id, name:m.name, pos:m.pos}));
-    tasks   = (tsks||[]).map(t => ({
-      id:t.id, memberId:t.member_id, title:t.title,
-      desc:t.description||'', prio:t.prio||'ปานกลาง',
-      status:t.status||'รอดำเนินการ',
-      due:t.due||'', prog:t.prog||0, note:t.note||''
-    }));
-  } catch(e) {
-    showLoading(false);
-    alert('❌ เชื่อมต่อ Supabase ไม่ได้\nตรวจสอบ URL และ API Key ใน index.html');
-    throw e;
-  } finally {
-    showLoading(false);
-  }
+function uid() { return 'x'+Math.random().toString(36).slice(2,9); }
+function isManager() { return currentMember?.role === 'manager'; }
+function canEdit(task) { return isManager() || task.memberId === currentMember?.id; }
+function isLate(t) { return t.status !== 'เสร็จสิ้น' && t.due && new Date(t.due) < new Date(); }
+function effectiveStatus(t) { return isLate(t) ? 'เกินกำหนด' : t.status; }
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString(lang==='th'?'th-TH':'en-GB',{day:'numeric',month:'short'});
 }
+function empName(id) { const m=members.find(x=>x.id===id); return m?m.name:'—'; }
 
-// save() ถูกเรียกหลัง members/tasks ถูกอัปเดตในหน่วยความจำแล้ว
-// Supabase ใช้ upsert รายการเดียว ไม่ต้องส่งข้อมูลทั้งหมด
-function save(key, val) {
-  if (key === 'ak_members') members = val;
-  if (key === 'ak_tasks')   tasks   = val;
-  // fire-and-forget — การ sync จริงทำใน saveTask/saveMember แยกกัน
+function statusPill(s) {
+  const map = { 'รอดำเนินการ':'pill-todo','กำลังดำเนินการ':'pill-doing','เสร็จสิ้น':'pill-done','เกินกำหนด':'pill-late','รอตรวจสอบ':'pill-review' };
+  const labelMap = { 'รอดำเนินการ':T('statusTodo'),'กำลังดำเนินการ':T('statusDoing'),'เสร็จสิ้น':T('statusDone'),'เกินกำหนด':T('statusLate'),'รอตรวจสอบ':T('statusReview') };
+  return `<span class="pill ${map[s]||'pill-todo'}">${labelMap[s]||s}</span>`;
 }
-
-function showLoading(show) {
-  let el = document.getElementById('loading-overlay');
-  if (!el) return;
-  el.style.display = show ? 'flex' : 'none';
+function prioTag(p) {
+  const map = {'เร่งด่วน':'p-urgent','สูง':'p-high','ปานกลาง':'p-normal','ต่ำ':'p-low'};
+  const labelMap = {'เร่งด่วน':T('prioUrgent'),'สูง':T('prioHigh'),'ปานกลาง':T('prioNormal'),'ต่ำ':T('prioLow')};
+  return `<span class="priority-tag ${map[p]||'p-normal'}">${labelMap[p]||p}</span>`;
 }
-
-
-// ══════════════════════════════════════════
-//  SESSION
-// ══════════════════════════════════════════
-let currentMember = null;
-
-async function initLogin() {
-  await loadData();
-  populateEmpPicker();
-  session = loadSession();
-  if (session) {
-    const m = members.find(x=>x.id===session.memberId);
-    if (m) { currentMember = m; enterApp(); return; }
-  }
+function prioColor(p) { return {'เร่งด่วน':'var(--red)','สูง':'var(--orange)','ปานกลาง':'var(--blue)','ต่ำ':'var(--muted)'}[p]||'var(--border)'; }
+function progColor(n) { if(n>=100)return'var(--green)';if(n>=60)return'var(--blue)';if(n>=30)return'var(--orange)';return'var(--red)'; }
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2500);
 }
+function showLoading(msg='') { const el=document.getElementById('loading-overlay'); if(el){el.style.display='flex'; const t=document.getElementById('loading-text'); if(t)t.textContent=msg;} }
+function hideLoading() { const el=document.getElementById('loading-overlay'); if(el)el.style.display='none'; }
 
-function populateEmpPicker() {
-  const sel = document.getElementById('emp-picker');
-  if (!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— เลือกชื่อ —</option>' + members.map(m=>`<option value="${m.id}">${m.name} · ${m.pos}</option>`).join('');
-  sel.value = cur;
-}
-
-function enterApp() {
-  if (!currentMember) {
-    const sel = document.getElementById('emp-picker');
-    if (!sel.value) return;
-    currentMember = members.find(m=>m.id===sel.value);
-    if (!currentMember) return;
-    saveSession({memberId: currentMember.id});
-  }
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').classList.add('visible');
-
-  const av = document.getElementById('tb-avatar');
-  av.style.background = avatarColor(currentMember.name);
-  av.textContent = currentMember.name.slice(0,2);
-  document.getElementById('tb-name').textContent = currentMember.name;
-  document.getElementById('tb-dept').textContent = currentMember.pos + ' · ฝ่าย HR';
-  document.getElementById('my-task-subtitle').textContent = 'ฝ่าย HR · ' + currentMember.pos;
-  document.getElementById('dept-title').textContent = 'ภาพรวม — ฝ่าย HR';
-
-  populateAllEmpFilter();
-  renderMyTasks();
-  renderMyKpi();
-}
-
-function logout() {
-  currentMember = null;
-  session = null;
-  saveSession(null);
-  document.getElementById('login-screen').style.display = '';
-  document.getElementById('app').classList.remove('visible');
-  document.getElementById('btn-enter').disabled = true;
-  document.getElementById('emp-picker').value = '';
-  switchTab('my-tasks');
-}
-
-// ══════════════════════════════════════════
-//  TABS
-// ══════════════════════════════════════════
+// ── TABS ──
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -756,173 +920,81 @@ function switchTab(tab) {
   if (tab==='all-tasks') renderAllTasks();
 }
 
-// ══════════════════════════════════════════
-//  HELPERS
-// ══════════════════════════════════════════
-function uid() { return 'x'+Math.random().toString(36).slice(2,9); }
-
-
-
-function statusPill(s) {
-  const map = {'รอดำเนินการ':'pill-todo','กำลังดำเนินการ':'pill-doing','เสร็จสิ้น':'pill-done','เกินกำหนด':'pill-late','รอตรวจสอบ':'pill-review'};
-  return `<span class="pill ${map[s]||'pill-todo'}">${s}</span>`;
-}
-
-function prioTag(p) {
-  const map = {'เร่งด่วน':'p-urgent','สูง':'p-high','ปานกลาง':'p-normal','ต่ำ':'p-low'};
-  return `<span class="priority-tag ${map[p]||'p-normal'}">${p}</span>`;
-}
-
-function prioColor(p) {
-  return {'เร่งด่วน':'var(--red)','สูง':'var(--orange)','ปานกลาง':'var(--blue)','ต่ำ':'var(--muted)'}[p] || 'var(--border)';
-}
-
-function progColor(n) {
-  if (n>=100) return 'var(--green)';
-  if (n>=60) return 'var(--blue)';
-  if (n>=30) return 'var(--orange)';
-  return 'var(--red)';
-}
-
-function fmtDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('th-TH',{day:'numeric',month:'short'});
-}
-function isLate(t) {
-  return t.status !== 'เสร็จสิ้น' && t.due && new Date(t.due) < new Date();
-}
-function effectiveStatus(t) {
-  return isLate(t) ? 'เกินกำหนด' : t.status;
-}
-
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'), 2500);
-}
-
-// ══════════════════════════════════════════
-//  MY TASKS
-// ══════════════════════════════════════════
-let editTaskId = null;
-
-function myTaskList() {
-  if (!currentMember) return [];
-  const q = (document.getElementById('my-search')||{}).value?.toLowerCase()||'';
-  const prio = (document.getElementById('my-prio-filter')||{}).value||'';
-  return tasks.filter(t =>
-    t.memberId === currentMember.id &&
-    (!q || t.title.toLowerCase().includes(q) || (t.desc||'').toLowerCase().includes(q)) &&
-    (!prio || t.prio===prio)
-  );
-}
-
+// ── MY TASKS ──
 function renderMyKpi() {
   const mine = tasks.filter(t=>t.memberId===currentMember.id);
-  const total = mine.length;
-  const done  = mine.filter(t=>t.status==='เสร็จสิ้น').length;
-  const doing = mine.filter(t=>t.status==='กำลังดำเนินการ').length;
-  const late  = mine.filter(t=>isLate(t)).length;
-  const avgProg = total ? Math.round(mine.reduce((s,t)=>s+(t.prog||0),0)/total) : 0;
-
+  const total=mine.length, done=mine.filter(t=>t.status==='เสร็จสิ้น').length;
+  const doing=mine.filter(t=>t.status==='กำลังดำเนินการ').length;
+  const late=mine.filter(t=>isLate(t)).length;
+  const avg=total?Math.round(mine.reduce((s,t)=>s+(t.prog||0),0)/total):0;
   document.getElementById('my-kpi').innerHTML = `
-    <div class="kpi-card" style="--card-top:var(--blue)">
-      <div class="kpi-label">งานทั้งหมด</div>
-      <div class="kpi-val">${total}</div>
-      <div class="kpi-sub">รายการ</div>
-    </div>
-    <div class="kpi-card" style="--card-top:var(--green);--card-color:var(--green)">
-      <div class="kpi-label">เสร็จสิ้น</div>
-      <div class="kpi-val">${done}</div>
-      <div class="kpi-sub">${total?Math.round(done/total*100):0}% ของงานทั้งหมด</div>
-    </div>
-    <div class="kpi-card" style="--card-top:var(--blue)">
-      <div class="kpi-label">กำลังดำเนินการ</div>
-      <div class="kpi-val">${doing}</div>
-      <div class="kpi-sub">งาน</div>
-    </div>
-    <div class="kpi-card" style="--card-top:${late?'var(--red)':'var(--green)'};--card-color:${late?'var(--red)':'var(--text)'}">
-      <div class="kpi-label">เกินกำหนด</div>
-      <div class="kpi-val">${late}</div>
-      <div class="kpi-sub">${late?'⚠ ต้องเร่งดำเนินการ':'✓ ไม่มีงานเกิน'}</div>
-    </div>
-    <div class="kpi-card" style="--card-top:var(--gold)">
-      <div class="kpi-label">ความคืบหน้าเฉลี่ย</div>
-      <div class="kpi-val">${avgProg}<span style="font-size:16px;font-weight:400">%</span></div>
-      <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:${avgProg}%;background:${progColor(avgProg)}"></div></div>
-    </div>
+    <div class="kpi-card" style="--card-top:var(--blue)"><div class="kpi-label">${T('kpiTotal')}</div><div class="kpi-val">${total}</div></div>
+    <div class="kpi-card" style="--card-top:var(--green);--card-color:var(--green)"><div class="kpi-label">${T('kpiDone')}</div><div class="kpi-val">${done}</div><div class="kpi-sub">${total?Math.round(done/total*100):0}%</div></div>
+    <div class="kpi-card" style="--card-top:var(--blue)"><div class="kpi-label">${T('kpiDoing')}</div><div class="kpi-val">${doing}</div></div>
+    <div class="kpi-card" style="--card-top:${late?'var(--red)':'var(--green)'};--card-color:${late?'var(--red)':'var(--text)'}"><div class="kpi-label">${T('kpiLate')}</div><div class="kpi-val">${late}</div></div>
+    <div class="kpi-card" style="--card-top:var(--gold)"><div class="kpi-label">${T('kpiProgress')}</div><div class="kpi-val">${avg}<span style="font-size:16px;font-weight:400">%</span></div><div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:${avg}%;background:${progColor(avg)}"></div></div></div>
   `;
 }
 
 const COLS = [
-  {key:'รอดำเนินการ', label:'รอดำเนินการ', headBg:'#f2f4f8', headColor:'var(--muted)', countBg:'#e4e8f0', countColor:'var(--muted)'},
-  {key:'กำลังดำเนินการ', label:'กำลังดำเนินการ', headBg:'#e8eef8', headColor:'var(--blue)', countBg:'var(--blue)', countColor:'#fff'},
-  {key:'รอตรวจสอบ', label:'รอตรวจสอบ', headBg:'var(--gold-lt)', headColor:'#a07800', countBg:'var(--gold)', countColor:'var(--blue-dk)'},
-  {key:'เสร็จสิ้น', label:'เสร็จสิ้น', headBg:'var(--green-lt)', headColor:'var(--green)', countBg:'var(--green)', countColor:'#fff'},
+  {key:'รอดำเนินการ',headBg:'#f2f4f8',headColor:'var(--muted)',countBg:'#e4e8f0',countColor:'var(--muted)'},
+  {key:'กำลังดำเนินการ',headBg:'var(--blue-lt)',headColor:'var(--blue)',countBg:'var(--blue)',countColor:'#fff'},
+  {key:'รอตรวจสอบ',headBg:'var(--gold-lt)',headColor:'#a07800',countBg:'var(--gold)',countColor:'var(--blue-dk)'},
+  {key:'เสร็จสิ้น',headBg:'var(--green-lt)',headColor:'var(--green)',countBg:'var(--green)',countColor:'#fff'},
 ];
 
 function renderMyTasks() {
-  const list = myTaskList();
-  const view = (document.getElementById('my-view')||{}).value||'kanban';
-  const kanbanEl = document.getElementById('my-kanban');
-  const listWrap  = document.getElementById('my-list-wrap');
-
+  const q=(document.getElementById('my-search')||{}).value?.toLowerCase()||'';
+  const prio=(document.getElementById('my-prio-filter')||{}).value||'';
+  const view=(document.getElementById('my-view')||{}).value||'kanban';
+  const mine=tasks.filter(t=>t.memberId===currentMember.id&&(!q||t.title.toLowerCase().includes(q)||(t.desc||'').toLowerCase().includes(q))&&(!prio||t.prio===prio));
+  const kanbanEl=document.getElementById('my-kanban');
+  const listWrap=document.getElementById('my-list-wrap');
   if (view==='kanban') {
-    kanbanEl.style.display = '';
-    listWrap.style.display = 'none';
-    kanbanEl.className = 'kanban';
-    kanbanEl.innerHTML = COLS.map(col => {
-      const colTasks = list.filter(t => effectiveStatus(t)===col.key || (col.key==='เกินกำหนด' && isLate(t)));
-      const realColTasks = list.filter(t => {
-        if (col.key==='รอดำเนินการ') return t.status==='รอดำเนินการ' && !isLate(t);
-        if (col.key==='กำลังดำเนินการ') return t.status==='กำลังดำเนินการ' && !isLate(t);
-        if (col.key==='รอตรวจสอบ') return t.status==='รอตรวจสอบ' && !isLate(t);
-        if (col.key==='เสร็จสิ้น') return t.status==='เสร็จสิ้น';
+    kanbanEl.style.display=''; listWrap.style.display='none';
+    kanbanEl.className='kanban';
+    kanbanEl.innerHTML=COLS.map(col=>{
+      const colT=mine.filter(t=>{
+        if(col.key==='รอดำเนินการ') return t.status==='รอดำเนินการ'&&!isLate(t);
+        if(col.key==='กำลังดำเนินการ') return t.status==='กำลังดำเนินการ'&&!isLate(t);
+        if(col.key==='รอตรวจสอบ') return t.status==='รอตรวจสอบ'&&!isLate(t);
+        if(col.key==='เสร็จสิ้น') return t.status==='เสร็จสิ้น';
         return false;
       });
-      const lateInCol = col.key!=='เสร็จสิ้น' ? list.filter(t=>isLate(t)&&t.status===col.key) : [];
-      const merged = [...lateInCol, ...realColTasks.filter(t=>!lateInCol.includes(t))];
-      return `
-        <div class="kanban-col">
-          <div class="kanban-head" style="background:${col.headBg};color:${col.headColor}">
-            <span>${col.label}</span>
-            <span class="col-count" style="background:${col.countBg};color:${col.countColor}">${merged.length}</span>
-          </div>
-          <div class="kanban-body">
-            ${merged.length ? merged.map(t=>taskCard(t)).join('') : '<div class="empty" style="padding:20px 10px"><p style="font-size:12px">ไม่มีงาน</p></div>'}
-          </div>
-        </div>`;
+      const lateT=col.key!=='เสร็จสิ้น'?mine.filter(t=>isLate(t)&&t.status===col.key):[];
+      const merged=[...lateT,...colT.filter(t=>!lateT.includes(t))];
+      const label={'รอดำเนินการ':T('statusTodo'),'กำลังดำเนินการ':T('statusDoing'),'รอตรวจสอบ':T('statusReview'),'เสร็จสิ้น':T('statusDone')}[col.key]||col.key;
+      return `<div class="kanban-col">
+        <div class="kanban-head" style="background:${col.headBg};color:${col.headColor}">
+          <span>${label}</span>
+          <span class="col-count" style="background:${col.countBg};color:${col.countColor}">${merged.length}</span>
+        </div>
+        <div class="kanban-body">
+          ${merged.length?merged.map(t=>taskCard(t)).join(''):`<div class="empty" style="padding:20px 10px"><p style="font-size:12px">${T('noTasks')}</p></div>`}
+        </div>
+      </div>`;
     }).join('');
   } else {
-    kanbanEl.style.display = 'none';
-    listWrap.style.display = '';
-    const sorted = [...list].sort((a,b)=>(a.due||'zzz')>(b.due||'zzz')?1:-1);
-    document.getElementById('my-list-tbody').innerHTML = sorted.map(t=>`
+    kanbanEl.style.display='none'; listWrap.style.display='';
+    const sorted=[...mine].sort((a,b)=>(a.due||'zzz')>(b.due||'zzz')?1:-1);
+    document.getElementById('my-list-tbody').innerHTML=sorted.map(t=>`
       <tr>
-        <td>
-          <div style="font-weight:600;font-size:13px">${t.title}</div>
-          ${t.desc?`<div style="font-size:11.5px;color:var(--muted);margin-top:2px">${t.desc}</div>`:''}
-        </td>
+        <td><div style="font-weight:600;font-size:13px">${t.title}</div>${t.desc?`<div style="font-size:11.5px;color:var(--muted);margin-top:2px">${t.desc}</div>`:''}</td>
         <td>${prioTag(t.prio)}</td>
         <td>${statusPill(effectiveStatus(t))}</td>
-        <td class="${isLate(t)?'tc-due-late':''}" style="font-size:12px;white-space:nowrap">${fmtDate(t.due)}</td>
-        <td>
-          <div style="display:flex;gap:4px">
-            <button class="btn btn-ghost btn-xs" onclick="openEditTask('${t.id}')">แก้ไข</button>
-            <button class="btn btn-danger btn-xs" onclick="delTask('${t.id}')">ลบ</button>
-          </div>
-        </td>
-      </tr>
-    `).join('') || '<tr><td colspan="5" class="empty"><div class="empty-icon">✅</div><p>ยังไม่มีงาน</p></td></tr>';
+        <td style="font-size:12px;${isLate(t)?'color:var(--red);font-weight:600':''}">${fmtDate(t.due)}</td>
+        <td><div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-xs" onclick="openEditTask('${t.id}')">${T('btnSave').replace('บันทึก','แก้ไข').replace('Save','Edit')}</button>
+          <button class="btn btn-danger btn-xs" onclick="delTask('${t.id}')">✕</button>
+        </div></td>
+      </tr>`).join('')||`<tr><td colspan="5" class="empty"><p>${T('noTasks')}</p></td></tr>`;
   }
 }
 
 function taskCard(t) {
-  const late = isLate(t);
-  return `
-  <div class="task-card" style="--card-left:${late?'var(--red)':prioColor(t.prio)}" onclick="openEditTask('${t.id}')">
-    <div class="tc-title">${t.title}${late?' <span style="color:var(--red);font-size:10px">⚠ เกิน</span>':''}</div>
+  const late=isLate(t);
+  return `<div class="task-card" style="--card-left:${late?'var(--red)':prioColor(t.prio)}" onclick="openEditTask('${t.id}')">
+    <div class="tc-title">${t.title}${late?` <span style="color:var(--red);font-size:10px">⚠</span>`:''}</div>
     ${t.desc?`<div class="tc-desc">${t.desc}</div>`:''}
     <div style="margin-bottom:6px">
       <div class="prog-bar"><div class="prog-fill" style="width:${t.prog||0}%;background:${progColor(t.prog||0)}"></div></div>
@@ -935,296 +1007,147 @@ function taskCard(t) {
   </div>`;
 }
 
-// ══════════════════════════════════════════
-//  DEPT OVERVIEW
-// ══════════════════════════════════════════
+// ── DEPT OVERVIEW ──
+function destroyCharts() {
+  Object.values(charts).forEach(c=>{ try{c.destroy()}catch(e){} });
+  charts = {};
+}
+
 function renderDeptOverview() {
-  if (!currentMember) return;
-  const dept = currentMember.dept;
-  const deptMembers = members;
-  const deptTasks = tasks.filter(t=>members.some(m=>m.id===t.memberId));
-
-  const total = deptTasks.length;
-  const done  = deptTasks.filter(t=>t.status==='เสร็จสิ้น').length;
-  const late  = deptTasks.filter(t=>isLate(t)).length;
-  const doing = deptTasks.filter(t=>t.status==='กำลังดำเนินการ').length;
-  const avg   = total ? Math.round(deptTasks.reduce((s,t)=>s+(t.prog||0),0)/total) : 0;
-
-  document.getElementById('dept-kpi').innerHTML = `
-    <div class="kpi-card" style="--card-top:var(--blue)">
-      <div class="kpi-label">สมาชิกในแผนก</div>
-      <div class="kpi-val">${deptMembers.length}</div>
-      <div class="kpi-sub">คน</div>
-    </div>
-    <div class="kpi-card" style="--card-top:var(--blue)">
-      <div class="kpi-label">งานทั้งหมด</div>
-      <div class="kpi-val">${total}</div>
-      <div class="kpi-sub">รายการ</div>
-    </div>
-    <div class="kpi-card" style="--card-top:var(--green);--card-color:var(--green)">
-      <div class="kpi-label">เสร็จสิ้น</div>
-      <div class="kpi-val">${done}</div>
-      <div class="kpi-sub">${total?Math.round(done/total*100):0}%</div>
-    </div>
-    <div class="kpi-card" style="--card-top:var(--blue)">
-      <div class="kpi-label">กำลังดำเนินการ</div>
-      <div class="kpi-val">${doing}</div><div class="kpi-sub">งาน</div>
-    </div>
-    <div class="kpi-card" style="--card-top:${late?'var(--red)':'var(--green)'};--card-color:${late?'var(--red)':'var(--text)'}">
-      <div class="kpi-label">เกินกำหนด</div>
-      <div class="kpi-val">${late}</div>
-      <div class="kpi-sub">${late?'⚠ ต้องติดตาม':'✓ ทันกำหนดทุกงาน'}</div>
-    </div>
-    <div class="kpi-card" style="--card-top:var(--gold)">
-      <div class="kpi-label">ความคืบหน้าเฉลี่ย</div>
-      <div class="kpi-val">${avg}<span style="font-size:16px;font-weight:400">%</span></div>
-      <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:${avg}%;background:${progColor(avg)}"></div></div>
-    </div>
+  const total=tasks.length, done=tasks.filter(t=>t.status==='เสร็จสิ้น').length;
+  const late=tasks.filter(t=>isLate(t)).length, doing=tasks.filter(t=>t.status==='กำลังดำเนินการ').length;
+  const avg=total?Math.round(tasks.reduce((s,t)=>s+(t.prog||0),0)/total):0;
+  document.getElementById('dept-kpi').innerHTML=`
+    <div class="kpi-card" style="--card-top:var(--blue)"><div class="kpi-label">${T('kpiMembers')}</div><div class="kpi-val">${members.length}</div></div>
+    <div class="kpi-card" style="--card-top:var(--blue)"><div class="kpi-label">${T('kpiTotal')}</div><div class="kpi-val">${total}</div></div>
+    <div class="kpi-card" style="--card-top:var(--green);--card-color:var(--green)"><div class="kpi-label">${T('kpiDone')}</div><div class="kpi-val">${done}</div><div class="kpi-sub">${total?Math.round(done/total*100):0}%</div></div>
+    <div class="kpi-card" style="--card-top:var(--blue)"><div class="kpi-label">${T('kpiDoing')}</div><div class="kpi-val">${doing}</div></div>
+    <div class="kpi-card" style="--card-top:${late?'var(--red)':'var(--green)'};--card-color:${late?'var(--red)':'var(--text)'}"><div class="kpi-label">${T('kpiLate')}</div><div class="kpi-val">${late}</div></div>
+    <div class="kpi-card" style="--card-top:var(--gold)"><div class="kpi-label">${T('kpiProgress')}</div><div class="kpi-val">${avg}<span style="font-size:16px;font-weight:400">%</span></div><div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:${avg}%;background:${progColor(avg)}"></div></div></div>
   `;
-
-  document.getElementById('dept-members').innerHTML = deptMembers.map(m => {
-    const mt = tasks.filter(t=>t.memberId===m.id);
-    const mdone = mt.filter(t=>t.status==='เสร็จสิ้น').length;
-    const mlate = mt.filter(t=>isLate(t)).length;
-    const mdoing = mt.filter(t=>t.status==='กำลังดำเนินการ').length;
-    const mavg = mt.length ? Math.round(mt.reduce((s,t)=>s+(t.prog||0),0)/mt.length) : 0;
-    const activeTasks = mt.filter(t=>t.status!=='เสร็จสิ้น').slice(0,3);
-    const isMe = m.id === currentMember.id;
-    return `
-    <div class="member-card" style="${isMe?'border-color:var(--blue);border-width:2px':''}">
+  destroyCharts();
+  // Chart 1: Status
+  const statusCounts = {'รอดำเนินการ':0,'กำลังดำเนินการ':0,'รอตรวจสอบ':0,'เสร็จสิ้น':0,'เกินกำหนด':0};
+  tasks.forEach(t=>{ const s=effectiveStatus(t); if(statusCounts[s]!==undefined) statusCounts[s]++; });
+  charts.status = new Chart(document.getElementById('chart-status'), {
+    type:'doughnut',
+    data:{
+      labels:[T('statusTodo'),T('statusDoing'),T('statusReview'),T('statusDone'),T('statusLate')],
+      datasets:[{data:Object.values(statusCounts),backgroundColor:['#e4e8f0','#2B5BAE','#F5C02B','#1e9e6b','#d44'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}
+  });
+  // Chart 2: Priority
+  const prioCounts={'เร่งด่วน':0,'สูง':0,'ปานกลาง':0,'ต่ำ':0};
+  tasks.forEach(t=>{if(prioCounts[t.prio]!==undefined)prioCounts[t.prio]++;});
+  charts.prio = new Chart(document.getElementById('chart-prio'), {
+    type:'doughnut',
+    data:{
+      labels:[T('prioUrgent'),T('prioHigh'),T('prioNormal'),T('prioLow')],
+      datasets:[{data:Object.values(prioCounts),backgroundColor:['#d44','#e07b10','#2B5BAE','#b4b2a9'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}
+  });
+  // Chart 3: Tasks per member
+  const memNames=members.map(m=>m.name);
+  const memCounts=members.map(m=>tasks.filter(t=>t.memberId===m.id).length);
+  charts.member = new Chart(document.getElementById('chart-member'), {
+    type:'bar',
+    data:{
+      labels:memNames,
+      datasets:[{label:T('kpiTotal'),data:memCounts,backgroundColor:'#2B5BAE',borderRadius:6}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+  // Chart 4: Avg progress per member
+  const memProg=members.map(m=>{const mt=tasks.filter(t=>t.memberId===m.id);return mt.length?Math.round(mt.reduce((s,t)=>s+(t.prog||0),0)/mt.length):0;});
+  charts.prog = new Chart(document.getElementById('chart-prog'), {
+    type:'bar',
+    data:{
+      labels:memNames,
+      datasets:[{label:'%',data:memProg,backgroundColor:memProg.map(v=>v>=75?'#1e9e6b':v>=50?'#2B5BAE':'#e07b10'),borderRadius:6}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}}}
+  });
+  // Member cards
+  document.getElementById('dept-members').innerHTML=members.map(m=>{
+    const mt=tasks.filter(t=>t.memberId===m.id);
+    const mdone=mt.filter(t=>t.status==='เสร็จสิ้น').length;
+    const mlate=mt.filter(t=>isLate(t)).length;
+    const mdoing=mt.filter(t=>t.status==='กำลังดำเนินการ').length;
+    const mavg=mt.length?Math.round(mt.reduce((s,t)=>s+(t.prog||0),0)/mt.length):0;
+    const isMe=m.id===currentMember.id;
+    const active=mt.filter(t=>t.status!=='เสร็จสิ้น').slice(0,3);
+    const roleLabel=m.role==='manager'?`<span class="role-badge role-manager">${T('roleManager')}</span>`:`<span class="role-badge role-member">${T('roleMember')}</span>`;
+    return `<div class="member-card" style="${isMe?'border-color:var(--blue);border-width:2px':''}">
       <div class="mc-header">
         <div class="avatar" style="background:${avatarColor(m.name)};width:40px;height:40px;font-size:14px">${m.name.slice(0,2)}</div>
         <div>
-          <div class="mc-name">${m.name}${isMe?' <span style="font-size:10px;color:var(--blue);background:var(--blue-lt);padding:1px 6px;border-radius:10px">ฉัน</span>':''}</div>
-          <div class="mc-pos" style="color:var(--muted)">${m.pos}</div>
+          <div class="mc-name">${m.name} ${isMe?`<span style="font-size:10px;color:var(--blue);background:var(--blue-lt);padding:1px 6px;border-radius:10px">Me</span>`:''}</div>
+          <div class="mc-pos">${m.pos} ${roleLabel}</div>
         </div>
       </div>
       <div class="mc-stats">
-        <div class="mc-stat"><div class="val">${mt.length}</div><div class="lbl">ทั้งหมด</div></div>
-        <div class="mc-stat"><div class="val" style="color:var(--green)">${mdone}</div><div class="lbl">เสร็จ</div></div>
-        <div class="mc-stat"><div class="val" style="color:var(--blue)">${mdoing}</div><div class="lbl">ดำเนินการ</div></div>
-        <div class="mc-stat"><div class="val" style="color:${mlate?'var(--red)':'var(--green)'}">${mlate}</div><div class="lbl">เกินกำหนด</div></div>
+        <div class="mc-stat"><div class="val">${mt.length}</div><div class="lbl">${T('kpiTotal')}</div></div>
+        <div class="mc-stat"><div class="val" style="color:var(--green)">${mdone}</div><div class="lbl">${T('kpiDone')}</div></div>
+        <div class="mc-stat"><div class="val" style="color:var(--blue)">${mdoing}</div><div class="lbl">${T('kpiDoing')}</div></div>
+        <div class="mc-stat"><div class="val" style="color:${mlate?'var(--red)':'var(--green)'}">${mlate}</div><div class="lbl">${T('kpiLate')}</div></div>
       </div>
       <div style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
-          <span>ความคืบหน้า</span><span style="font-family:var(--mono);font-weight:600;color:${progColor(mavg)}">${mavg}%</span>
+          <span>${T('progress')}</span><span style="font-family:var(--mono);font-weight:600;color:${progColor(mavg)}">${mavg}%</span>
         </div>
         <div class="prog-bar" style="height:8px"><div class="prog-fill" style="width:${mavg}%;background:${progColor(mavg)}"></div></div>
       </div>
-      ${activeTasks.length ? `
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">งานที่กำลังดำเนินการ</div>
-        <div class="mc-tasks-preview">
-          ${activeTasks.map(t=>`
-            <div class="mc-task-row">
-              <span style="color:${prioColor(t.prio)};font-size:10px">▲</span>
-              <span class="tc-name">${t.title}</span>
-              <span style="font-size:10px;color:${isLate(t)?'var(--red)':'var(--muted)'};">${fmtDate(t.due)}</span>
-            </div>`).join('')}
-        </div>` : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0">ไม่มีงานที่ค้างอยู่ 🎉</div>`}
+      ${active.length?`<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">${T('activeTasks')}</div>
+        ${active.map(t=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)">
+          <span style="color:${prioColor(t.prio)};font-size:10px">▲</span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</span>
+          <span style="font-size:10px;color:${isLate(t)?'var(--red)':'var(--muted)'}">${fmtDate(t.due)}</span>
+        </div>`).join('')}`:`<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0">${T('noActiveTasks')} 🎉</div>`}
     </div>`;
-  }).join('') || '<div class="empty"><div class="empty-icon">👥</div><p>ไม่มีสมาชิกในแผนก</p></div>';
+  }).join('');
 }
 
-// ══════════════════════════════════════════
-//  ALL TASKS
-// ══════════════════════════════════════════
+// ── ALL TASKS ──
 function populateAllEmpFilter() {
-  const el = document.getElementById('all-emp-filter');
+  const el=document.getElementById('all-emp-filter');
   if (!el) return;
-  el.innerHTML = '<option value="">ทุกคน</option>' + members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  el.innerHTML=`<option value="">${T('allMembers')}</option>`+members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
 }
 
 function renderAllTasks() {
-  if (!currentMember) return;
-  const q       = (document.getElementById('all-search')||{}).value?.toLowerCase()||'';
-  const empId   = (document.getElementById('all-emp-filter')||{}).value||'';
-  const status  = (document.getElementById('all-status-filter')||{}).value||'';
-  const prio    = (document.getElementById('all-prio-filter')||{}).value||'';
-
-  let list = tasks.filter(t => {
-    const es = effectiveStatus(t);
-    return members.some(m=>m.id===t.memberId) &&
-      (!q || t.title.toLowerCase().includes(q) || (t.desc||'').toLowerCase().includes(q)) &&
-      (!empId || t.memberId===empId) &&
-      (!status || es===status) &&
-      (!prio || t.prio===prio);
+  const q=(document.getElementById('all-search')||{}).value?.toLowerCase()||'';
+  const empId=(document.getElementById('all-emp-filter')||{}).value||'';
+  const status=(document.getElementById('all-status-filter')||{}).value||'';
+  const prio=(document.getElementById('all-prio-filter')||{}).value||'';
+  let list=tasks.filter(t=>{
+    const es=effectiveStatus(t);
+    return (!q||t.title.toLowerCase().includes(q)||(t.desc||'').toLowerCase().includes(q))&&(!empId||t.memberId===empId)&&(!status||es===status)&&(!prio||t.prio===prio);
   }).sort((a,b)=>(a.due||'zzz')>(b.due||'zzz')?1:-1);
-
-  const m = id => members.find(x=>x.id===id);
-  document.getElementById('all-tbody').innerHTML = list.map(t=>{
-    const mem = m(t.memberId);
-    const late = isLate(t);
-    return `
-    <tr>
-      <td>
-        <div style="font-weight:600;font-size:13px">${t.title}</div>
-        ${t.desc?`<div style="font-size:11.5px;color:var(--muted);margin-top:2px">${t.desc}</div>`:''}
-      </td>
-      <td>${mem?`<div class="avatar-row"><div class="avatar" style="background:${avatarColor(mem.name)};font-size:10px">${mem.name.slice(0,2)}</div><div><div style="font-size:13px;font-weight:500">${mem.name}</div><div style="font-size:11px;color:var(--muted)">${mem.pos}</div></div></div>`:'—'}</td>
+  document.getElementById('all-tbody').innerHTML=list.map(t=>{
+    const mem=members.find(x=>x.id===t.memberId);
+    const late=isLate(t);
+    const editable=canEdit(t);
+    return `<tr>
+      <td><div style="font-weight:600;font-size:13px">${t.title}</div>${t.desc?`<div style="font-size:11.5px;color:var(--muted);margin-top:2px">${t.desc}</div>`:''}</td>
+      <td>${mem?`<div class="avatar-row"><div class="avatar" style="background:${avatarColor(mem.name)};font-size:10px">${mem.name.slice(0,2)}</div><span style="font-size:13px">${mem.name}</span></div>`:'—'}</td>
       <td>${prioTag(t.prio)}</td>
       <td>${statusPill(effectiveStatus(t))}</td>
       <td style="font-size:12px;${late?'color:var(--red);font-weight:600':''};white-space:nowrap">${fmtDate(t.due)}${late?' ⚠':''}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px;min-width:100px">
-          <div class="prog-bar" style="flex:1"><div class="prog-fill" style="width:${t.prog||0}%;background:${progColor(t.prog||0)}"></div></div>
-          <span style="font-size:11px;font-family:var(--mono);color:var(--muted);width:30px;text-align:right">${t.prog||0}%</span>
-        </div>
-      </td>
+      <td><div style="display:flex;align-items:center;gap:8px;min-width:100px">
+        <div class="prog-bar" style="flex:1"><div class="prog-fill" style="width:${t.prog||0}%;background:${progColor(t.prog||0)}"></div></div>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--muted);width:30px;text-align:right">${t.prog||0}%</span>
+      </div></td>
+      <td>${editable?`<button class="btn btn-ghost btn-xs" onclick="openEditTask('${t.id}')">Edit</button>`:`<span class="locked-badge">🔒</span>`}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="6" class="empty"><div class="empty-icon">📋</div><p>ไม่พบงานที่ค้นหา</p></td></tr>';
+  }).join('')||`<tr><td colspan="7" class="empty"><p>${T('noTasks')}</p></td></tr>`;
 }
 
-// ══════════════════════════════════════════
-//  TASK CRUD
-// ══════════════════════════════════════════
+// ── TASK CRUD ──
+let editTaskId = null;
+
 function openAddTask() {
   editTaskId = null;
-  document.getElementById('task-modal-title').textContent = 'เพิ่มงานใหม่';
-  document.getElementById('tf-title').value='';
-  document.getElementById('tf-desc').value='';
-  document.getElementById('tf-prio').value='ปานกลาง';
-  document.getElementById('tf-status').value='รอดำเนินการ';
-  document.getElementById('tf-due').value='';
-  document.getElementById('tf-prog').value='0';
-  document.getElementById('tf-note').value='';
-  openModal('modal-task');
-}
-
-function openEditTask(id) {
-  editTaskId = id;
-  const t = tasks.find(x=>x.id===id);
-  if (!t) return;
-  document.getElementById('task-modal-title').textContent = 'แก้ไขงาน';
-  document.getElementById('tf-title').value = t.title;
-  document.getElementById('tf-desc').value = t.desc||'';
-  document.getElementById('tf-prio').value = t.prio;
-  document.getElementById('tf-status').value = t.status;
-  document.getElementById('tf-due').value = t.due||'';
-  document.getElementById('tf-prog').value = t.prog||0;
-  document.getElementById('tf-note').value = t.note||'';
-  openModal('modal-task');
-}
-
-async function saveTask() {
-  const title = document.getElementById('tf-title').value.trim();
-  if (!title) { alert('กรุณาระบุชื่องาน'); return; }
-  const data = {
-    title,
-    desc:   document.getElementById('tf-desc').value.trim(),
-    prio:   document.getElementById('tf-prio').value,
-    status: document.getElementById('tf-status').value,
-    due:    document.getElementById('tf-due').value,
-    prog:   Math.min(100,Math.max(0,parseInt(document.getElementById('tf-prog').value)||0)),
-    note:   document.getElementById('tf-note').value.trim(),
-    memberId: currentMember.id,
-  };
-  const taskId = editTaskId || uid();
-  const row = {
-    id: taskId, member_id: data.memberId,
-    title: data.title, description: data.desc,
-    prio: data.prio, status: data.status,
-    due: data.due || null, prog: data.prog, note: data.note
-  };
-  try {
-    await sbFetch('tasks?on_conflict=id', {
-      method: 'POST',
-      prefer: 'resolution=merge-duplicates',
-      body: JSON.stringify(row)
-    });
-    if (editTaskId) {
-      const i = tasks.findIndex(t=>t.id===editTaskId);
-      tasks[i] = {...tasks[i], ...data, id:taskId};
-    } else {
-      tasks.push({...data, id:taskId});
-    }
-    closeModal('modal-task');
-    renderMyTasks();
-    renderMyKpi();
-    toast(editTaskId ? '✏️ แก้ไขงานแล้ว' : '✅ เพิ่มงานใหม่แล้ว');
-    editTaskId = null;
-  } catch(e) {
-    toast('❌ บันทึกไม่สำเร็จ: ' + e.message);
-  }
-}
-
-async function delTask(id) {
-  if (!confirm('ลบงานนี้?')) return;
-  try {
-    await sbFetch('tasks?id=eq.'+id, { method:'DELETE' });
-    tasks = tasks.filter(t=>t.id!==id);
-    renderMyTasks();
-    renderMyKpi();
-    toast('ลบงานแล้ว');
-  } catch(e) { toast('❌ ลบไม่สำเร็จ'); }
-}
-
-// ══════════════════════════════════════════
-//  TEAM MANAGEMENT
-// ══════════════════════════════════════════
-function openManageTeam() {
-  renderTeamModal();
-  openModal('modal-team');
-}
-
-function renderTeamModal() {
-  document.getElementById('member-manage-list').innerHTML = members.map(m=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div class="avatar-row">
-        <div class="avatar" style="background:${avatarColor(m.name)};font-size:11px">${m.name.slice(0,2)}</div>
-        <div>
-          <div style="font-size:13px;font-weight:600">${m.name}</div>
-          <div style="font-size:11.5px;color:var(--muted)">${m.pos}</div>
-        </div>
-      </div>
-      <button class="btn btn-danger btn-xs" onclick="removeMember('${m.id}')">ลบ</button>
-    </div>
-  `).join('') || '<div style="font-size:13px;color:var(--muted);padding:10px 0">ยังไม่มีสมาชิก</div>';
-}
-
-async function addMember() {
-  const name = document.getElementById('new-mem-name').value.trim();
-  const pos  = document.getElementById('new-mem-pos').value.trim();
-  if (!name) { alert('กรุณาระบุชื่อ'); return; }
-  const newMem = {id:uid(), name, pos};
-  try {
-    await sbFetch('members', {
-      method:'POST', prefer:'resolution=merge-duplicates',
-      body: JSON.stringify(newMem)
-    });
-    members.push(newMem);
-    document.getElementById('new-mem-name').value='';
-    document.getElementById('new-mem-pos').value='';
-    renderTeamModal();
-    populateEmpPicker();
-    toast('เพิ่มสมาชิก: '+name);
-  } catch(e) { toast('❌ เพิ่มสมาชิกไม่สำเร็จ'); }
-}
-
-async function removeMember(id) {
-  if (!confirm('ลบสมาชิกนี้?')) return;
-  try {
-    await sbFetch('members?id=eq.'+id, { method:'DELETE' });
-    members = members.filter(m=>m.id!==id);
-    renderTeamModal();
-    populateEmpPicker();
-    populateAllEmpFilter();
-    toast('ลบสมาชิกแล้ว');
-  } catch(e) { toast('❌ ลบไม่สำเร็จ'); }
-}
-
-// ══════════════════════════════════════════
-//  MODAL HELPERS
-// ══════════════════════════════════════════
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.overlay').forEach(el=>{
-  el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
-});
-
-// ══════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════
-initLogin().catch(console.error);
-</script>
-</body>
-</html>
+  document.getElementById('task-modal-title').textContent = T('taskModalAdd');
+  ['tf-title','tf-desc','tf-note'].for
