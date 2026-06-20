@@ -1255,9 +1255,75 @@ document.querySelectorAll('.overlay').forEach(el=>{
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') doLogin(); });
 
+// ── RESET PASSWORD HANDLER ──
+async function handleResetToken() {
+  const hash = window.location.hash;
+  if (!hash) return false;
+  const params = new URLSearchParams(hash.replace('#',''));
+  const accessToken = params.get('access_token');
+  const type = params.get('type');
+  if (!accessToken || type !== 'recovery') return false;
+  // Show change password modal with this token
+  currentUser = { access_token: accessToken, user: { id: '' } };
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('reset-screen').style.display='none';
+  // Show a simple password reset UI
+  showResetForm(accessToken);
+  return true;
+}
+
+function showResetForm(token) {
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-screen').innerHTML = `
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="brand-name">AKARA RESOURCES</div>
+        <div class="brand-sub">HR Task Board</div>
+        <div class="gold-bar"></div>
+      </div>
+      <h2>Set New Password</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Enter your new password below</p>
+      <div class="login-error" id="reset-pw-error" style="display:none"></div>
+      <div class="form-field">
+        <label>New Password</label>
+        <input type="password" id="reset-pw-new" placeholder="Min 6 characters">
+      </div>
+      <div class="form-field">
+        <label>Confirm Password</label>
+        <input type="password" id="reset-pw-confirm" placeholder="Repeat password">
+      </div>
+      <button class="btn-enter" onclick="submitResetPw('${token}')">Set Password →</button>
+    </div>`;
+}
+
+async function submitResetPw(token) {
+  const pw1 = document.getElementById('reset-pw-new').value;
+  const pw2 = document.getElementById('reset-pw-confirm').value;
+  const errEl = document.getElementById('reset-pw-error');
+  if (pw1 !== pw2) { errEl.textContent='Passwords do not match'; errEl.style.display='block'; return; }
+  if (pw1.length < 6) { errEl.textContent='Password must be at least 6 characters'; errEl.style.display='block'; return; }
+  try {
+    const res = await fetch(SUPABASE_URL + '/auth/v1/user', {
+      method: 'PUT',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw1 })
+    });
+    if (!res.ok) throw new Error('Failed to update password');
+    // Clear hash and go to login
+    window.location.hash = '';
+    window.location.reload();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
 // ── INIT ──
 async function init() {
   applyLang();
+  // Check if coming from password reset email
+  const isReset = await handleResetToken();
+  if (isReset) return;
   const restored = await tryRestoreSession();
   if (!restored) {
     hideLoading();
