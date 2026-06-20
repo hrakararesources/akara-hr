@@ -18,6 +18,88 @@
 }
 body{font-family:var(--font);background:var(--gray);color:var(--text);min-height:100vh;font-size:14px}
 
+/* ── SIDEBAR LAYOUT ── */
+.app-body { display:flex; flex:1; overflow:hidden; min-height:0; }
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: linear-gradient(180deg, var(--blue-dk) 0%, var(--blue) 100%);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transition: width .25s, min-width .25s;
+  flex-shrink: 0;
+}
+.sidebar.collapsed { width:52px; min-width:52px; }
+.sidebar.collapsed .sb-label,
+.sidebar.collapsed .sidebar-section-label,
+.sidebar.collapsed .sidebar-divider { display:none; }
+.sidebar.collapsed .sidebar-item { justify-content:center; padding:12px 0; }
+.sidebar-nav { padding:12px 0; flex:1; }
+.sidebar-section-label {
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:rgba(255,255,255,.4);
+  padding:14px 16px 4px;
+}
+.sidebar-divider { height:1px; background:rgba(255,255,255,.1); margin:8px 12px; }
+.sidebar-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 16px;
+  cursor:pointer;
+  color:rgba(255,255,255,.7);
+  font-size:13px;
+  font-weight:500;
+  border-left:3px solid transparent;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.sidebar-item:hover { background:rgba(255,255,255,.1); color:#fff; }
+.sidebar-item.active { background:rgba(255,255,255,.15); color:#fff; border-left-color:var(--gold); }
+.sb-icon { font-size:16px; flex-shrink:0; width:20px; text-align:center; }
+.main-content { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+.main-content .content { flex:1; overflow-y:auto; padding:24px; max-width:none; }
+.sidebar-toggle-btn {
+  background:none;
+  border:none;
+  font-size:18px;
+  cursor:pointer;
+  color:var(--muted);
+  padding:4px 8px;
+  border-radius:6px;
+  margin-right:4px;
+  line-height:1;
+}
+.sidebar-toggle-btn:hover { background:var(--gray); color:var(--text); }
+
+/* ── MODULE PLACEHOLDER ── */
+.module-placeholder {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:400px;
+  text-align:center;
+  padding:40px;
+}
+.module-icon { font-size:56px; margin-bottom:16px; }
+.module-placeholder h2 { font-size:22px; font-weight:700; color:var(--text); margin-bottom:8px; }
+.module-placeholder p { font-size:14px; color:var(--muted); max-width:360px; line-height:1.6; margin-bottom:24px; }
+.coming-soon {
+  display:inline-block;
+  padding:8px 24px;
+  background:var(--blue-lt);
+  color:var(--blue);
+  border-radius:20px;
+  font-size:13px;
+  font-weight:600;
+  border:1px solid var(--border);
+}
+
 /* ── LOGIN ── */
 #login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--blue-dk) 0%,var(--blue) 60%,#3d70cc 100%);padding:24px}
 .login-card{background:var(--white);border-radius:16px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
@@ -276,10 +358,15 @@ tbody tr:hover{background:var(--blue-lt)}
 
 <!-- APP -->
 <div id="app">
+  <!-- TOPBAR -->
   <div class="topbar">
+    <button class="sidebar-toggle-btn" onclick="toggleSidebar()" id="sidebar-toggle-btn" title="Toggle Sidebar">☰</button>
     <div class="topbar-brand">
-      <div class="brand-box">A</div>
-      <div class="brand-text">AKARA <span>RESOURCES</span></div>
+      <img src="./logo.jpg" alt="Akara Resources" style="height:32px;width:auto">
+      <div style="display:flex;flex-direction:column;line-height:1.1">
+        <span style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.08em">AKARA RESOURCES</span>
+        <span style="font-size:9px;color:var(--muted);letter-spacing:.06em">Human Resources Task Management</span>
+      </div>
     </div>
     <div class="topbar-divider"></div>
     <div class="topbar-user">
@@ -299,12 +386,58 @@ tbody tr:hover{background:var(--blue-lt)}
     </div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('my-tasks')" id="tab-my-tasks">✅ <span class="t-my-tasks">My Tasks</span></div>
-    <div class="tab" onclick="switchTab('dept-overview')" id="tab-dept-overview">🏢 <span class="t-overview">Department Overview</span></div>
-    <div class="tab" onclick="switchTab('all-tasks')" id="tab-all-tasks">📋 <span class="t-all-tasks">All Tasks</span></div>
-  </div>
+  <!-- MAIN LAYOUT -->
+  <div class="app-body">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label" id="sb-label-tasks">Task Management</div>
+        <div class="sidebar-item active" onclick="switchSidebar('my-tasks')" id="sb-my-tasks">
+          <span class="sb-icon">✅</span><span class="sb-label t-my-tasks">My Tasks</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('dept-overview')" id="sb-dept-overview">
+          <span class="sb-icon">🏢</span><span class="sb-label t-overview">Dept Overview</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('all-tasks')" id="sb-all-tasks">
+          <span class="sb-icon">📋</span><span class="sb-label t-all-tasks">All Tasks</span>
+        </div>
 
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label" id="sb-label-hr">HR Modules</div>
+
+        <div class="sidebar-item" onclick="switchSidebar('recruitment')" id="sb-recruitment">
+          <span class="sb-icon">🔍</span><span class="sb-label" data-en="Recruitment" data-th="สรรหา">Recruitment</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('onboarding')" id="sb-onboarding">
+          <span class="sb-icon">🌟</span><span class="sb-label" data-en="Onboarding" data-th="พนักงานใหม่">Onboarding</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('training')" id="sb-training">
+          <span class="sb-icon">📚</span><span class="sb-label" data-en="Training & Dev" data-th="ฝึกอบรม">Training & Dev</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('performance')" id="sb-performance">
+          <span class="sb-icon">🎯</span><span class="sb-label" data-en="Performance" data-th="ประเมินผล">Performance</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('leave')" id="sb-leave">
+          <span class="sb-icon">🗓️</span><span class="sb-label" data-en="Leave Management" data-th="การลา">Leave Management</span>
+        </div>
+
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label" id="sb-label-comm">Communication</div>
+
+        <div class="sidebar-item" onclick="switchSidebar('announcements')" id="sb-announcements">
+          <span class="sb-icon">📢</span><span class="sb-label" data-en="Announcements" data-th="ประกาศ">Announcements</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('meetings')" id="sb-meetings">
+          <span class="sb-icon">📝</span><span class="sb-label" data-en="Meeting Notes" data-th="บันทึกประชุม">Meeting Notes</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('documents')" id="sb-documents">
+          <span class="sb-icon">📁</span><span class="sb-label" data-en="Documents" data-th="เอกสาร">Documents</span>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- CONTENT AREA -->
+    <div class="main-content" id="main-content">
   <div class="content">
 
     <!-- MY TASKS -->
@@ -424,8 +557,76 @@ tbody tr:hover{background:var(--blue-lt)}
         </div>
       </div>
     </div>
-  </div>
-</div>
+    <!-- HR MODULE PAGES -->
+    <div class="page hr-module" id="page-recruitment">
+      <div class="module-placeholder">
+        <div class="module-icon">🔍</div>
+        <h2 data-en="Recruitment" data-th="สรรหา">Recruitment</h2>
+        <p data-en="Track job openings, applicants, and hiring pipeline" data-th="ติดตามตำแหน่งงาน ผู้สมัคร และกระบวนการสรรหา">Track job openings, applicants, and hiring pipeline</p>
+        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      </div>
+    </div>
+    <div class="page hr-module" id="page-onboarding">
+      <div class="module-placeholder">
+        <div class="module-icon">🌟</div>
+        <h2 data-en="Onboarding" data-th="พนักงานใหม่">Onboarding</h2>
+        <p data-en="Manage new employee onboarding checklists and progress" data-th="จัดการ checklist และความคืบหน้าของพนักงานใหม่">Manage new employee onboarding checklists and progress</p>
+        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      </div>
+    </div>
+    <div class="page hr-module" id="page-training">
+      <div class="module-placeholder">
+        <div class="module-icon">📚</div>
+        <h2 data-en="Training & Development" data-th="ฝึกอบรม">Training & Development</h2>
+        <p data-en="Plan and track employee training programs" data-th="วางแผนและติดตามโปรแกรมฝึกอบรมและพัฒนาทักษะ">Plan and track employee training programs</p>
+        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      </div>
+    </div>
+    <div class="page hr-module" id="page-performance">
+      <div class="module-placeholder">
+        <div class="module-icon">🎯</div>
+        <h2 data-en="Performance Review" data-th="ประเมินผล">Performance Review</h2>
+        <p data-en="Set goals, track KPIs, and conduct performance evaluations" data-th="ตั้งเป้าหมาย ติดตาม KPI และประเมินผลการปฏิบัติงาน">Set goals, track KPIs, and conduct performance evaluations</p>
+        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      </div>
+    </div>
+    <div class="page hr-module" id="page-leave">
+      <div class="module-placeholder">
+        <div class="module-icon">🗓️</div>
+        <h2 data-en="Leave Management" data-th="การลา">Leave Management</h2>
+        <p data-en="Manage leave requests, approvals, and leave balances" data-th="จัดการคำขอลา การอนุมัติ และวันลาคงเหลือ">Manage leave requests, approvals, and leave balances</p>
+        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      </div>
+    </div>
+    <div class="page hr-module" id="page-announcements">
+      <div class="module-placeholder">
+        <div class="module-icon">📢</div>
+        <h2 data-en="Announcements" data-th="ประกาศ">Announcements</h2>
+        <p data-en="Post and view company and HR announcements" data-th="โพสต์และดูประกาศของบริษัทและฝ่าย HR">Post and view company and HR announcements</p>
+        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      </div>
+    </div>
+    <div class="page hr-module" id="page-meetings">
+      <div class="module-placeholder">
+        <div class="module-icon">📝</div>
+        <h2 data-en="Meeting Notes" data-th="บันทึกประชุม">Meeting Notes</h2>
+        <p data-en="Record and share meeting minutes and action items" data-th="บันทึกและแชร์รายงานการประชุมและรายการติดตาม">Record and share meeting minutes and action items</p>
+        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      </div>
+    </div>
+    <div class="page hr-module" id="page-documents">
+      <div class="module-placeholder">
+        <div class="module-icon">📁</div>
+        <h2 data-en="Document Library" data-th="เอกสาร">Document Library</h2>
+        <p data-en="Store and access HR policies, forms, and documents" data-th="จัดเก็บและเข้าถึงนโยบาย แบบฟอร์ม และเอกสาร HR">Store and access HR policies, forms, and documents</p>
+        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      </div>
+    </div>
+
+    </div><!-- /content -->
+    </div><!-- /main-content -->
+  </div><!-- /app-body -->
+</div><!-- /app -->
 
 <!-- MODALS -->
 <div class="overlay" id="modal-task">
@@ -514,8 +715,8 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
+  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
 const LANGS = {
@@ -687,6 +888,13 @@ function applyLang() {
   document.querySelectorAll('#my-search,#all-search').forEach(el => el && (el.placeholder = T('searchPlaceholder')));
   // re-render if logged in
   if (currentMember) { renderMyTasks(); renderMyKpi(); }
+  // Apply lang to sidebar
+  document.querySelectorAll('.sidebar-item .sb-label[data-en]').forEach(el => {
+    el.textContent = lang === 'th' ? el.getAttribute('data-th') : el.getAttribute('data-en');
+  });
+  // Apply lang to active HR module
+  const activeMod = document.querySelector('.page.active.hr-module');
+  if (activeMod) applyModuleLang(activeMod);
 }
 
 function safeSet(id, val) {
@@ -926,11 +1134,52 @@ function showLoading(msg='') { const el=document.getElementById('loading-overlay
 function hideLoading() { const el=document.getElementById('loading-overlay'); if(el)el.style.display='none'; }
 
 // ── TABS ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','documents'];
+const TASK_TABS = ['my-tasks','dept-overview','all-tasks'];
+
+function switchSidebar(page) {
+  // Update sidebar active state
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  const sbEl = document.getElementById('sb-'+page);
+  if (sbEl) sbEl.classList.add('active');
+
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+
+  if (HR_MODULES.includes(page)) {
+    // Show HR module page
+    const pageEl = document.getElementById('page-'+page);
+    if (pageEl) {
+      pageEl.classList.add('active');
+      // Apply lang to module page
+      applyModuleLang(pageEl);
+    }
+  } else {
+    // Show task management page and sync tabs
+    switchTab(page);
+  }
+}
+
+function applyModuleLang(el) {
+  el.querySelectorAll('[data-en][data-th]').forEach(node => {
+    node.textContent = lang === 'th' ? node.getAttribute('data-th') : node.getAttribute('data-en');
+  });
+}
+
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
+  const tabEl = document.getElementById('tab-'+tab);
+  if (tabEl) tabEl.classList.add('active');
   document.getElementById('page-'+tab).classList.add('active');
+  // Sync sidebar
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  const sbEl = document.getElementById('sb-'+tab);
+  if (sbEl) sbEl.classList.add('active');
   if (tab==='dept-overview') renderDeptOverview();
   if (tab==='all-tasks') renderAllTasks();
 }
