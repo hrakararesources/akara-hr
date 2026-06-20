@@ -696,6 +696,12 @@ tbody tr:hover{background:var(--blue-lt)}
     <div class="modal-body">
       <div class="form-grid">
         <div class="fg full"><label id="lbl-task-title">Title *</label><input id="tf-title" placeholder="Task title"></div>
+        <div class="fg full" id="tf-assignee-wrap" style="display:none">
+          <label id="lbl-task-assignee">Assign To</label>
+          <select id="tf-assignee">
+            <option value="">— Select member —</option>
+          </select>
+        </div>
         <div class="fg full"><label id="lbl-task-desc">Description</label><textarea id="tf-desc" placeholder="Details..."></textarea></div>
         <div class="fg"><label id="lbl-task-prio">Priority</label>
           <select id="tf-prio">
@@ -835,7 +841,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -857,7 +863,8 @@ const LANGS = {
     thTitle:'Title', thPrio:'Priority', thStatus:'Status', thDue:'Due Date',
     lblTaskTitle:'Title *', lblTaskDesc:'Description', lblTaskPrio:'Priority',
     lblTaskStatus:'Status', lblTaskDue:'Due Date', lblTaskProg:'Progress (%)',
-    lblTaskNote:'Note', btnCancel:'Cancel', btnSave:'Save',
+    lblTaskNote:'Note',
+    lblTaskAssignee:'Assign To', btnCancel:'Cancel', btnSave:'Save',
     taskModalAdd:'Add Task', taskModalEdit:'Edit Task',
     lblHrMembers:'HR Team Members', btnAddMember:'+ Add Member', btnClose:'Close',
     changePwTitle:'Change Password', lblNewPw:'New Password', lblConfirmPw:'Confirm Password',
@@ -900,7 +907,8 @@ const LANGS = {
     thTitle:'ชื่องาน', thPrio:'ความสำคัญ', thStatus:'สถานะ', thDue:'กำหนดส่ง',
     lblTaskTitle:'ชื่องาน *', lblTaskDesc:'รายละเอียด', lblTaskPrio:'ความสำคัญ',
     lblTaskStatus:'สถานะ', lblTaskDue:'กำหนดส่ง', lblTaskProg:'ความคืบหน้า (%)',
-    lblTaskNote:'หมายเหตุ', btnCancel:'ยกเลิก', btnSave:'บันทึก',
+    lblTaskNote:'หมายเหตุ',
+    lblTaskAssignee:'มอบหมายให้', btnCancel:'ยกเลิก', btnSave:'บันทึก',
     taskModalAdd:'เพิ่มงาน', taskModalEdit:'แก้ไขงาน',
     lblHrMembers:'สมาชิกฝ่าย HR', btnAddMember:'+ เพิ่มสมาชิก', btnClose:'ปิด',
     changePwTitle:'เปลี่ยนรหัสผ่าน', lblNewPw:'รหัสผ่านใหม่', lblConfirmPw:'ยืนยันรหัสผ่าน',
@@ -993,6 +1001,7 @@ function applyLang() {
   safeSet('lbl-task-due', T('lblTaskDue'));
   safeSet('lbl-task-prog', T('lblTaskProg'));
   safeSet('lbl-task-note', T('lblTaskNote'));
+  safeSet('lbl-task-assignee', T('lblTaskAssignee'));
   safeSet('btn-cancel', T('btnCancel'));
   safeSet('btn-save', T('btnSave'));
   safeSet('lbl-hr-members', T('lblHrMembers'));
@@ -1391,6 +1400,7 @@ function taskCard(t) {
     <div class="tc-meta">
       ${prioTag(t.prio)}
       ${t.due?`<div class="tc-meta-item ${late?'tc-due-late':''}">📅 ${fmtDate(t.due)}</div>`:''}
+      ${t.memberId!==currentMember?.id?`<div class="tc-meta-item" style="color:var(--blue)">👤 ${empName(t.memberId)}</div>`:''}
     </div>
   </div>`;
 }
@@ -1560,6 +1570,16 @@ function openEditTask(id) {
   document.getElementById('tf-due').value=t.due||'';
   document.getElementById('tf-prog').value=t.prog||0;
   document.getElementById('tf-note').value=t.note||'';
+  // Show assignee field for manager/admin
+  const wrap = document.getElementById('tf-assignee-wrap');
+  if (isManagerOrAdmin()) {
+    wrap.style.display='';
+    const sel = document.getElementById('tf-assignee');
+    sel.innerHTML = `<option value="">${lang==='th'?'— เลือกสมาชิก —':'— Select member —'}</option>`
+      + members.map(m=>`<option value="${m.id}" ${m.id===t.memberId?'selected':''}>${m.name} · ${m.pos}</option>`).join('');
+  } else {
+    wrap.style.display='none';
+  }
   openModal('modal-task');
 }
 
@@ -1567,7 +1587,11 @@ async function saveTask() {
   const title=document.getElementById('tf-title').value.trim();
   if (!title) { alert(T('lblTaskTitle').replace(' *','')+' is required'); return; }
   const taskId=editTaskId||uid();
-  const data={title, desc:document.getElementById('tf-desc').value.trim(), prio:document.getElementById('tf-prio').value, status:document.getElementById('tf-status').value, due:document.getElementById('tf-due').value||null, prog:Math.min(100,Math.max(0,parseInt(document.getElementById('tf-prog').value)||0)), note:document.getElementById('tf-note').value.trim(), memberId:currentMember.id};
+  // Manager/admin can assign to anyone, others assign to self
+  const assigneeId = isManagerOrAdmin() && document.getElementById('tf-assignee').value
+    ? document.getElementById('tf-assignee').value
+    : currentMember.id;
+  const data={title, desc:document.getElementById('tf-desc').value.trim(), prio:document.getElementById('tf-prio').value, status:document.getElementById('tf-status').value, due:document.getElementById('tf-due').value||null, prog:Math.min(100,Math.max(0,parseInt(document.getElementById('tf-prog').value)||0)), note:document.getElementById('tf-note').value.trim(), memberId:assigneeId};
   const row={id:taskId, member_id:data.memberId, title:data.title, description:data.desc, prio:data.prio, status:data.status, due:data.due, prog:data.prog, note:data.note};
   try {
     await sbFetch('tasks?on_conflict=id', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
