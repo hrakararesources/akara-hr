@@ -630,8 +630,9 @@ tbody tr:hover { background: var(--blue-lt); }
       }
     });
     if (!res.ok) { const err = await res.text(); throw new Error('Supabase: ' + err); }
-    if (res.status === 204) return null;
-    return res.json();
+    if (res.status === 204 || res.status === 201) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
   }
 
 // ── AVATAR ──
