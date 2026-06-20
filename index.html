@@ -1182,7 +1182,7 @@ function enterApp() {
   av.style.background = avatarColor(currentMember.name);
   av.textContent = currentMember.name.slice(0,2);
   document.getElementById('tb-name').textContent = currentMember.name;
-  const roleLabel = currentMember.role === 'manager' ? T('roleManager') : T('roleMember');
+  const roleLabel = currentMember.role === 'admin' ? (lang==='th'?'ผู้ดูแลระบบ':'Admin') : currentMember.role === 'manager' ? T('roleManager') : T('roleMember');
   document.getElementById('tb-role').textContent = currentMember.pos + ' · ' + roleLabel;
   document.getElementById('my-task-subtitle').textContent = currentMember.pos + ' · ' + T('myTaskSubtitle');
   populateAllEmpFilter();
@@ -1225,7 +1225,9 @@ function avatarColor(name) {
 }
 function uid() { return 'x'+Math.random().toString(36).slice(2,9); }
 function isManager() { return currentMember?.role === 'manager'; }
-function canEdit(task) { return isManager() || task.memberId === currentMember?.id; }
+function isAdmin() { return currentMember?.role === 'admin'; }
+function isManagerOrAdmin() { return isManager() || isAdmin(); }
+function canEdit(task) { return isManagerOrAdmin() || task.memberId === currentMember?.id; }
 function isLate(t) { return t.status !== 'เสร็จสิ้น' && t.due && new Date(t.due) < new Date(); }
 function effectiveStatus(t) { return isLate(t) ? 'เกินกำหนด' : t.status; }
 function fmtDate(d) {
@@ -1593,21 +1595,33 @@ async function delTask(id) {
 // ── TEAM MANAGEMENT ──
 function openManageTeam() { renderTeamModal(); openModal('modal-team'); }
 function renderTeamModal() {
-  document.getElementById('member-manage-list').innerHTML=members.map(m=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div class="avatar-row">
+  document.getElementById('member-manage-list').innerHTML=members.map(m=>{
+    const roleLabel = m.role==='admin'?(lang==='th'?'ผู้ดูแลระบบ':'Admin'):m.role==='manager'?T('roleManager'):T('roleMember');
+    const roleBadgeColor = m.role==='admin'?'#7c3aed':m.role==='manager'?'#a07800':'var(--blue)';
+    const roleBgColor = m.role==='admin'?'#ede9fe':m.role==='manager'?'var(--gold-lt)':'var(--blue-lt)';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:8px">
+      <div class="avatar-row" style="flex:1">
         <div class="avatar" style="background:${avatarColor(m.name)};font-size:11px">${m.name.slice(0,2)}</div>
         <div>
           <div style="font-size:13px;font-weight:600">${m.name}</div>
-          <div style="font-size:11.5px;color:var(--muted)">${m.pos} · ${m.role==='manager'?T('roleManager'):T('roleMember')}</div>
+          <div style="font-size:11.5px;color:var(--muted)">${m.pos}</div>
+          <span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${roleBgColor};color:${roleBadgeColor}">${roleLabel}</span>
         </div>
       </div>
-      ${isManager()?`<button class="btn btn-danger btn-xs" onclick="removeMember('${m.id}')">✕</button>`:''}
-    </div>`).join('')||`<div style="font-size:13px;color:var(--muted);padding:10px 0">${T('noTasks')}</div>`;
+      ${isAdmin()?`<div style="display:flex;gap:4px;align-items:center">
+        <select onchange="changeRole('${m.id}',this.value)" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);outline:none;background:var(--white)">
+          <option value="member" ${m.role==='member'?'selected':''}>Member</option>
+          <option value="manager" ${m.role==='manager'?'selected':''}>Manager</option>
+          <option value="admin" ${m.role==='admin'?'selected':''}>Admin</option>
+        </select>
+        <button class="btn btn-danger btn-xs" onclick="removeMember('${m.id}')">✕</button>
+      </div>`:isManager()?`<button class="btn btn-danger btn-xs" onclick="removeMember('${m.id}')">✕</button>`:''}
+    </div>`;
+  }).join('')||`<div style="font-size:13px;color:var(--muted);padding:10px 0">${T('noTasks')}</div>`;
 }
 
 async function addMember() {
-  if (!isManager()) { toast('🔒 '+T('cannotEdit')); return; }
+  if (!isManagerOrAdmin()) { toast('🔒 '+T('cannotEdit')); return; }
   const name=document.getElementById('new-mem-name').value.trim();
   const pos=document.getElementById('new-mem-pos').value.trim();
   if (!name) { alert('Name is required'); return; }
@@ -1623,13 +1637,30 @@ async function addMember() {
 }
 
 async function removeMember(id) {
-  if (!isManager()) { toast('🔒 '+T('cannotEdit')); return; }
+  if (!isManagerOrAdmin()) { toast('🔒 '+T('cannotEdit')); return; }
   if (!confirm('Remove member?')) return;
   try {
     await sbFetch('members?id=eq.'+id, {method:'DELETE'});
     members=members.filter(m=>m.id!==id);
     renderTeamModal(); populateAllEmpFilter();
     toast(T('toastMemberDeleted'));
+  } catch(e) { toast('❌ '+e.message); }
+}
+
+async function changeRole(memberId, newRole) {
+  if (!isAdmin()) { toast('🔒 Admin only'); return; }
+  if (memberId === currentMember.id && newRole !== 'admin') {
+    if (!confirm(lang==='th'?'คุณกำลังเปลี่ยน role ของตัวเอง ยืนยัน?':'You are changing your own role. Confirm?')) return;
+  }
+  try {
+    await sbFetch('members?id=eq.'+memberId, {
+      method:'PATCH', prefer:'resolution=merge-duplicates',
+      body: JSON.stringify({role: newRole})
+    });
+    const m = members.find(x=>x.id===memberId);
+    if (m) m.role = newRole;
+    renderTeamModal();
+    toast(lang==='th'?'เปลี่ยน Role แล้ว':'Role updated');
   } catch(e) { toast('❌ '+e.message); }
 }
 
@@ -1718,7 +1749,7 @@ async function saveAnn() {
 async function delAnn(id) {
   const a = announcements.find(x=>x.id===id);
   if (!a) return;
-  if (!isManager() && a.member_id !== currentMember?.id) { toast('🔒 '+T('cannotEdit')); return; }
+  if (!isManagerOrAdmin() && a.member_id !== currentMember?.id) { toast('🔒 '+T('cannotEdit')); return; }
   if (!confirm(lang==='th'?'ลบประกาศนี้?':'Delete this announcement?')) return;
   try {
     await sbFetch('announcements?id=eq.'+id, {method:'DELETE'});
