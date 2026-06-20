@@ -1,0 +1,9 @@
+{
+  "name": "akara-hr-notify",
+  "version": "1.0.0",
+  "description": "Task due date email notification",
+  "main": "notify.js",
+  "dependencies": {
+    "nodemailer": "^6.9.0"
+  }
+}
