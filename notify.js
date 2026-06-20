@@ -2,7 +2,7 @@
 // รันโดย GitHub Actions ทุกเช้า 08:00 น.
 
 const https = require('https');
-const nodemailer = require('nodemailer/lib/nodemailer');
+const { createTransport } = require('nodemailer');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
@@ -35,7 +35,7 @@ function sbGet(path) {
 }
 
 // ── EMAIL TRANSPORTER ──
-const transporter = nodemailer.createTransporter({
+const transporter = createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT) || 587,
   secure: parseInt(process.env.SMTP_PORT) === 465,
