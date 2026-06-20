@@ -68,16 +68,25 @@ async function main() {
   console.log(`📅 Checking tasks due on: ${tomorrowStr}`);
 
   // ดึง tasks ที่ครบกำหนดพรุ่งนี้ และยังไม่เสร็จ
-  const tasks = await sbGet(
+  // Tasks due tomorrow
+  const tasksDueTomorrow = await sbGet(
     `tasks?due=eq.${tomorrowStr}&status=neq.เสร็จสิ้น&select=*`
   );
 
-  if (!tasks || !tasks.length) {
-    console.log('✅ No tasks due tomorrow. Nothing to send.');
+  // Tasks overdue (due before today, not done)
+  const todayStr = new Date().toISOString().slice(0,10);
+  const tasksOverdue = await sbGet(
+    `tasks?due=lt.${todayStr}&status=neq.เสร็จสิ้น&select=*`
+  );
+
+  const tasks = [...(tasksDueTomorrow||[]), ...(tasksOverdue||[])];
+
+  if (!tasks.length) {
+    console.log('✅ No tasks due tomorrow or overdue. Nothing to send.');
     return;
   }
 
-  console.log(`📋 Found ${tasks.length} task(s) due tomorrow`);
+  console.log(`📋 Found ${tasksDueTomorrow?.length||0} due tomorrow, ${tasksOverdue?.length||0} overdue`);
 
   // ดึง members ทั้งหมด
   const members = await sbGet('members?select=*');
@@ -173,7 +182,7 @@ async function main() {
       await transporter.sendMail({
         from: `"Akara HR System" <${process.env.SMTP_FROM}>`,
         to: member.email,
-        subject: `⏰ แจ้งเตือน: มี ${memberTasks.length} งานครบกำหนดพรุ่งนี้ — ${formatDate(tomorrowStr)}`,
+        subject: `⏰ แจ้งเตือน Task HR — ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}`,
         html,
       });
       console.log(`✅ Sent to ${member.name} <${member.email}> (${memberTasks.length} task(s))`);

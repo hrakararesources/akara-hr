@@ -18,6 +18,45 @@
 }
 body{font-family:var(--font);background:var(--gray);color:var(--text);min-height:100vh;font-size:14px}
 
+/* ── NOTIFICATION BADGE ── */
+.sb-badge {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  height:18px;
+  background:var(--red);
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  border-radius:20px;
+  padding:0 4px;
+  margin-left:auto;
+  flex-shrink:0;
+}
+.notif-popup {
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--blue-dk);
+  color:#fff;
+  padding:14px 20px;
+  border-radius:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.25);
+  z-index:300;
+  max-width:400px;
+  width:90%;
+  border-left:4px solid var(--red);
+  animation:slideUp .3s ease;
+}
+.notif-popup-title { font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px; }
+.notif-popup-item { font-size:12px;color:rgba(255,255,255,.8);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px; }
+.notif-popup-item:last-child { border-bottom:none; }
+.notif-close { position:absolute;top:10px;right:12px;background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;line-height:1; }
+.notif-close:hover { color:#fff; }
+@keyframes slideUp { from{transform:translateX(-50%) translateY(20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+
 /* ── SIDEBAR LAYOUT ── */
 .app-body { display:flex; flex:1; overflow:hidden; min-height:0; }
 .sidebar {
@@ -838,6 +877,11 @@ tbody tr:hover{background:var(--blue-lt)}
   </div>
 </div>
 
+<div id="notif-popup" style="display:none" class="notif-popup">
+  <button class="notif-close" onclick="closeNotifPopup()">✕</button>
+  <div class="notif-popup-title">⚠️ <span id="notif-popup-title">Tasks needing attention</span></div>
+  <div id="notif-popup-items"></div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -1198,6 +1242,7 @@ function enterApp() {
   applyLang();
   renderMyTasks();
   renderMyKpi();
+  updateNotifBadge();
 }
 
 // ── SESSION RESTORE ──
@@ -1324,6 +1369,7 @@ function renderMyKpi() {
   const doing=mine.filter(t=>t.status==='กำลังดำเนินการ').length;
   const late=mine.filter(t=>isLate(t)).length;
   const avg=total?Math.round(mine.reduce((s,t)=>s+(t.prog||0),0)/total):0;
+  if (currentMember) updateNotifBadge();
   document.getElementById('my-kpi').innerHTML = `
     <div class="kpi-card" style="--card-top:var(--blue)"><div class="kpi-label">${T('kpiTotal')}</div><div class="kpi-val">${total}</div></div>
     <div class="kpi-card" style="--card-top:var(--green);--card-color:var(--green)"><div class="kpi-label">${T('kpiDone')}</div><div class="kpi-val">${done}</div><div class="kpi-sub">${total?Math.round(done/total*100):0}%</div></div>
@@ -1967,6 +2013,94 @@ async function delMeeting(id) {
     renderMeetings();
     toast(lang==='th'?'ลบบันทึกประชุมแล้ว':'Meeting note deleted');
   } catch(e) { toast('❌ '+e.message); }
+}
+
+// ── IN-APP NOTIFICATIONS ──
+function getAlertTasks() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate()+1);
+
+  return tasks.filter(t => {
+    if (t.status === 'เสร็จสิ้น') return false;
+    if (!t.due) return false;
+    const due = new Date(t.due);
+    due.setHours(0,0,0,0);
+    // overdue or due today or due tomorrow
+    return due <= tomorrow;
+  });
+}
+
+function updateNotifBadge() {
+  const mine = getAlertTasks().filter(t => t.memberId === currentMember?.id);
+  const all  = isManagerOrAdmin() ? getAlertTasks() : mine;
+  const count = all.length;
+
+  // Update sidebar badge
+  let badge = document.getElementById('sb-notif-badge');
+  if (!badge) {
+    const myTaskItem = document.getElementById('sb-my-tasks');
+    if (myTaskItem) {
+      badge = document.createElement('span');
+      badge.id = 'sb-notif-badge';
+      badge.className = 'sb-badge';
+      myTaskItem.appendChild(badge);
+    }
+  }
+  if (badge) {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? '' : 'none';
+  }
+
+  // Show popup if has overdue/urgent tasks (only once per session)
+  if (count > 0 && !sessionStorage.getItem('notif_shown')) {
+    showNotifPopup(all);
+    sessionStorage.setItem('notif_shown', '1');
+  }
+}
+
+function showNotifPopup(alertTasks) {
+  const popup = document.getElementById('notif-popup');
+  const itemsEl = document.getElementById('notif-popup-items');
+  const titleEl = document.getElementById('notif-popup-title');
+  if (!popup || !itemsEl) return;
+
+  titleEl.textContent = lang==='th'
+    ? `มี ${alertTasks.length} งานที่ต้องดูแล`
+    : `${alertTasks.length} task(s) need attention`;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  itemsEl.innerHTML = alertTasks.slice(0,5).map(t => {
+    const due = new Date(t.due); due.setHours(0,0,0,0);
+    const isLateTask = due < today;
+    const isTodayTask = due.getTime() === today.getTime();
+    const label = isLateTask
+      ? (lang==='th'?'⚠ เกินกำหนด':'⚠ Overdue')
+      : isTodayTask
+        ? (lang==='th'?'📅 ครบกำหนดวันนี้':'📅 Due today')
+        : (lang==='th'?'🔔 ครบกำหนดพรุ่งนี้':'🔔 Due tomorrow');
+    const member = members.find(m=>m.id===t.memberId);
+    return `<div class="notif-popup-item">
+      <span style="color:${isLateTask?'var(--red)':'var(--gold)'}">${label}</span>
+      <span style="flex:1">${t.title}</span>
+      ${isManagerOrAdmin()&&member?`<span style="font-size:11px;opacity:.7">${member.name}</span>`:''}
+    </div>`;
+  }).join('');
+
+  if (alertTasks.length > 5) {
+    itemsEl.innerHTML += `<div style="font-size:11px;color:rgba(255,255,255,.5);padding:6px 0;text-align:center">
+      ${lang==='th'?`และอีก ${alertTasks.length-5} งาน`:`and ${alertTasks.length-5} more`}
+    </div>`;
+  }
+
+  popup.style.display = '';
+  setTimeout(() => closeNotifPopup(), 8000);
+}
+
+function closeNotifPopup() {
+  const popup = document.getElementById('notif-popup');
+  if (popup) popup.style.display = 'none';
 }
 
 // ── RESET PASSWORD HANDLER ──
