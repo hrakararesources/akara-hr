@@ -3392,6 +3392,7 @@ function getZodiac(month, day) {
 }
 
 let employees_bday = []; // separate from HR members
+let gift_records = {}; // key: employee_id_year_month -> record
 
 async function loadBirthdayData() {
   try {
@@ -3579,7 +3580,7 @@ function switchBdayTab(tab) {
   document.getElementById('bday-tab-'+tab).classList.add('active');
   document.getElementById('bday-view-calendar').style.display = tab==='calendar' ? '' : 'none';
   document.getElementById('bday-view-gift').style.display = tab==='gift' ? '' : 'none';
-  if (tab==='gift') renderGiftSummary(currentGiftMonth);
+  if (tab==='gift') loadGiftRecords(currentGiftMonth).then(()=>renderGiftSummary(currentGiftMonth));
 }
 
 function renderGiftMonthSelector() {
@@ -3605,25 +3606,136 @@ function selectGiftMonth(monthIdx) {
   renderGiftSummary(monthIdx);
 }
 
-function buildEmpRows(emps, todayMonth, todayDay, th) {
-  return emps.map((e,i) => {
+async function loadGiftRecords(monthIdx) {
+  const year = new Date().getFullYear();
+  const month = monthIdx + 1;
+  try {
+    const data = await sbFetch(
+      'gift_records?gift_year=eq.' + year + '&gift_month=eq.' + month + '&select=*'
+    );
+    gift_records = {};
+    (data||[]).forEach(r => {
+      gift_records[r.employee_id] = r;
+    });
+  } catch(e) { gift_records = {}; }
+}
+
+async function toggleGiftReceived(empId, monthIdx, checkbox) {
+  const year = new Date().getFullYear();
+  const month = monthIdx + 1;
+  const received = checkbox.checked;
+  const existing = gift_records[empId];
+
+  try {
+    if (existing) {
+      // Update existing record
+      await sbFetch('gift_records?id=eq.' + existing.id, {
+        method: 'PATCH',
+        prefer: 'resolution=merge-duplicates',
+        body: JSON.stringify({
+          received,
+          received_at: received ? new Date().toISOString() : null,
+          given_by: received ? currentMember.id : null
+        })
+      });
+      gift_records[empId] = { ...existing, received,
+        received_at: received ? new Date().toISOString() : null,
+        given_by: received ? currentMember.id : null
+      };
+    } else {
+      // Create new record
+      const newRecord = {
+        id: uid(),
+        employee_id: empId,
+        gift_year: year,
+        gift_month: month,
+        received,
+        received_at: received ? new Date().toISOString() : null,
+        given_by: received ? currentMember.id : null
+      };
+      await sbFetch('gift_records', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates',
+        body: JSON.stringify(newRecord)
+      });
+      gift_records[empId] = newRecord;
+    }
+    // Update row UI
+    const row = document.getElementById('gift-row-' + empId);
+    if (row) {
+      row.style.background = received ? 'var(--green-lt)' : '';
+      const statusCell = document.getElementById('gift-status-' + empId);
+      if (statusCell) {
+        const giver = members.find(m => m.id === currentMember.id);
+        statusCell.innerHTML = received
+          ? '<span style="font-size:11px;color:var(--green)">✓ ' + (lang==='th'?'แจกแล้วโดย ':'Given by ') + (giver?giver.name:'—') + '</span>'
+          : '';
+      }
+    }
+    // Update summary counter
+    updateGiftCounter(monthIdx);
+    toast(received
+      ? (lang==='th'?'บันทึก: แจกของขวัญแล้ว ✓':'Marked as received ✓')
+      : (lang==='th'?'ยกเลิกการบันทึก':'Unmarked'));
+  } catch(e) {
+    checkbox.checked = !received; // revert
+    toast('❌ ' + e.message);
+  }
+}
+
+function updateGiftCounter(monthIdx) {
+  const monthEmps = employees_bday.filter(e => {
+    if (!e.birthdate) return false;
+    return parseInt(e.birthdate.split('-')[1])-1 === monthIdx;
+  });
+  const receivedCount = monthEmps.filter(e => gift_records[e.id]?.received).length;
+  const totalCount = monthEmps.length;
+  const counterEl = document.getElementById('gift-counter');
+  if (counterEl) {
+    const th = lang === 'th';
+    counterEl.innerHTML = '<span style="color:var(--green);font-weight:700">' + receivedCount + '</span>/' + totalCount
+      + ' ' + (th?'คนรับแล้ว':'received');
+  }
+}
+
+function buildEmpRows(emps, todayMonth, todayDay, th, monthIdx) {
+  const rows = emps.map((e,i) => {
     const parts = e.birthdate.split('-').map(Number);
     const mm = parts[1]; const dd = parts[2];
     const isToday = (mm-1)===todayMonth && dd===todayDay;
     const dateStr = dd + ' ' + (th ? MONTHS_SHORT_TH[mm-1] : MONTHS_SHORT_EN[mm-1]);
-    const bgStyle = isToday ? 'background:var(--gold-lt)' : '';
+    const record = gift_records[e.id];
+    const received = record ? record.received : false;
+    const giver = received ? members.find(m=>m.id===record.given_by) : null;
+    const receivedAt = (received && record.received_at)
+      ? new Date(record.received_at).toLocaleDateString(th?'th-TH':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+      : '';
+    const rowBg = received ? 'background:var(--green-lt)' : isToday ? 'background:var(--gold-lt)' : '';
     const dateColor = isToday ? '#a07800' : 'var(--text)';
-    const checkTitle = th ? 'ทำเครื่องหมายว่าแจกแล้ว' : 'Mark as given';
-    return '<tr style="border-bottom:1px solid var(--border);' + bgStyle + '">'
-      + '<td style="padding:10px 14px;color:var(--muted);font-size:12px">' + (i+1) + '</td>'
-      + '<td style="padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--blue)">' + e.id + '</td>'
-      + '<td style="padding:10px 14px;font-weight:600">' + (lang==='th'?(e.name_th||e.name_en):(e.name_en||e.name_th)) + (isToday?' 🎂':'') + '</td>'
-      + '<td style="padding:10px 14px;color:var(--muted)">' + (e.nickname||'—') + '</td>'
-      + '<td style="padding:10px 14px;font-size:12px;color:var(--muted)">' + (e.pos||'—') + '</td>'
-      + '<td style="padding:10px 14px;text-align:center;font-weight:600;color:' + dateColor + '">' + dateStr + '</td>'
-      + '<td style="padding:10px 14px;text-align:center"><input type="checkbox" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer" title="' + checkTitle + '"></td>'
-      + '</tr>';
-  }).join('');
+    const empName = lang==='th' ? (e.name_th||e.name_en) : (e.name_en||e.name_th);
+    const giverName = giver ? giver.name : '—';
+    const statusHtml = received
+      ? '<span style="color:var(--green)">✓ ' + (th?'แจกโดย ':'By ') + giverName + (receivedAt ? '<br><span style="opacity:.7">' + receivedAt + '</span>' : '') + '</span>'
+      : '';
+    const tr = document.createElement('tr');
+    tr.id = 'gift-row-' + e.id;
+    tr.style.cssText = 'border-bottom:1px solid var(--border);' + rowBg;
+    tr.innerHTML = [
+      '<td style="padding:10px 14px;color:var(--muted);font-size:12px">' + (i+1) + '</td>',
+      '<td style="padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--blue)">' + e.id + '</td>',
+      '<td style="padding:10px 14px;font-weight:600">' + empName + (isToday?' 🎂':'') + '</td>',
+      '<td style="padding:10px 14px;color:var(--muted)">' + (e.nickname||'—') + '</td>',
+      '<td style="padding:10px 14px;font-size:12px;color:var(--muted)">' + (e.pos||'—') + '</td>',
+      '<td style="padding:10px 14px;text-align:center;font-weight:600;color:' + dateColor + '">' + dateStr + '</td>',
+      '<td style="padding:10px 14px;text-align:center"><input type="checkbox" ' + (received?'checked':'') + ' style="width:16px;height:16px;accent-color:var(--green);cursor:pointer"></td>',
+      '<td id="gift-status-' + e.id + '" style="padding:6px 14px;font-size:11px">' + statusHtml + '</td>'
+    ].join('');
+    // Add event listener after element is created
+    const cb = tr.querySelector('input[type=checkbox]');
+    if (cb) cb.addEventListener('change', function() { toggleGiftReceived(e.id, monthIdx, this); });
+    return tr.outerHTML;
+  });
+  return rows.join('');
 }
 
 function renderGiftSummary(monthIdx) {
@@ -3677,8 +3789,14 @@ function renderGiftSummary(monthIdx) {
         <div class="gift-summary-num">${monthEmps.length}</div>
         <div class="gift-summary-lbl">${th ? ('พนักงานเกิดเดือน' + monthName) : ('Employees born in ' + monthName)}</div>
       </div>
+      <div style="margin-left:24px">
+        <div class="gift-summary-num" style="color:var(--gold)" id="gift-counter">
+          <span style="color:var(--green)">${Object.values(gift_records).filter(r=>r.received).length}</span>/${monthEmps.length} ${th?'คนรับแล้ว':'received'}
+        </div>
+        <div class="gift-summary-lbl">${th?'สถานะการรับของขวัญ':'Gift Status'}</div>
+      </div>
       <div style="margin-left:auto;text-align:right;font-size:13px;opacity:.9">
-        ${th?'จำนวนของขวัญที่ต้องเตรียม':'Gifts to prepare'}<br>
+        ${th?'ต้องเตรียมทั้งหมด':'Total to prepare'}<br>
         <strong style="font-size:22px;font-family:var(--mono)">${monthEmps.length} ${th?'ชิ้น':'items'}</strong>
       </div>
     </div>`;
@@ -3701,10 +3819,11 @@ function renderGiftSummary(monthIdx) {
                 <th style="padding:8px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border)">${th?'ตำแหน่ง':'Position'}</th>
                 <th style="padding:8px 14px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border)">${th?'วันเกิด':'Birthday'}</th>
                 <th style="padding:8px 14px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border)">${th?'รับของแล้ว':'Received'}</th>
+                <th style="padding:8px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border)">${th?'แจกโดย/เวลา':'Given By/Time'}</th>
               </tr>
             </thead>
             <tbody>
-${buildEmpRows(emps, todayMonth, todayDay, th)}
+${buildEmpRows(emps, todayMonth, todayDay, th, monthIdx)}
             </tbody>
           </table>
         </div>
