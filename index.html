@@ -175,6 +175,50 @@ body{font-family:var(--font);background:var(--gray);color:var(--text);min-height
 .action-due { font-size:11.5px;color:var(--muted); }
 .section-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 6px; }
 
+/* ── NOTIFICATIONS PAGE ── */
+.notif-group { margin-bottom:20px; }
+.notif-group-header {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--muted);
+  margin-bottom:10px;
+  padding-bottom:6px;
+  border-bottom:2px solid var(--border);
+}
+.notif-group-count {
+  padding:1px 8px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:700;
+  font-family:var(--mono);
+}
+.notif-item {
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+  padding:14px 16px;
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:8px;
+  border-left:4px solid var(--item-left,var(--border));
+  transition:box-shadow .15s;
+  cursor:pointer;
+}
+.notif-item:hover { box-shadow:0 4px 16px rgba(43,91,174,.1); }
+.notif-item-icon { font-size:22px; flex-shrink:0; margin-top:2px; }
+.notif-item-body { flex:1; min-width:0; }
+.notif-item-title { font-size:14px; font-weight:600; margin-bottom:4px; }
+.notif-item-meta { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:6px; }
+.notif-item-desc { font-size:12.5px; color:var(--muted); line-height:1.5; }
+.notif-item-action { display:flex; gap:6px; margin-top:8px; flex-shrink:0; }
+.notif-empty-group { text-align:center; padding:20px; color:var(--muted); font-size:13px; background:var(--white); border:1px solid var(--border); border-radius:var(--radius); }
+
 /* ── HELP / USER GUIDE ── */
 .help-section { margin-bottom:24px; }
 .help-card {
@@ -702,6 +746,10 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="sidebar-item active" onclick="switchSidebar('my-tasks')" id="sb-my-tasks">
           <span class="sb-icon">✅</span><span class="sb-label t-my-tasks">My Tasks</span>
         </div>
+        <div class="sidebar-item" onclick="switchSidebar('notifications')" id="sb-notifications">
+          <span class="sb-icon">🔔</span><span class="sb-label" data-en="Notifications" data-th="การแจ้งเตือน">Notifications</span>
+          <span class="sb-badge" id="sb-notif-badge" style="display:none"></span>
+        </div>
         <div class="sidebar-item" onclick="switchSidebar('dept-overview')" id="sb-dept-overview">
           <span class="sb-icon">🏢</span><span class="sb-label t-overview">Dept Overview</span>
         </div>
@@ -939,6 +987,18 @@ tbody tr:hover{background:var(--blue-lt)}
       </div>
       <div id="meet-list"></div>
     </div>
+    <!-- NOTIFICATIONS PAGE -->
+    <div class="page hr-module" id="page-notifications">
+      <div class="section-header">
+        <div>
+          <h2 id="h-notif-page">Notifications</h2>
+          <p id="notif-page-sub" style="font-size:13px;color:var(--muted);margin-top:2px">Tasks requiring your attention</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadData().then(()=>{renderNotifPage();updateNotifBadge();})" id="btn-refresh-notif">🔄 Refresh</button>
+      </div>
+      <div id="notif-page-content"></div>
+    </div>
+
     <div class="page hr-module" id="page-documents">
       <div class="module-placeholder">
         <div class="module-icon">📁</div>
@@ -972,16 +1032,17 @@ tbody tr:hover{background:var(--blue-lt)}
     <div class="mobile-nav-item active" onclick="switchSidebar('my-tasks')" id="mob-my-tasks">
       <span class="nav-icon">✅</span>
       <span class="t-my-tasks">My Tasks</span>
+    </div>
+    <div class="mobile-nav-item" onclick="switchSidebar('notifications')" id="mob-notifications">
+      <span class="nav-icon">🔔</span>
+      <span>Alerts</span>
       <span class="mobile-nav-badge" id="mob-badge" style="display:none"></span>
     </div>
     <div class="mobile-nav-item" onclick="switchSidebar('dept-overview')" id="mob-dept-overview">
       <span class="nav-icon">🏢</span>
       <span class="t-overview">Overview</span>
     </div>
-    <div class="mobile-nav-item" onclick="switchSidebar('all-tasks')" id="mob-all-tasks">
-      <span class="nav-icon">📋</span>
-      <span class="t-all-tasks">All Tasks</span>
-    </div>
+
     <div class="mobile-nav-item" onclick="switchSidebar('announcements')" id="mob-announcements">
       <span class="nav-icon">📢</span>
       <span>Announce</span>
@@ -1362,6 +1423,7 @@ function applyLang() {
   const activeMod = document.querySelector('.page.active.hr-module');
   if (activeMod) applyModuleLang(activeMod);
   // Re-render help if active
+  if (document.getElementById('page-notifications')?.classList.contains('active')) renderNotifPage();
   if (document.getElementById('page-help')?.classList.contains('active')) {
     renderHelp();
     const enBtn = document.getElementById('help-lang-en');
@@ -1621,7 +1683,7 @@ function toggleSidebar() {
   }
 }
 
-const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','documents','help'];
+const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','documents','help','notifications'];
 const TASK_TABS = ['my-tasks','dept-overview','all-tasks'];
 
 function switchSidebar(page) {
@@ -1642,6 +1704,7 @@ function switchSidebar(page) {
     if (pageEl) {
       pageEl.classList.add('active');
       applyModuleLang(pageEl);
+      if (page==='notifications') renderNotifPage();
       if (page==='announcements') renderAnnouncements();
       if (page==='meetings') renderMeetings();
       if (page==='help') {
@@ -2392,16 +2455,7 @@ function updateNotifBadge() {
   const count = all.length;
 
   // Update sidebar badge
-  let badge = document.getElementById('sb-notif-badge');
-  if (!badge) {
-    const myTaskItem = document.getElementById('sb-my-tasks');
-    if (myTaskItem) {
-      badge = document.createElement('span');
-      badge.id = 'sb-notif-badge';
-      badge.className = 'sb-badge';
-      myTaskItem.appendChild(badge);
-    }
-  }
+  const badge = document.getElementById('sb-notif-badge');
   if (badge) {
     badge.textContent = count;
     badge.style.display = count > 0 ? '' : 'none';
@@ -2768,6 +2822,104 @@ function renderHelp() {
     </div>
   </div>
   `;
+}
+
+// ── NOTIFICATIONS PAGE ──
+function renderNotifPage() {
+  const el = document.getElementById('notif-page-content');
+  if (!el) return;
+
+  const th = lang === 'th';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+  const dayAfter = new Date(today); dayAfter.setDate(dayAfter.getDate()+2);
+
+  const myTasks = isManagerOrAdmin()
+    ? tasks
+    : tasks.filter(t => t.memberId === currentMember?.id);
+
+  const overdue   = myTasks.filter(t => t.status!=='เสร็จสิ้น' && t.due && new Date(t.due)<today);
+  const dueToday  = myTasks.filter(t => t.status!=='เสร็จสิ้น' && t.due && new Date(t.due)>=today && new Date(t.due)<tomorrow);
+  const dueTomorrow = myTasks.filter(t => t.status!=='เสร็จสิ้น' && t.due && new Date(t.due)>=tomorrow && new Date(t.due)<dayAfter);
+
+  // Update page title/sub
+  const total = overdue.length + dueToday.length + dueTomorrow.length;
+  document.getElementById('h-notif-page').textContent = th ? 'การแจ้งเตือน' : 'Notifications';
+  document.getElementById('notif-page-sub').textContent = th
+    ? `มี ${total} งานที่ต้องดูแล`
+    : `${total} task(s) requiring attention`;
+
+  if (!total) {
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px">
+      <div style="font-size:48px;margin-bottom:16px">🎉</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:6px">${th?'ไม่มีงานที่ต้องเร่งดูแล':'No tasks need attention'}</div>
+      <div style="font-size:13px;color:var(--muted)">${th?'ทุกงานอยู่ในกำหนดเวลา':'All tasks are on schedule'}</div>
+    </div>`;
+    return;
+  }
+
+  function notifCard(t, type) {
+    const member = members.find(m=>m.id===t.memberId);
+    const colors = {
+      overdue:   { left:'var(--red)',    icon:'⚠️', bg:'var(--red-lt)',   color:'var(--red)' },
+      today:     { left:'var(--orange)', icon:'📅', bg:'var(--orange-lt)', color:'var(--orange)' },
+      tomorrow:  { left:'var(--blue)',   icon:'🔔', bg:'var(--blue-lt)',  color:'var(--blue)' },
+    };
+    const c = colors[type];
+    const prioLabel = {'เร่งด่วน':th?'เร่งด่วน':'Urgent','สูง':th?'สูง':'High','ปานกลาง':th?'ปานกลาง':'Medium','ต่ำ':th?'ต่ำ':'Low'}[t.prio]||t.prio;
+    const statusLabel = {'รอดำเนินการ':th?'รอดำเนินการ':'Pending','กำลังดำเนินการ':th?'กำลังดำเนินการ':'In Progress','รอตรวจสอบ':th?'รอตรวจสอบ':'Review'}[t.status]||t.status;
+    return `
+    <div class="notif-item" style="--item-left:${c.left}" onclick="switchSidebar('my-tasks')">
+      <div class="notif-item-icon">${c.icon}</div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">${t.title}</div>
+        <div class="notif-item-meta">
+          <span style="background:${c.bg};color:${c.color};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">
+            ${type==='overdue'?(th?'เกินกำหนด':'Overdue'):type==='today'?(th?'ครบกำหนดวันนี้':'Due Today'):(th?'ครบกำหนดพรุ่งนี้':'Due Tomorrow')}
+          </span>
+          ${statusPill(t.status)}
+          ${prioTag(t.prio)}
+          ${isManagerOrAdmin()&&member?`<span>👤 ${member.name}</span>`:''}
+          <span>📅 ${fmtDate(t.due)}</span>
+        </div>
+        ${t.desc?`<div class="notif-item-desc">${t.desc}</div>`:''}
+        <div style="margin-top:8px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px">
+            <span>${th?'ความคืบหน้า':'Progress'}</span>
+            <span style="font-family:var(--mono);font-weight:600;color:${progColor(t.prog||0)}">${t.prog||0}%</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill" style="width:${t.prog||0}%;background:${progColor(t.prog||0)}"></div></div>
+        </div>
+      </div>
+      <div class="notif-item-action">
+        <button class="btn btn-primary btn-xs" onclick="event.stopPropagation();openEditTask('${t.id}')">${th?'แก้ไข':'Edit'}</button>
+      </div>
+    </div>`;
+  }
+
+  function group(tasks, type, icon, label, countBg, countColor) {
+    if (!tasks.length) return `
+      <div class="notif-group">
+        <div class="notif-group-header">
+          <span>${icon}</span> ${label}
+          <span class="notif-group-count" style="background:#f2f4f8;color:var(--muted)">0</span>
+        </div>
+        <div class="notif-empty-group">${th?'ไม่มีงานในกลุ่มนี้':'No tasks in this group'} ✓</div>
+      </div>`;
+    return `
+      <div class="notif-group">
+        <div class="notif-group-header">
+          <span>${icon}</span> ${label}
+          <span class="notif-group-count" style="background:${countBg};color:${countColor}">${tasks.length}</span>
+        </div>
+        ${tasks.map(t=>notifCard(t,type)).join('')}
+      </div>`;
+  }
+
+  el.innerHTML =
+    group(overdue,   'overdue',   '⚠️', th?'เกินกำหนด':'Overdue',          'var(--red)',    '#fff') +
+    group(dueToday,  'today',     '📅', th?'ครบกำหนดวันนี้':'Due Today',    'var(--orange)', '#fff') +
+    group(dueTomorrow,'tomorrow', '🔔', th?'ครบกำหนดพรุ่งนี้':'Due Tomorrow','var(--blue)',   '#fff');
 }
 
 // ── RESET PASSWORD HANDLER ──
