@@ -511,6 +511,71 @@ body{font-family:var(--font);background:var(--gray);color:var(--text);min-height
 .help-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; margin:1px; }
 @media(max-width:768px) { .help-role-grid { grid-template-columns:1fr; } }
 
+/* ── ONBOARDING ── */
+.ob-card {
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:14px;
+  overflow:hidden;
+  transition:box-shadow .15s;
+}
+.ob-card:hover { box-shadow:0 4px 16px rgba(43,91,174,.1); }
+.ob-card-header {
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:16px 20px;
+  cursor:pointer;
+}
+.ob-card-header:hover { background:var(--blue-lt); }
+.ob-info { flex:1; min-width:0; }
+.ob-name { font-size:14px;font-weight:700;margin-bottom:2px; }
+.ob-meta { font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap; }
+.ob-body { padding:16px 20px;border-top:1px solid var(--border);display:none; }
+.ob-body.open { display:block; }
+.ob-status-badge {
+  padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;flex-shrink:0;
+}
+.ob-probation { background:var(--blue-lt);color:var(--blue); }
+.ob-passed { background:var(--green-lt);color:var(--green); }
+.ob-failed { background:var(--red-lt);color:var(--red); }
+.ob-warning { background:var(--orange-lt);color:var(--orange); }
+.probation-bar-wrap { margin:12px 0; }
+.probation-bar { height:10px;background:var(--border);border-radius:5px;overflow:hidden; }
+.probation-fill { height:100%;border-radius:5px;transition:width .3s; }
+.checklist-group { margin-bottom:14px; }
+.checklist-group-title {
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--muted);
+  margin-bottom:8px;padding-bottom:4px;
+  border-bottom:1px solid var(--border);
+}
+.checklist-item {
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;
+}
+.checklist-item:last-child { border-bottom:none; }
+.checklist-check { width:18px;height:18px;accent-color:var(--green);cursor:pointer;flex-shrink:0; }
+.checklist-label { flex:1; }
+.checklist-label.done { text-decoration:line-through;color:var(--muted); }
+.checklist-by { font-size:11px;color:var(--muted); }
+.ob-alert-card {
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px 20px;
+  margin-bottom:12px;
+  display:flex;align-items:center;gap:16px;
+}
+.ob-alert-card.urgent { border-left:4px solid var(--red); }
+.ob-alert-card.warning { border-left:4px solid var(--orange); }
+.ob-alert-card.info { border-left:4px solid var(--blue); }
+.ob-days-badge {
+  font-size:20px;font-weight:700;font-family:var(--mono);
+  text-align:center;min-width:50px;
+}
+
 /* ── MODULE PLACEHOLDER ── */
 .module-placeholder {
   display:flex;
@@ -1154,12 +1219,57 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
       </div>
     </div>
+    <!-- ONBOARDING PAGE -->
     <div class="page hr-module" id="page-onboarding">
-      <div class="module-placeholder">
-        <div class="module-icon">🌟</div>
-        <h2 data-en="Onboarding" data-th="พนักงานใหม่">Onboarding</h2>
-        <p data-en="Manage new employee onboarding checklists and progress" data-th="จัดการ checklist และความคืบหน้าของพนักงานใหม่">Manage new employee onboarding checklists and progress</p>
-        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      <!-- Sub tabs -->
+      <div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:20px">
+        <div class="bday-tab active" id="ob-tab-list" onclick="switchObTab('list')" style="padding:10px 20px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s">
+          🌟 <span id="t-ob-list">พนักงานใหม่</span>
+        </div>
+        <div class="bday-tab" id="ob-tab-alert" onclick="switchObTab('alert')" style="padding:10px 20px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s">
+          🔔 <span id="t-ob-alert">แจ้งเตือนประเมิน</span>
+          <span class="sb-badge" id="ob-alert-badge" style="display:none;margin-left:6px"></span>
+        </div>
+      </div>
+
+      <!-- List View -->
+      <div id="ob-view-list">
+        <div class="section-header" style="margin-bottom:16px">
+          <div>
+            <h2 id="h-onboarding">🌟 พนักงานใหม่</h2>
+            <p id="ob-sub" style="font-size:13px;color:var(--muted);margin-top:2px">ติดตาม Onboarding และ Probation</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="openImportNewEmp()" id="btn-import-newemp">⬆ Import Excel</button>
+            <button class="btn btn-gold" onclick="openAddNewEmp()" id="btn-add-newemp">+ เพิ่มพนักงานใหม่</button>
+          </div>
+        </div>
+        <!-- KPI -->
+        <div class="kpi-row" id="ob-kpi" style="margin-bottom:20px"></div>
+        <!-- Filter -->
+        <div class="filter-row" style="margin-bottom:16px">
+          <select id="ob-status-filter" onchange="renderNewEmpList()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;outline:none">
+            <option value="">ทุกสถานะ</option>
+            <option value="probation">กำลัง Probation</option>
+            <option value="passed">ผ่านทดลองงาน</option>
+            <option value="failed">ไม่ผ่านทดลองงาน</option>
+          </select>
+          <select id="ob-dept-filter" onchange="renderNewEmpList()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;outline:none">
+            <option value="">ทุกแผนก</option>
+          </select>
+        </div>
+        <div id="ob-list-content"></div>
+      </div>
+
+      <!-- Alert View -->
+      <div id="ob-view-alert" style="display:none">
+        <div class="section-header" style="margin-bottom:16px">
+          <div>
+            <h2>🔔 <span id="h-ob-alert">แจ้งเตือนประเมินผล</span></h2>
+            <p id="ob-alert-sub" style="font-size:13px;color:var(--muted);margin-top:2px">พนักงานที่ใกล้ครบกำหนดประเมิน</p>
+          </div>
+        </div>
+        <div id="ob-alert-content"></div>
       </div>
     </div>
     <div class="page hr-module" id="page-training">
@@ -1488,6 +1598,47 @@ tbody tr:hover{background:var(--blue-lt)}
   <div class="notif-popup-title">⚠️ <span id="notif-popup-title">Tasks needing attention</span></div>
   <div id="notif-popup-items"></div>
 </div>
+<!-- ONBOARDING ADD MODAL -->
+<div class="overlay" id="modal-new-emp">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3 id="new-emp-modal-title">เพิ่มพนักงานใหม่</h3>
+      <button class="modal-close" onclick="closeModal('modal-new-emp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg"><label>รหัสพนักงาน</label><input id="ne-empid" placeholder="AKR25..."></div>
+        <div class="fg"><label>วันเริ่มงาน *</label><input id="ne-startdate" type="date"></div>
+        <div class="fg full"><label>ชื่อ-นามสกุล (TH) *</label><input id="ne-name-th" placeholder="คุณ สมชาย ใจดี"></div>
+        <div class="fg full"><label>ชื่อ-นามสกุล (EN)</label><input id="ne-name-en" placeholder="Khun Somchai Jaidee"></div>
+        <div class="fg"><label>ชื่อเล่น</label><input id="ne-nickname" placeholder="ชาย"></div>
+        <div class="fg"><label>ระยะทดลองงาน (วัน)</label><input id="ne-probdays" type="number" value="119"></div>
+        <div class="fg full"><label>ตำแหน่ง (TH)</label><input id="ne-pos-th" placeholder="เจ้าหน้าที่..."></div>
+        <div class="fg full"><label>ตำแหน่ง (EN)</label><input id="ne-pos-en" placeholder="Officer..."></div>
+        <div class="fg"><label>แผนก (TH)</label><input id="ne-dept-th" placeholder="ฝ่าย..."></div>
+        <div class="fg"><label>แผนก (EN)</label><input id="ne-dept-en" placeholder="Department..."></div>
+        <div class="fg"><label>Buddy (HR ดูแล)</label>
+          <select id="ne-buddy">
+            <option value="">— เลือก HR —</option>
+          </select>
+        </div>
+        <div class="fg"><label>สถานะ</label>
+          <select id="ne-status">
+            <option value="probation">กำลัง Probation</option>
+            <option value="passed">ผ่านทดลองงาน</option>
+            <option value="failed">ไม่ผ่านทดลองงาน</option>
+          </select>
+        </div>
+        <div class="fg full"><label>หมายเหตุ</label><textarea id="ne-note" placeholder="หมายเหตุเพิ่มเติม..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-emp')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveNewEmp()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- GIFT CONFIRM MODAL -->
 <div class="overlay" id="modal-gift-confirm">
   <div class="modal" style="max-width:420px">
@@ -2023,6 +2174,9 @@ function switchSidebar(page) {
       pageEl.classList.add('active');
       applyModuleLang(pageEl);
       if (page==='notifications') renderNotifPage();
+      if (page==='onboarding') {
+        loadNewEmployees().then(()=>{ renderObKpi(); renderNewEmpList(); });
+      }
       if (page==='birthday') {
         loadBirthdayData().then(()=>{
           renderBirthday();
@@ -4070,6 +4224,407 @@ async function exportGiftList() {
   a.click();
   URL.revokeObjectURL(url);
   toast(th?`Export ${monthEmps.length} คน เรียบร้อย`:`Exported ${monthEmps.length} employees`);
+}
+
+// ── ONBOARDING / NEW EMPLOYEES ──
+let newEmployees = [];
+
+const CHECKLIST_TEMPLATE = [
+  { category: 'ก่อนเริ่มงาน', category_en: 'Pre-Start', title: 'เตรียมบัตรพนักงาน', title_en: 'Prepare employee ID card', due_day: 0 },
+  { category: 'ก่อนเริ่มงาน', category_en: 'Pre-Start', title: 'ตั้งค่า Email บริษัท', title_en: 'Setup company email', due_day: 0 },
+  { category: 'ก่อนเริ่มงาน', category_en: 'Pre-Start', title: 'เตรียมอุปกรณ์การทำงาน', title_en: 'Prepare work equipment', due_day: 0 },
+  { category: 'วันแรก', category_en: 'Day 1', title: 'แนะนำทีมและสถานที่', title_en: 'Team & facility orientation', due_day: 1 },
+  { category: 'วันแรก', category_en: 'Day 1', title: 'ลงนามสัญญาจ้างงาน', title_en: 'Sign employment contract', due_day: 1 },
+  { category: 'วันแรก', category_en: 'Day 1', title: 'รับทราบระเบียบบริษัท', title_en: 'Acknowledge company policy', due_day: 1 },
+  { category: 'สัปดาห์แรก', category_en: 'Week 1', title: 'อบรม Safety', title_en: 'Safety training', due_day: 7 },
+  { category: 'สัปดาห์แรก', category_en: 'Week 1', title: 'อบรม HR Policy', title_en: 'HR Policy training', due_day: 7 },
+  { category: 'สัปดาห์แรก', category_en: 'Week 1', title: 'เรียนรู้ระบบการทำงาน', title_en: 'Learn work systems', due_day: 7 },
+  { category: 'เดือนแรก', category_en: 'Month 1', title: 'ประเมิน 30 วัน', title_en: '30-day evaluation', due_day: 30 },
+  { category: 'เดือนที่ 3', category_en: 'Month 3', title: 'ประเมิน 90 วัน (ก่อนครบ Probation)', title_en: '90-day evaluation (pre-probation)', due_day: 90 },
+  { category: 'ครบ Probation', category_en: 'Probation End', title: 'ประเมินสิ้นสุดทดลองงาน 119 วัน', title_en: 'Final probation evaluation (119 days)', due_day: 119 },
+];
+
+async function loadNewEmployees() {
+  try {
+    const data = await sbFetch('new_employees?select=*&order=start_date.desc');
+    newEmployees = data || [];
+  } catch(e) { newEmployees = []; }
+}
+
+async function loadOnboardingItems(empId) {
+  try {
+    return await sbFetch('onboarding_items?new_employee_id=eq.' + empId + '&select=*&order=due_day');
+  } catch(e) { return []; }
+}
+
+function switchObTab(tab) {
+  document.querySelectorAll('[id^="ob-tab-"]').forEach(t => t.classList.remove('active'));
+  document.getElementById('ob-tab-'+tab).classList.add('active');
+  document.getElementById('ob-view-list').style.display = tab==='list' ? '' : 'none';
+  document.getElementById('ob-view-alert').style.display = tab==='alert' ? '' : 'none';
+  if (tab==='alert') renderObAlerts();
+}
+
+function calcProbationDays(startDate, probDays) {
+  const start = new Date(startDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(start); end.setDate(end.getDate() + probDays);
+  const elapsed = Math.floor((today - start) / (1000*60*60*24));
+  const remaining = Math.floor((end - today) / (1000*60*60*24));
+  const pct = Math.min(100, Math.round(elapsed / probDays * 100));
+  return { elapsed, remaining, pct, endDate: end };
+}
+
+function renderObKpi() {
+  const total = newEmployees.length;
+  const inProb = newEmployees.filter(e=>e.status==='probation').length;
+  const passed = newEmployees.filter(e=>e.status==='passed').length;
+  const th = lang === 'th';
+
+  // Count alerts
+  const alerts = newEmployees.filter(e => {
+    if (e.status !== 'probation') return false;
+    const {remaining} = calcProbationDays(e.start_date, e.probation_days||119);
+    return remaining <= 30 && remaining >= 0;
+  }).length;
+
+  const badge = document.getElementById('ob-alert-badge');
+  if (badge) { badge.textContent = alerts; badge.style.display = alerts>0?'':'none'; }
+
+  document.getElementById('ob-kpi').innerHTML = `
+    <div class="kpi-card" style="--card-top:var(--blue)">
+      <div class="kpi-label">${th?'พนักงานใหม่ทั้งหมด':'Total New Employees'}</div>
+      <div class="kpi-val">${total}</div>
+    </div>
+    <div class="kpi-card" style="--card-top:var(--blue);--card-color:var(--blue)">
+      <div class="kpi-label">${th?'กำลัง Probation':'In Probation'}</div>
+      <div class="kpi-val">${inProb}</div>
+    </div>
+    <div class="kpi-card" style="--card-top:var(--green);--card-color:var(--green)">
+      <div class="kpi-label">${th?'ผ่านทดลองงาน':'Passed'}</div>
+      <div class="kpi-val">${passed}</div>
+    </div>
+    <div class="kpi-card" style="--card-top:${alerts>0?'var(--orange)':'var(--green)'};--card-color:${alerts>0?'var(--orange)':'var(--text)'}">
+      <div class="kpi-label">${th?'ใกล้ครบ Probation':'Near Probation End'}</div>
+      <div class="kpi-val">${alerts}</div>
+      <div class="kpi-sub">${th?'(ภายใน 30 วัน)':'(within 30 days)'}</div>
+    </div>`;
+}
+
+function renderNewEmpList() {
+  const th = lang === 'th';
+  const statusFilter = document.getElementById('ob-status-filter')?.value || '';
+  const deptFilter = document.getElementById('ob-dept-filter')?.value || '';
+
+  // Populate dept filter
+  const deptSel = document.getElementById('ob-dept-filter');
+  if (deptSel) {
+    const currentDept = deptSel.value;
+    const depts = [...new Set(newEmployees.map(e=>th?e.department_th:e.department_en).filter(Boolean))].sort();
+    deptSel.innerHTML = `<option value="">${th?'ทุกแผนก':'All Dept'}</option>`
+      + depts.map(d=>`<option value="${d}" ${d===currentDept?'selected':''}>${d}</option>`).join('');
+  }
+
+  let list = newEmployees.filter(e => {
+    const dept = th ? e.department_th : e.department_en;
+    return (!statusFilter || e.status===statusFilter) && (!deptFilter || dept===deptFilter);
+  });
+
+  const el = document.getElementById('ob-list-content');
+  if (!el) return;
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🌟</div><p>${th?'ยังไม่มีพนักงานใหม่':'No new employees yet'}</p></div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(e => {
+    const {elapsed, remaining, pct, endDate} = calcProbationDays(e.start_date, e.probation_days||119);
+    const isNear = remaining <= 30 && remaining >= 0 && e.status==='probation';
+    const isOverdue = remaining < 0 && e.status==='probation';
+    const buddy = members.find(m=>m.id===e.buddy_id);
+    const name = th ? e.full_name_th : (e.full_name_en||e.full_name_th);
+    const dept = th ? e.department_th : e.department_en;
+    const pos = th ? e.job_title_th : e.job_title_en;
+    const statusLabel = {probation:th?'กำลัง Probation':'In Probation', passed:th?'ผ่านทดลองงาน':'Passed', failed:th?'ไม่ผ่าน':'Failed'}[e.status]||e.status;
+    const statusClass = {probation:'ob-probation', passed:'ob-passed', failed:'ob-failed'}[e.status]||'ob-probation';
+    const barColor = isOverdue?'var(--red)':isNear?'var(--orange)':pct>=80?'var(--gold)':'var(--blue)';
+
+    return `<div class="ob-card">
+      <div class="ob-card-header" onclick="toggleObCard('${e.id}')">
+        <div class="avatar" style="background:${avatarColor(e.full_name_th||'')};width:44px;height:44px;font-size:15px;flex-shrink:0">${(e.full_name_th||'?').slice(0,2)}</div>
+        <div class="ob-info">
+          <div class="ob-name">${name}${e.nickname?' ('+e.nickname+')':''}</div>
+          <div class="ob-meta">
+            <span>🏢 ${dept||'—'}</span>
+            <span>💼 ${pos||'—'}</span>
+            <span>📅 ${th?'เริ่ม':'Start'}: ${fmtDate(e.start_date)}</span>
+            ${buddy?`<span>👤 Buddy: ${buddy.name}</span>`:''}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <span class="ob-status-badge ${isNear&&e.status==='probation'?'ob-warning':statusClass}">${isNear?'⚠ '+statusLabel:statusLabel}</span>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">
+            ${e.status==='probation'
+              ? (isOverdue
+                ? `<span style="color:var(--red)">เกิน ${Math.abs(remaining)} วัน</span>`
+                : `เหลือ ${remaining} วัน`)
+              : fmtDate(endDate.toISOString().slice(0,10))}
+          </div>
+        </div>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px">▼</span>
+      </div>
+      <div class="ob-body" id="ob-body-${e.id}">
+        <!-- Probation Progress -->
+        ${e.status==='probation'?`
+        <div class="probation-bar-wrap">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
+            <span>${th?'ความคืบหน้า Probation':'Probation Progress'} (${elapsed}/${e.probation_days||119} ${th?'วัน':'days'})</span>
+            <span style="font-weight:700;color:${barColor}">${pct}%</span>
+          </div>
+          <div class="probation-bar">
+            <div class="probation-fill" style="width:${pct}%;background:${barColor}"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
+            <span>${fmtDate(e.start_date)}</span>
+            <span style="color:${isNear?'var(--orange)':'var(--muted)'}">🏁 ${fmtDate(endDate.toISOString().slice(0,10))}</span>
+          </div>
+        </div>`:''}
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="loadAndShowChecklist('${e.id}')">📋 ${th?'ดู Checklist':'View Checklist'}</button>
+          ${isManagerOrAdmin()?`
+          <button class="btn btn-ghost btn-sm" onclick="openEditNewEmp('${e.id}')">✏ ${th?'แก้ไข':'Edit'}</button>
+          ${e.status==='probation'?`
+          <button class="btn btn-primary btn-sm" onclick="updateProbationStatus('${e.id}','passed')">✓ ${th?'ผ่านทดลองงาน':'Mark Passed'}</button>
+          <button class="btn btn-danger btn-sm" onclick="updateProbationStatus('${e.id}','failed')">✗ ${th?'ไม่ผ่าน':'Mark Failed'}</button>`:''}
+          `:''}
+        </div>
+        <div id="checklist-${e.id}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleObCard(id) {
+  const body = document.getElementById('ob-body-'+id);
+  if (body) body.classList.toggle('open');
+}
+
+async function loadAndShowChecklist(empId) {
+  const th = lang === 'th';
+  const container = document.getElementById('checklist-'+empId);
+  if (!container) return;
+  container.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">${th?'กำลังโหลด...':'Loading...'}</div>`;
+
+  let items = await loadOnboardingItems(empId);
+
+  // If no items, create from template
+  if (!items.length && isManagerOrAdmin()) {
+    const emp = newEmployees.find(e=>e.id===empId);
+    if (emp) {
+      for (const t of CHECKLIST_TEMPLATE) {
+        const row = { id:uid(), new_employee_id:empId, category:t.category, title:t.title, title_en:t.title_en, due_day:t.due_day, completed:false };
+        await sbFetch('onboarding_items', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
+        items.push(row);
+      }
+    }
+  }
+
+  if (!items.length) {
+    container.innerHTML = `<div style="color:var(--muted);font-size:13px">${th?'ยังไม่มี Checklist':'No checklist yet'}</div>`;
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  items.forEach(it => {
+    const cat = th ? it.category : (it.title_en ? it.category : it.category);
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(it);
+  });
+
+  const done = items.filter(i=>i.completed).length;
+  container.innerHTML = `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
+        <span>Checklist: <strong style="color:var(--green)">${done}</strong>/${items.length}</span>
+        <span style="font-weight:600;color:${progColor(Math.round(done/items.length*100))}">${Math.round(done/items.length*100)}%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${Math.round(done/items.length*100)}%;background:${progColor(Math.round(done/items.length*100))}"></div></div>
+    </div>
+    ${Object.entries(groups).map(([cat, its]) => `
+      <div class="checklist-group">
+        <div class="checklist-group-title">${cat}</div>
+        ${its.map(it => {
+          const changer = it.completed_by ? members.find(m=>m.id===it.completed_by) : null;
+          const label = th ? it.title : (it.title_en||it.title);
+          return `<div class="checklist-item">
+            <input type="checkbox" class="checklist-check" ${it.completed?'checked':''}
+              data-itemid="${it.id}" data-empid="${empId}"
+              ${!isManagerOrAdmin()?'disabled':''}>
+            <span class="checklist-label ${it.completed?'done':''}">${label}</span>
+            ${it.due_day!==undefined?`<span class="checklist-by">${th?'วันที่':'Day'} ${it.due_day}</span>`:''}
+            ${changer?`<span class="checklist-by">✓ ${changer.name}</span>`:''}
+          </div>`;
+        }).join('')}
+      </div>`).join('')}`;
+
+  // Bind checklist events
+  container.querySelectorAll('input[type=checkbox][data-itemid]').forEach(cb => {
+    cb.addEventListener('change', async function() {
+      const itemId = this.dataset.itemid;
+      const empId = this.dataset.empid;
+      const checked = this.checked;
+      try {
+        await sbFetch('onboarding_items?id=eq.'+itemId, {
+          method:'PATCH', prefer:'resolution=merge-duplicates',
+          body: JSON.stringify({ completed:checked, completed_by:checked?currentMember.id:null, completed_at:checked?new Date().toISOString():null })
+        });
+        toast(checked?(th?'ทำเครื่องหมายแล้ว ✓':'Marked done ✓'):(th?'ยกเลิกแล้ว':'Unmarked'));
+        loadAndShowChecklist(empId);
+      } catch(e) { this.checked=!checked; toast('❌ '+e.message); }
+    });
+  });
+}
+
+async function updateProbationStatus(empId, status) {
+  const th = lang === 'th';
+  const label = status==='passed'?(th?'ผ่านทดลองงาน':'Passed'):(th?'ไม่ผ่าน':'Failed');
+  if (!confirm((th?'ยืนยัน: ':'Confirm: ')+label+'?')) return;
+  try {
+    await sbFetch('new_employees?id=eq.'+empId, {method:'PATCH', prefer:'resolution=merge-duplicates', body:JSON.stringify({status})});
+    const idx = newEmployees.findIndex(e=>e.id===empId);
+    if (idx>=0) newEmployees[idx].status = status;
+    renderNewEmpList(); renderObKpi();
+    toast(label);
+  } catch(e) { toast('❌ '+e.message); }
+}
+
+function renderObAlerts() {
+  const th = lang === 'th';
+  const el = document.getElementById('ob-alert-content');
+  if (!el) return;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const alerts = newEmployees
+    .filter(e => e.status==='probation')
+    .map(e => {
+      const {remaining, endDate} = calcProbationDays(e.start_date, e.probation_days||119);
+      const days90 = new Date(e.start_date); days90.setDate(days90.getDate()+90);
+      const rem90 = Math.floor((days90-today)/(1000*60*60*24));
+      return {...e, remaining, endDate, rem90};
+    })
+    .filter(e => e.remaining <= 30 || (e.rem90 >= 0 && e.rem90 <= 14))
+    .sort((a,b) => a.remaining - b.remaining);
+
+  if (!alerts.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">✅</div><p>${th?'ไม่มีการแจ้งเตือนในขณะนี้':'No alerts at this time'}</p></div>`;
+    return;
+  }
+
+  el.innerHTML = alerts.map(e => {
+    const name = th ? e.full_name_th : (e.full_name_en||e.full_name_th);
+    const dept = th ? e.department_th : e.department_en;
+    const isOverdue = e.remaining < 0;
+    const isNear90 = e.rem90 >= 0 && e.rem90 <= 14;
+    const isNearEnd = e.remaining >= 0 && e.remaining <= 30;
+    let alertType = isOverdue?'urgent':isNear90?'warning':'info';
+    let alertIcon = isOverdue?'🚨':isNear90?'⚠️':'🔔';
+    let alertMsg = '';
+    if (isOverdue) alertMsg = th?`เกินกำหนด Probation ${Math.abs(e.remaining)} วัน`:`Probation overdue by ${Math.abs(e.remaining)} days`;
+    else if (isNear90) alertMsg = th?`ใกล้ครบ 90 วัน — เหลืออีก ${e.rem90} วัน (ต้องประเมินก่อน Probation สิ้นสุด)`:`Approaching 90-day mark — ${e.rem90} days left (evaluate before probation ends)`;
+    else alertMsg = th?`ใกล้ครบ Probation — เหลืออีก ${e.remaining} วัน`:`Probation ending soon — ${e.remaining} days left`;
+
+    return `<div class="ob-alert-card ${alertType}">
+      <div class="ob-days-badge" style="color:${isOverdue?'var(--red)':isNear90?'var(--orange)':'var(--blue)'}">
+        ${isOverdue?Math.abs(e.remaining):isNear90?e.rem90:e.remaining}
+        <div style="font-size:10px;font-weight:400;color:var(--muted)">${th?'วัน':'days'}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600">${alertIcon} ${name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${dept||''} · ${th?'เริ่ม':'Start'}: ${fmtDate(e.start_date)}</div>
+        <div style="font-size:12.5px;color:${isOverdue?'var(--red)':isNear90?'var(--orange)':'var(--blue)'};margin-top:4px;font-weight:500">${alertMsg}</div>
+      </div>
+      ${isManagerOrAdmin()?`<div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="updateProbationStatus('${e.id}','passed')">✓ ${th?'ผ่าน':'Passed'}</button>
+        <button class="btn btn-danger btn-sm" onclick="updateProbationStatus('${e.id}','failed')">✗ ${th?'ไม่ผ่าน':'Failed'}</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openAddNewEmp() {
+  document.getElementById('new-emp-modal-title').textContent = lang==='th'?'เพิ่มพนักงานใหม่':'Add New Employee';
+  ['ne-empid','ne-name-th','ne-name-en','ne-nickname','ne-pos-th','ne-pos-en','ne-dept-th','ne-dept-en','ne-note'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('ne-startdate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ne-probdays').value = 119;
+  document.getElementById('ne-status').value = 'probation';
+  const buddySel = document.getElementById('ne-buddy');
+  buddySel.innerHTML = `<option value="">— ${lang==='th'?'เลือก HR':'Select HR'} —</option>` + members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  openModal('modal-new-emp');
+}
+
+function openImportNewEmp() {
+  toast(lang==='th'?'ฟีเจอร์ Import Excel สำหรับพนักงานใหม่ — เร็วๆ นี้':'Import Excel for new employees — Coming soon');
+}
+
+function openEditNewEmp(id) {
+  const e = newEmployees.find(x=>x.id===id);
+  if (!e) return;
+  document.getElementById('new-emp-modal-title').textContent = lang==='th'?'แก้ไขพนักงานใหม่':'Edit New Employee';
+  document.getElementById('ne-empid').value = e.employee_id||'';
+  document.getElementById('ne-name-th').value = e.full_name_th||'';
+  document.getElementById('ne-name-en').value = e.full_name_en||'';
+  document.getElementById('ne-nickname').value = e.nickname||'';
+  document.getElementById('ne-startdate').value = e.start_date||'';
+  document.getElementById('ne-probdays').value = e.probation_days||119;
+  document.getElementById('ne-pos-th').value = e.job_title_th||'';
+  document.getElementById('ne-pos-en').value = e.job_title_en||'';
+  document.getElementById('ne-dept-th').value = e.department_th||'';
+  document.getElementById('ne-dept-en').value = e.department_en||'';
+  document.getElementById('ne-status').value = e.status||'probation';
+  document.getElementById('ne-note').value = e.note||'';
+  const buddySel = document.getElementById('ne-buddy');
+  buddySel.innerHTML = `<option value="">— ${lang==='th'?'เลือก HR':'Select HR'} —</option>` + members.map(m=>`<option value="${m.id}" ${m.id===e.buddy_id?'selected':''}>${m.name}</option>`).join('');
+  document.getElementById('ne-buddy').value = e.buddy_id||'';
+  openModal('modal-new-emp');
+}
+
+async function saveNewEmp() {
+  const th = lang === 'th';
+  const nameTh = document.getElementById('ne-name-th').value.trim();
+  const startDate = document.getElementById('ne-startdate').value;
+  if (!nameTh||!startDate) { alert(th?'กรุณากรอกชื่อและวันเริ่มงาน':'Please fill name and start date'); return; }
+
+  const row = {
+    id: uid(),
+    employee_id: document.getElementById('ne-empid').value.trim()||null,
+    full_name_th: nameTh,
+    full_name_en: document.getElementById('ne-name-en').value.trim()||null,
+    nickname: document.getElementById('ne-nickname').value.trim()||null,
+    start_date: startDate,
+    probation_days: parseInt(document.getElementById('ne-probdays').value)||119,
+    job_title_th: document.getElementById('ne-pos-th').value.trim()||null,
+    job_title_en: document.getElementById('ne-pos-en').value.trim()||null,
+    department_th: document.getElementById('ne-dept-th').value.trim()||null,
+    department_en: document.getElementById('ne-dept-en').value.trim()||null,
+    buddy_id: document.getElementById('ne-buddy').value||null,
+    status: document.getElementById('ne-status').value,
+    note: document.getElementById('ne-note').value.trim()||null,
+    created_by: currentMember.id
+  };
+
+  try {
+    await sbFetch('new_employees?on_conflict=id', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
+    newEmployees.unshift(row);
+    closeModal('modal-new-emp');
+    renderNewEmpList(); renderObKpi();
+    toast(th?'เพิ่มพนักงานใหม่แล้ว':'New employee added');
+  } catch(e) { toast('❌ '+e.message); }
 }
 
 // ── NOTIFICATIONS PAGE ──
