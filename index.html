@@ -2867,8 +2867,8 @@ function updateNotifBadge() {
   if (todayBdays.length && !sessionStorage.getItem('bday_shown')) {
     setTimeout(() => {
       toast('🎂 ' + (lang==='th'
-        ? 'วันเกิด: ' + todayBdays.map(m=>m.name_th||m.name_en).join(', ') + ' 🎉'
-        : 'Birthday: ' + todayBdays.map(m=>m.name_en||m.name_th).join(', ') + ' 🎉'));
+        ? 'วันเกิด: ' + todayBdays.map(m=>m.display_name_th).join(', ') + ' 🎉'
+        : 'Birthday: ' + todayBdays.map(m=>m.display_name_en).join(', ') + ' 🎉'));
       sessionStorage.setItem('bday_shown','1');
     }, 3000);
   }
@@ -3516,8 +3516,22 @@ async function loadBirthdayData() {
       name_th: e.full_name_th || e.id,
       name_en: e.full_name_en || e.id,
       get name() { return lang==='th' ? (this.name_th||this.name_en) : (this.name_en||this.name_th); },
-      pos: e.job_title_th || e.job_title_en || '',
-      dept: e.department_th || e.department_en || '',
+      get display_name_th() {
+        // Strip Thai prefixes and replace with คุณ
+        const n = this.name_th || this.name_en || this.id;
+        return n.replace(/^(นาย|นาง(?:สาว)?|ดร\.|Mr\.|Mrs\.|Miss|Ms\.)\s*/i, 'คุณ ');
+      },
+      get display_name_en() {
+        // Strip EN prefixes and replace with Khun
+        const n = this.name_en || this.name_th || this.id;
+        return n.replace(/^(Mr\.|Mrs\.|Miss|Ms\.|Dr\.)\s*/i, 'Khun ');
+      },
+      pos_th: e.job_title_th || e.job_title_en || '',
+      pos_en: e.job_title_en || e.job_title_th || '',
+      get pos() { return lang==='th' ? this.pos_th : this.pos_en; },
+      dept_th: e.department_th || e.department_en || '',
+      dept_en: e.department_en || e.department_th || '',
+      get dept() { return lang==='th' ? this.dept_th : this.dept_en; },
       nickname: e.nickname || null,
       birthdate: e.birthdate || null,
       email: e.email || null,
@@ -3601,8 +3615,8 @@ function renderBirthday() {
     </div>
     <div id="birthday-months"></div>
     ${withoutBday.length?`<div style="margin-top:16px;padding:12px 16px;background:var(--gold-lt);border:1px solid #f0d060;border-radius:8px;font-size:12.5px;color:#7a5c00">
-      ⚠️ ${th?`${withoutBday.length} คนยังไม่มีข้อมูลวันเกิด: ${withoutBday.map(m=>lang==='th'?(m.name_th||m.name_en):(m.name_en||m.name_th)).join(', ')}`:
-      `${withoutBday.length} member(s) missing birthday: ${withoutBday.map(m=>lang==='th'?(m.name_th||m.name_en):(m.name_en||m.name_th)).join(', ')}`}
+      ⚠️ ${th?`${withoutBday.length} คนยังไม่มีข้อมูลวันเกิด: ${withoutBday.map(m=>lang==='th'?m.display_name_th:m.display_name_en).join(', ')}`:
+      `${withoutBday.length} member(s) missing birthday: ${withoutBday.map(m=>lang==='th'?m.display_name_th:m.display_name_en).join(', ')}`}
       ${isManagerOrAdmin()?`<br><span style="font-size:11.5px;opacity:.8">${th?'Admin สามารถเพิ่มได้ใน Supabase Table Editor → members → birthdate':'Admin can add via Supabase Table Editor → members → birthdate'}</span>`:''}
     </div>`:''}
   `;
@@ -3780,7 +3794,7 @@ async function toggleGiftReceived(empId, monthIdx, checkbox) {
 
   // Find employee name
   const emp = employees_bday.find(e => e.id === empId);
-  const empName = emp ? (lang==='th' ? (emp.name_th||emp.name_en) : (emp.name_en||emp.name_th)) : empId;
+  const empName = emp ? (lang==='th' ? emp.display_name_th : emp.display_name_en) : empId;
   const months = th ? MONTHS_TH : MONTHS_EN;
 
   // Confirmation dialog
@@ -3885,7 +3899,7 @@ function buildEmpRows(emps, todayMonth, todayDay, th, monthIdx) {
       : '';
     const rowBg = received ? 'background:var(--green-lt)' : isToday ? 'background:var(--gold-lt)' : '';
     const dateColor = isToday ? '#a07800' : 'var(--text)';
-    const empName = lang==='th' ? (e.name_th||e.name_en) : (e.name_en||e.name_th);
+    const empName = lang==='th' ? e.display_name_th : e.display_name_en;
     const giverName = giver ? giver.name : '—';
     const statusHtml = received
       ? '<span style="color:var(--green)">\u2713 ' + (th?'แจกโดย ':'By ') + giverName + (receivedAt ? '<br><span style="opacity:.7">' + receivedAt + '</span>' : '') + '</span>'
@@ -4041,7 +4055,7 @@ async function exportGiftList() {
   // Create CSV
   const headers = th ? ['รหัสพนักงาน','ชื่อ-นามสกุล (TH)','ชื่อ-นามสกุล (EN)','ชื่อเล่น','ตำแหน่ง','แผนก/ฝ่าย','วันเกิด','รับของขวัญแล้ว'] : ['Employee ID','Full Name (TH)','Full Name (EN)','Nickname','Position','Department','Birthday','Gift Received'];
   const rows = monthEmps.map(e => [
-    e.id, e.name_th||'', e.name_en||'', e.nickname||'', e.pos||'', e.dept||'', e.birthdate, ''
+    e.id, e.display_name_th, e.display_name_en, e.nickname||'', e.pos_th||'', e.pos_en||'', e.dept_th||'', e.birthdate, ''
   ]);
 
   const csvContent = '﻿' + [headers, ...rows]
