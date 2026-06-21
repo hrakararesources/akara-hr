@@ -227,6 +227,125 @@ body{font-family:var(--font);background:var(--gray);color:var(--text);min-height
   font-family:var(--mono);
 }
 
+/* ── BIRTHDAY PAGE ── */
+.birthday-month-section { margin-bottom:24px; }
+.birthday-month-header {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 16px;
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:10px;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.birthday-month-header.current-month {
+  background:linear-gradient(135deg,var(--blue-dk),var(--blue));
+  border-color:var(--blue);
+}
+.birthday-month-name {
+  font-size:15px;
+  font-weight:700;
+  color:var(--text);
+}
+.birthday-month-header.current-month .birthday-month-name { color:#fff; }
+.birthday-month-count {
+  font-size:12px;
+  padding:2px 8px;
+  border-radius:20px;
+  background:var(--blue-lt);
+  color:var(--blue);
+  font-weight:600;
+  font-family:var(--mono);
+}
+.birthday-month-header.current-month .birthday-month-count {
+  background:rgba(255,255,255,.2);
+  color:#fff;
+}
+.birthday-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:12px;
+}
+.birthday-card {
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  transition:box-shadow .15s;
+  position:relative;
+  overflow:hidden;
+}
+.birthday-card:hover { box-shadow:0 4px 16px rgba(43,91,174,.1); }
+.birthday-card.is-today {
+  border-color:var(--gold);
+  border-width:2px;
+  background:var(--gold-lt);
+}
+.birthday-card.is-upcoming {
+  border-color:var(--blue);
+  border-left-width:4px;
+}
+.birthday-avatar-wrap { position:relative; flex-shrink:0; }
+.birthday-avatar {
+  width:48px; height:48px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; font-weight:700; color:#fff;
+}
+.birthday-today-badge {
+  position:absolute;
+  bottom:-4px; right:-4px;
+  font-size:16px;
+  animation:bounce 1s infinite;
+}
+@keyframes bounce {
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-4px)}
+}
+.birthday-info { flex:1; min-width:0; }
+.birthday-name { font-size:14px; font-weight:600; margin-bottom:2px; }
+.birthday-pos { font-size:11.5px; color:var(--muted); margin-bottom:4px; }
+.birthday-date-display {
+  display:flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:600;
+}
+.birthday-days-badge {
+  font-size:10px; padding:1px 7px; border-radius:20px;
+  font-weight:700; font-family:var(--mono);
+}
+.birthday-empty {
+  text-align:center; padding:20px;
+  color:var(--muted); font-size:13px;
+  background:var(--gray); border-radius:8px;
+}
+.birthday-stats {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  margin-bottom:24px;
+}
+.birthday-stat-card {
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+  text-align:center;
+  border-top:3px solid var(--stat-color,var(--blue));
+}
+.birthday-stat-val { font-size:28px; font-weight:700; font-family:var(--mono); color:var(--stat-color,var(--text)); }
+.birthday-stat-lbl { font-size:11px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:.06em; }
+@media(max-width:768px){
+  .birthday-grid { grid-template-columns:1fr; }
+  .birthday-stats { grid-template-columns:1fr 1fr; }
+}
+
 /* ── NOTIFICATIONS PAGE ── */
 .notif-group { margin-bottom:20px; }
 .notif-group-header {
@@ -837,8 +956,8 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="sidebar-item" onclick="switchSidebar('meetings')" id="sb-meetings">
           <span class="sb-icon">📝</span><span class="sb-label" data-en="Meeting Notes" data-th="บันทึกประชุม">Meeting Notes</span>
         </div>
-        <div class="sidebar-item" onclick="switchSidebar('documents')" id="sb-documents">
-          <span class="sb-icon">📁</span><span class="sb-label" data-en="Documents" data-th="เอกสาร">Documents</span>
+        <div class="sidebar-item" onclick="switchSidebar('birthday')" id="sb-birthday">
+          <span class="sb-icon">🎂</span><span class="sb-label" data-en="Birthdays" data-th="วันเกิด">Birthdays</span>
         </div>
         <div class="sidebar-divider"></div>
         <div class="sidebar-item" onclick="switchSidebar('help')" id="sb-help">
@@ -1052,13 +1171,18 @@ tbody tr:hover{background:var(--blue-lt)}
       <div id="notif-page-content"></div>
     </div>
 
-    <div class="page hr-module" id="page-documents">
-      <div class="module-placeholder">
-        <div class="module-icon">📁</div>
-        <h2 data-en="Document Library" data-th="เอกสาร">Document Library</h2>
-        <p data-en="Store and access HR policies, forms, and documents" data-th="จัดเก็บและเข้าถึงนโยบาย แบบฟอร์ม และเอกสาร HR">Store and access HR policies, forms, and documents</p>
-        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+    <!-- BIRTHDAY PAGE -->
+    <div class="page hr-module" id="page-birthday">
+      <div class="section-header">
+        <div>
+          <h2 id="h-birthday">🎂 Birthdays</h2>
+          <p id="birthday-sub" style="font-size:13px;color:var(--muted);margin-top:2px">All team member birthdays by month</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="scrollToCurrentMonth()" id="btn-today-month">📅 This Month</button>
+        </div>
       </div>
+      <div id="birthday-content"></div>
     </div>
 
     <!-- HELP PAGE -->
@@ -1494,6 +1618,7 @@ function applyLang() {
   if (activeMod) applyModuleLang(activeMod);
   // Re-render help if active
   if (document.getElementById('page-notifications')?.classList.contains('active')) renderNotifPage();
+  if (document.getElementById('page-birthday')?.classList.contains('active')) renderBirthday();
   if (document.getElementById('page-help')?.classList.contains('active')) {
     renderHelp();
     const enBtn = document.getElementById('help-lang-en');
@@ -1753,7 +1878,7 @@ function toggleSidebar() {
   }
 }
 
-const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','documents','help','notifications'];
+const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','birthday','help','notifications'];
 const TASK_TABS = ['my-tasks','dept-overview','all-tasks'];
 
 function switchSidebar(page) {
@@ -1775,6 +1900,7 @@ function switchSidebar(page) {
       pageEl.classList.add('active');
       applyModuleLang(pageEl);
       if (page==='notifications') renderNotifPage();
+      if (page==='birthday') { loadBirthdayData().then(()=>renderBirthday()); }
       if (page==='announcements') renderAnnouncements();
       if (page==='meetings') renderMeetings();
       if (page==='help') {
@@ -2603,6 +2729,21 @@ function updateNotifBadge() {
     mobBadge.style.display = count > 0 ? '' : 'none';
   }
 
+  // Check for today's birthdays and show in popup
+  const todayBdays = members.filter(m => {
+    if (!m.birthdate) return false;
+    const today = new Date();
+    const [,mm,dd] = m.birthdate.split('-').map(Number);
+    return mm === today.getMonth()+1 && dd === today.getDate();
+  });
+  if (todayBdays.length && !sessionStorage.getItem('bday_shown')) {
+    setTimeout(() => {
+      toast('🎂 ' + (lang==='th'
+        ? `วันเกิด: ${todayBdays.map(m=>m.name).join(', ')} 🎉`
+        : `Birthday: ${todayBdays.map(m=>m.name).join(', ')} 🎉`));
+      sessionStorage.setItem('bday_shown','1');
+    }, 3000);
+  }
   // Show popup if has overdue/urgent tasks (only once per session)
   if (count > 0 && !sessionStorage.getItem('notif_shown')) {
     showNotifPopup(all);
@@ -3146,6 +3287,176 @@ async function openTaskHistory() {
   } catch(e) {
     bodyEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red)">❌ ${e.message}</div>`;
   }
+}
+
+// ── BIRTHDAY PAGE ──
+const MONTHS_TH = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const MONTHS_SHORT_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const ZODIAC = ['♑','♒','♓','♈','♉','♊','♋','♌','♍','♎','♏','♐'];
+
+function getZodiac(month, day) {
+  const dates = [20,19,21,20,21,21,23,23,23,23,22,22];
+  const idx = day <= dates[month-1] ? month-1 : month%12;
+  return ZODIAC[idx];
+}
+
+async function loadBirthdayData() {
+  // Reload members to get birthdate field
+  try {
+    const mems = await sbFetch('members?select=*&order=name');
+    members = (mems||[]).map(m => ({
+      id:m.id, name:m.name, pos:m.pos,
+      email:m.email, role:m.role||'member',
+      user_id:m.user_id,
+      birthdate:m.birthdate||null,
+      nickname:m.nickname||null
+    }));
+  } catch(e) {}
+}
+
+function renderBirthday() {
+  const el = document.getElementById('birthday-content');
+  if (!el) return;
+  const th = lang === 'th';
+
+  // Update page header
+  document.getElementById('h-birthday').textContent = th ? '🎂 วันเกิด' : '🎂 Birthdays';
+  document.getElementById('birthday-sub').textContent = th
+    ? 'วันเกิดของสมาชิกทีมทั้งหมด แยกตามเดือน'
+    : 'All team member birthdays by month';
+  document.getElementById('btn-today-month').textContent = th ? '📅 เดือนนี้' : '📅 This Month';
+
+  const today = new Date();
+  const todayMonth = today.getMonth()+1;
+  const todayDay = today.getDate();
+
+  // Members with birthdate
+  const withBday = members.filter(m=>m.birthdate);
+  const withoutBday = members.filter(m=>!m.birthdate);
+
+  // Stats
+  const bdayToday = withBday.filter(m=>{
+    const [,mm,dd] = m.birthdate.split('-').map(Number);
+    return mm===todayMonth && dd===todayDay;
+  }).length;
+
+  const bdayThisMonth = withBday.filter(m=>{
+    const [,mm] = m.birthdate.split('-').map(Number);
+    return mm===todayMonth;
+  }).length;
+
+  // Next birthday
+  let nextDays = 999;
+  withBday.forEach(m=>{
+    const [,mm,dd] = m.birthdate.split('-').map(Number);
+    const next = new Date(today.getFullYear(), mm-1, dd);
+    if (next < today) next.setFullYear(today.getFullYear()+1);
+    const diff = Math.ceil((next-today)/(1000*60*60*24));
+    if (diff < nextDays) nextDays = diff;
+  });
+
+  el.innerHTML = `
+    <div class="birthday-stats">
+      <div class="birthday-stat-card" style="--stat-color:var(--gold)">
+        <div class="birthday-stat-val">${bdayToday}</div>
+        <div class="birthday-stat-lbl">${th?'วันเกิดวันนี้':'Today'}</div>
+      </div>
+      <div class="birthday-stat-card" style="--stat-color:var(--blue)">
+        <div class="birthday-stat-val">${bdayThisMonth}</div>
+        <div class="birthday-stat-lbl">${th?'เดือนนี้':'This Month'}</div>
+      </div>
+      <div class="birthday-stat-card" style="--stat-color:var(--green)">
+        <div class="birthday-stat-val">${nextDays===0?'🎉':nextDays}</div>
+        <div class="birthday-stat-lbl">${th?'วันถึงวันเกิดถัดไป':'Days to Next'}</div>
+      </div>
+    </div>
+    <div id="birthday-months"></div>
+    ${withoutBday.length?`<div style="margin-top:16px;padding:12px 16px;background:var(--gold-lt);border:1px solid #f0d060;border-radius:8px;font-size:12.5px;color:#7a5c00">
+      ⚠️ ${th?`${withoutBday.length} คนยังไม่มีข้อมูลวันเกิด: ${withoutBday.map(m=>m.name).join(', ')}`:
+      `${withoutBday.length} member(s) missing birthday: ${withoutBday.map(m=>m.name).join(', ')}`}
+      ${isManagerOrAdmin()?`<br><span style="font-size:11.5px;opacity:.8">${th?'Admin สามารถเพิ่มได้ใน Supabase Table Editor → members → birthdate':'Admin can add via Supabase Table Editor → members → birthdate'}</span>`:''}
+    </div>`:''}
+  `;
+
+  // Render months (start from current month)
+  const monthsEl = document.getElementById('birthday-months');
+  let monthsHtml = '';
+
+  for (let mi = 0; mi < 12; mi++) {
+    const monthNum = ((todayMonth-1+mi) % 12) + 1;
+    const monthName = th ? MONTHS_TH[monthNum-1] : MONTHS_EN[monthNum-1];
+    const isCurrent = monthNum === todayMonth;
+
+    const monthMembers = withBday
+      .filter(m => {
+        const [,mm] = m.birthdate.split('-').map(Number);
+        return mm === monthNum;
+      })
+      .sort((a,b) => {
+        const [,,da] = a.birthdate.split('-').map(Number);
+        const [,,db] = b.birthdate.split('-').map(Number);
+        return da - db;
+      });
+
+    const cards = monthMembers.map(m => {
+      const [yyyy,mm,dd] = m.birthdate.split('-').map(Number);
+      const isToday = mm===todayMonth && dd===todayDay;
+      const next = new Date(today.getFullYear(), mm-1, dd);
+      if (next < today) next.setFullYear(today.getFullYear()+1);
+      const diffDays = Math.ceil((next-today)/(1000*60*60*24));
+      const isUpcoming = diffDays <= 7 && diffDays > 0;
+      const age = today.getFullYear() - yyyy + (mm > todayMonth || (mm===todayMonth && dd >= todayDay) ? 0 : 0);
+      const nextAge = today.getFullYear() - yyyy + (mm < todayMonth || (mm===todayMonth && dd < todayDay) ? 1 : 0);
+      const zodiac = getZodiac(mm, dd);
+      const dateStr = th ? `${dd} ${MONTHS_SHORT_TH[mm-1]}` : `${dd} ${MONTHS_SHORT_EN[mm-1]}`;
+
+      let daysBadge = '';
+      if (isToday) {
+        daysBadge = `<span class="birthday-days-badge" style="background:var(--gold);color:var(--blue-dk)">🎉 ${th?'วันนี้!':'Today!'}</span>`;
+      } else if (isUpcoming) {
+        daysBadge = `<span class="birthday-days-badge" style="background:var(--blue-lt);color:var(--blue)">${th?`อีก ${diffDays} วัน`:`In ${diffDays} days`}</span>`;
+      }
+
+      return `<div class="birthday-card ${isToday?'is-today':isUpcoming?'is-upcoming':''}">
+        <div class="birthday-avatar-wrap">
+          <div class="birthday-avatar" style="background:${avatarColor(m.name)}">${m.name.slice(0,2)}</div>
+          ${isToday?'<div class="birthday-today-badge">🎂</div>':''}
+        </div>
+        <div class="birthday-info">
+          <div class="birthday-name">${m.name}${m.nickname?` <span style="font-size:11px;color:var(--muted)">(${m.nickname})</span>`:''}</div>
+          <div class="birthday-pos">${m.pos} ${zodiac}</div>
+          <div class="birthday-date-display">
+            <span style="color:${isToday?'#a07800':isUpcoming?'var(--blue)':'var(--text)'};font-size:13px;font-weight:700">📅 ${dateStr}</span>
+            ${isManagerOrAdmin()?`<span style="font-size:11px;color:var(--muted)">(${th?`อายุ ${nextAge} ปี`:`Age ${nextAge}`})</span>`:''}
+            ${daysBadge}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    monthsHtml += `
+      <div class="birthday-month-section" id="birthday-month-${monthNum}">
+        <div class="birthday-month-header ${isCurrent?'current-month':''}">
+          <span style="font-size:18px">${isCurrent?'📍':'📅'}</span>
+          <span class="birthday-month-name">${monthName}</span>
+          <span class="birthday-month-count">${monthMembers.length} ${th?'คน':'members'}</span>
+        </div>
+        ${monthMembers.length
+          ? `<div class="birthday-grid">${cards}</div>`
+          : `<div class="birthday-empty">${th?'ไม่มีพนักงานเกิดเดือนนี้':'No birthdays this month'}</div>`
+        }
+      </div>`;
+  }
+
+  monthsEl.innerHTML = monthsHtml;
+}
+
+function scrollToCurrentMonth() {
+  const today = new Date();
+  const el = document.getElementById('birthday-month-'+(today.getMonth()+1));
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 // ── NOTIFICATIONS PAGE ──
