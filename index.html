@@ -1530,7 +1530,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -3666,7 +3666,7 @@ function renderBirthday() {
           ${isToday?'<div class="birthday-today-badge">🎂</div>':''}
         </div>
         <div class="birthday-info">
-          <div class="birthday-name">${lang==='th'?(m.name_th||m.name_en):(m.name_en||m.name_th)}${m.nickname?' <span style="font-size:11px;color:var(--muted)">(' + m.nickname + ')</span>':''}</div>
+          <div class="birthday-name">${lang==='th'?m.display_name_th:m.display_name_en}${m.nickname?' <span style="font-size:11px;color:var(--muted)">(' + m.nickname + ')</span>':''}</div>
           <div class="birthday-pos">${m.pos}${m.dept?' · '+m.dept:''} ${zodiac}</div>
           <div class="birthday-date-display">
             <span style="color:${isToday?'#a07800':isUpcoming?'var(--blue)':'var(--text)'};font-size:13px;font-weight:700">📅 ${dateStr}</span>
