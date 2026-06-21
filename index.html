@@ -2947,6 +2947,120 @@ function renderHelp() {
     </div>
   </div>
 
+  <!-- NOTIFICATIONS SECTION -->
+  <div class="help-section">
+    <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      ${th?'การแจ้งเตือน':'Notifications'}
+    </h3>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-notifpage" onclick="toggleHelpCard('notifpage')">
+        <span class="help-card-icon">🔔</span>
+        <span class="help-card-title">${th?'หน้าการแจ้งเตือน':'Notifications Page'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-notifpage">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'เข้าถึงหน้าแจ้งเตือน':'Access Notifications'}</div>
+          <div class="help-step-desc">${th?'กดเมนู 🔔 การแจ้งเตือน ใน Sidebar จะเห็นงานทั้งหมดที่ต้องดูแลแบ่งเป็น 3 กลุ่ม':'Click 🔔 Notifications in Sidebar to see all tasks needing attention in 3 groups'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'3 กลุ่มงานที่ต้องดูแล':'3 Alert Groups'}</div>
+          <div class="help-step-desc">
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">⚠️ ${th?'เกินกำหนด':'Overdue'}</span><span style="font-size:12px;color:var(--muted)">${th?'งานที่ผ่านวันส่งแล้ว ต้องเร่งดำเนินการทันที':'Tasks past due date, need immediate action'}</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="background:var(--orange-lt);color:var(--orange);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">📅 ${th?'ครบกำหนดวันนี้':'Due Today'}</span><span style="font-size:12px;color:var(--muted)">${th?'งานที่ต้องส่งวันนี้':'Tasks due today'}</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="background:var(--blue-lt);color:var(--blue);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">🔔 ${th?'ครบกำหนดพรุ่งนี้':'Due Tomorrow'}</span><span style="font-size:12px;color:var(--muted)">${th?'งานที่ต้องส่งพรุ่งนี้':'Tasks due tomorrow'}</span></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'Badge แดงใน Sidebar':'Red Badge in Sidebar'}</div>
+          <div class="help-step-desc">${th?'ตัวเลขสีแดงบนเมนู 🔔 บอกจำนวนงานที่ต้องดูแลทั้งหมด กดเข้าไปดูรายละเอียดได้เลย':'Red number on 🔔 menu shows total tasks needing attention. Click to view details'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-content">
+          <div class="help-step-title">${th?'Popup แจ้งเตือนอัตโนมัติ':'Auto Notification Popup'}</div>
+          <div class="help-step-desc">${th?'เมื่อ login จะมี popup แสดงรายการงานที่เร่งด่วนขึ้นมาอัตโนมัติ หายไปเองใน 8 วินาที กด ✕ เพื่อปิด':'On login, a popup shows urgent tasks automatically. Disappears in 8 seconds or press ✕ to close'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">5</div><div class="help-step-content">
+          <div class="help-step-title">${th?'Email แจ้งเตือน':'Email Notification'}</div>
+          <div class="help-step-desc">${th?'ระบบส่ง email อัตโนมัติทุกเช้า 08:00 น. แจ้งงานที่เกินกำหนดและครบกำหนดพรุ่งนี้ไปยัง email ของพนักงานแต่ละคน':'System sends automatic email every morning at 8:00 AM for overdue and due tasks tomorrow'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">6</div><div class="help-step-content">
+          <div class="help-step-title">${th?'แก้ไขงานจากหน้าแจ้งเตือน':'Edit Task from Notifications'}</div>
+          <div class="help-step-desc">${th?'กดปุ่ม "แก้ไข" ข้างงานแต่ละรายการเพื่อเปิด modal แก้ไขได้เลย ไม่ต้องกลับไปหน้างานของฉัน':'Click "Edit" button next to each task to open edit modal directly without going back to My Tasks'}</div>
+        </div></div>
+        <div class="help-tip">💡 ${th?'Manager/Admin จะเห็นงานของทุกคนในทีม ส่วน Member เห็นเฉพาะงานของตัวเอง':'Manager/Admin sees all team tasks. Member sees only their own tasks'}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASK HISTORY SECTION -->
+  <div class="help-section">
+    <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      ${th?'ประวัติและการติดตาม':'History & Tracking'}
+    </h3>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-history" onclick="toggleHelpCard('history')">
+        <span class="help-card-icon">📋</span>
+        <span class="help-card-title">${th?'ประวัติการเปลี่ยนแปลงงาน':'Task Change History'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-history">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ดูประวัติของแต่ละงาน':'View Task History'}</div>
+          <div class="help-step-desc">${th?'เปิดงานเพื่อแก้ไข → กดปุ่ม 📋 History มุมซ้ายล่างของ modal':'Open a task to edit → click 📋 History button at bottom left of modal'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'สิ่งที่ระบบบันทึก':'What Gets Recorded'}</div>
+          <div class="help-step-desc">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px">
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0"></span>${th?'การเลื่อนกำหนดส่ง':'Due Date Changes'}</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0"></span>${th?'การเปลี่ยนสถานะ':'Status Changes'}</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0"></span>${th?'การเปลี่ยนความสำคัญ':'Priority Changes'}</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></span>${th?'การอัปเดตความคืบหน้า':'Progress Updates'}</div>
+            </div>
+          </div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'สรุปใน History Modal':'History Summary'}</div>
+          <div class="help-step-desc">${th?'ด้านบนของ modal แสดงสรุป: เปลี่ยนทั้งหมดกี่ครั้ง / เลื่อน Due Date กี่ครั้ง / เปลี่ยนสถานะกี่ครั้ง':'Top of modal shows summary: total changes / due date changes / status changes'}</div>
+        </div></div>
+        <div class="help-tip">⚠️ ${th?'ระบบเริ่มบันทึกประวัติตั้งแต่ติดตั้ง feature นี้ งานที่แก้ไขก่อนหน้าจะไม่มีประวัติ':'History is recorded from when this feature was installed. Previous edits have no history'}</div>
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-duereport" onclick="toggleHelpCard('duereport')">
+        <span class="help-card-icon">📊</span>
+        <span class="help-card-title">${th?'รายงานการเลื่อนกำหนดส่ง (Manager/Admin)':'Due Date Extension Report (Manager/Admin)'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-duereport">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ดูรายงาน':'View Report'}</div>
+          <div class="help-step-desc">${th?'ไปที่เมนู 🏢 ภาพรวมแผนก จะเห็นตาราง "รายงานการเลื่อนกำหนดส่ง" ด้านบน (เฉพาะ Manager/Admin)':'Go to 🏢 Department Overview, see "Due Date Extension Report" table at top (Manager/Admin only)'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ระดับความถี่':'Frequency Levels'}</div>
+          <div class="help-step-desc">
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="background:var(--green-lt);color:var(--green);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${th?'ปกติ':'Normal'}</span><span style="font-size:12px;color:var(--muted)">${th?'เลื่อนน้อยกว่า 3 ครั้ง':'Extended less than 3 times'}</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="background:var(--orange-lt);color:var(--orange);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${th?'บ่อย':'Frequent'}</span><span style="font-size:12px;color:var(--muted)">${th?'เลื่อน 3-4 ครั้ง ควรพูดคุยเพื่อหาสาเหตุ':'Extended 3-4 times, should discuss to find cause'}</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${th?'บ่อยมาก':'Very Frequent'}</span><span style="font-size:12px;color:var(--muted)">${th?'เลื่อน 5 ครั้งขึ้นไป ต้องให้ความช่วยเหลือหรือทบทวนการมอบหมายงาน':'Extended 5+ times, needs support or task reassignment review'}</span></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'วิธีใช้ข้อมูล':'How to Use This Data'}</div>
+          <div class="help-step-desc">${th?'ใช้เป็นข้อมูลประกอบการพูดคุย 1-on-1 กับพนักงาน ไม่ใช่เกณฑ์ตัดสิน เพราะการเลื่อน Due Date อาจมีเหตุผลที่สมเหตุสมผล เช่น งานเปลี่ยนแปลงหรือมีงานเพิ่มเติม':'Use as data for 1-on-1 discussions, not judgment criteria. Extensions may have valid reasons like scope changes or additional work'}</div>
+        </div></div>
+        <div class="help-tip">💡 ${th?'รายงานนี้ช่วยให้ผู้จัดการเห็นภาพรวมได้เร็ว และช่วยพนักงานที่อาจต้องการความสนับสนุนเพิ่มเติม':'This report helps managers get a quick overview and support team members who may need additional help'}</div>
+      </div>
+    </div>
+  </div>
+
   <!-- CONTACT -->
   <div class="help-card" style="margin-bottom:0">
     <div class="help-card-body open" style="display:block">
