@@ -1178,7 +1178,10 @@ tbody tr:hover{background:var(--blue-lt)}
           <h2 id="h-birthday">🎂 Birthdays</h2>
           <p id="birthday-sub" style="font-size:13px;color:var(--muted);margin-top:2px">All team member birthdays by month</p>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="bday-dept-filter" onchange="renderBirthday()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--white);outline:none">
+            <option value="">ทุกแผนก / All Dept</option>
+          </select>
           <button class="btn btn-ghost btn-sm" onclick="scrollToCurrentMonth()" id="btn-today-month">📅 This Month</button>
         </div>
       </div>
@@ -1411,7 +1414,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -2730,7 +2733,7 @@ function updateNotifBadge() {
   }
 
   // Check for today's birthdays and show in popup
-  const todayBdays = members.filter(m => {
+  const todayBdays = employees_bday.filter(m => {
     if (!m.birthdate) return false;
     const today = new Date();
     const [,mm,dd] = m.birthdate.split('-').map(Number);
@@ -3302,24 +3305,46 @@ function getZodiac(month, day) {
   return ZODIAC[idx];
 }
 
+let employees_bday = []; // separate from HR members
+
 async function loadBirthdayData() {
-  // Reload members to get birthdate field
   try {
-    const mems = await sbFetch('members?select=*&order=name');
-    members = (mems||[]).map(m => ({
-      id:m.id, name:m.name, pos:m.pos,
-      email:m.email, role:m.role||'member',
-      user_id:m.user_id,
-      birthdate:m.birthdate||null,
-      nickname:m.nickname||null
+    const emps = await sbFetch('employees?select=*&order=full_name_th&status=eq.active');
+    employees_bday = (emps||[]).map(e => ({
+      id: e.id,
+      name: e.full_name_th || e.full_name_en || e.id,
+      name_en: e.full_name_en,
+      pos: e.job_title_th || e.job_title_en || '',
+      dept: e.department_th || e.department_en || '',
+      nickname: e.nickname || null,
+      birthdate: e.birthdate || null,
+      email: e.email || null,
+      status: e.status || 'active'
     }));
-  } catch(e) {}
+  } catch(e) {
+    console.error('loadBirthdayData error:', e);
+    employees_bday = [];
+  }
 }
 
 function renderBirthday() {
   const el = document.getElementById('birthday-content');
   if (!el) return;
   const th = lang === 'th';
+
+  // Populate dept filter
+  const deptSel = document.getElementById('bday-dept-filter');
+  const selectedDept = deptSel ? deptSel.value : '';
+  if (deptSel) {
+    const depts = [...new Set(employees_bday.map(e=>e.dept).filter(Boolean))].sort();
+    deptSel.innerHTML = `<option value="">${th?'ทุกแผนก':'All Departments'}</option>`
+      + depts.map(d=>`<option value="${d}" ${d===selectedDept?'selected':''}>${d}</option>`).join('');
+  }
+
+  // Filter by dept
+  const filteredEmps = selectedDept
+    ? employees_bday.filter(e=>e.dept===selectedDept)
+    : employees_bday;
 
   // Update page header
   document.getElementById('h-birthday').textContent = th ? '🎂 วันเกิด' : '🎂 Birthdays';
@@ -3333,8 +3358,8 @@ function renderBirthday() {
   const todayDay = today.getDate();
 
   // Members with birthdate
-  const withBday = members.filter(m=>m.birthdate);
-  const withoutBday = members.filter(m=>!m.birthdate);
+  const withBday = filteredEmps.filter(m=>m.birthdate);
+  const withoutBday = filteredEmps.filter(m=>!m.birthdate);
 
   // Stats
   const bdayToday = withBday.filter(m=>{
@@ -3426,7 +3451,7 @@ function renderBirthday() {
         </div>
         <div class="birthday-info">
           <div class="birthday-name">${m.name}${m.nickname?` <span style="font-size:11px;color:var(--muted)">(${m.nickname})</span>`:''}</div>
-          <div class="birthday-pos">${m.pos} ${zodiac}</div>
+          <div class="birthday-pos">${m.pos}${m.dept?' · '+m.dept:''} ${zodiac}</div>
           <div class="birthday-date-display">
             <span style="color:${isToday?'#a07800':isUpcoming?'var(--blue)':'var(--text)'};font-size:13px;font-weight:700">📅 ${dateStr}</span>
             ${isManagerOrAdmin()?`<span style="font-size:11px;color:var(--muted)">(${th?`อายุ ${nextAge} ปี`:`Age ${nextAge}`})</span>`:''}
