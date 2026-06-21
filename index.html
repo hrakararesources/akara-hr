@@ -1491,7 +1491,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -3259,6 +3259,81 @@ function renderHelp() {
           <div class="help-step-desc">${th?'ใช้เป็นข้อมูลประกอบการพูดคุย 1-on-1 กับพนักงาน ไม่ใช่เกณฑ์ตัดสิน เพราะการเลื่อน Due Date อาจมีเหตุผลที่สมเหตุสมผล เช่น งานเปลี่ยนแปลงหรือมีงานเพิ่มเติม':'Use as data for 1-on-1 discussions, not judgment criteria. Extensions may have valid reasons like scope changes or additional work'}</div>
         </div></div>
         <div class="help-tip">💡 ${th?'รายงานนี้ช่วยให้ผู้จัดการเห็นภาพรวมได้เร็ว และช่วยพนักงานที่อาจต้องการความสนับสนุนเพิ่มเติม':'This report helps managers get a quick overview and support team members who may need additional help'}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BIRTHDAY SECTION -->
+  <div class="help-section">
+    <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      ${th?'วันเกิดและของขวัญ':'Birthdays & Gifts'}
+    </h3>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-bdaycal" onclick="toggleHelpCard('bdaycal')">
+        <span class="help-card-icon">🗓️</span>
+        <span class="help-card-title">${th?'ปฏิทินวันเกิด':'Birthday Calendar'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-bdaycal">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'เข้าถึงปฏิทินวันเกิด':'Access Birthday Calendar'}</div>
+          <div class="help-step-desc">${th?'กดเมนู 🎂 วันเกิด ใน Sidebar จะเห็นแท็บ 2 แท็บ คือ ปฏิทินวันเกิด และ สรุปของขวัญ':'Click 🎂 Birthdays in Sidebar. You will see 2 tabs: Birthday Calendar and Gift Summary'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ดูวันเกิดทั้งปี':'View All Year Birthdays'}</div>
+          <div class="help-step-desc">${th?'ระบบแสดงวันเกิดพนักงานทั้งหมด 485 คน แยกตามเดือน เริ่มจากเดือนปัจจุบัน กดปุ่ม "📅 เดือนนี้" เพื่อกลับมาเดือนปัจจุบันได้ตลอด':'Shows all 485 employees birthdays by month, starting from current month. Press "📅 This Month" to return anytime'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'กรองตามแผนก':'Filter by Department'}</div>
+          <div class="help-step-desc">${th?'ใช้ dropdown เลือกแผนกที่ต้องการ เพื่อดูเฉพาะพนักงานในแผนกนั้น':'Use the dropdown to filter employees by department'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-content">
+          <div class="help-step-title">${th?'สัญลักษณ์ที่แสดง':'Indicators Shown'}</div>
+          <div class="help-step-desc">
+            <div style="display:flex;flex-direction:column;gap:5px;margin-top:4px;font-size:12px">
+              <div>🎂 ${th?'= วันเกิดวันนี้ (card สีทอง)':'= Birthday today (gold card)'}</div>
+              <div style="color:var(--blue)">◀ ${th?'= ครบวันเกิดใน 7 วัน (badge แสดงจำนวนวัน)':'= Birthday in 7 days (badge shows days remaining)'}</div>
+              <div style="color:var(--muted)">♑♒♓... ${th?'= ราศีของพนักงาน':'= Employee zodiac sign'}</div>
+            </div>
+          </div>
+        </div></div>
+        <div class="help-tip">💡 ${th?'พนักงานทุกคนเห็นปฏิทินวันเกิดได้ ไม่จำกัดเฉพาะ HR':'All employees can view the birthday calendar, not just HR'}</div>
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-card-header" id="help-h-gift" onclick="toggleHelpCard('gift')">
+        <span class="help-card-icon">🎁</span>
+        <span class="help-card-title">${th?'สรุปของขวัญวันเกิด':'Birthday Gift Summary'}</span>
+        <span class="help-card-chevron">▼</span>
+      </div>
+      <div class="help-card-body" id="help-b-gift">
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-content">
+          <div class="help-step-title">${th?'เปิดแท็บสรุปของขวัญ':'Open Gift Summary Tab'}</div>
+          <div class="help-step-desc">${th?'กดแท็บ 🎁 สรุปของขวัญ ในหน้าวันเกิด จะเห็นปุ่ม 12 เดือน ให้เลือกดูย้อนหลังหรือล่วงหน้าได้':'Click 🎁 Gift Summary tab on Birthday page. Shows 12 month buttons to view past or future months'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-content">
+          <div class="help-step-title">${th?'เลือกเดือน':'Select Month'}</div>
+          <div class="help-step-desc">${th?'กดปุ่มเดือนที่ต้องการ ปุ่มที่มีขอบสีทองแสดงว่ามีพนักงานเกิดเดือนนั้น ตัวเลขใต้ชื่อเดือนบอกจำนวนคน':'Click the month button. Gold border means employees born that month. Number below shows count'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-content">
+          <div class="help-step-title">${th?'รายชื่อแยกตามแผนก':'List Grouped by Department'}</div>
+          <div class="help-step-desc">${th?'ระบบแสดงรายชื่อแยกตามแผนก มีรหัสพนักงาน ชื่อ ชื่อเล่น ตำแหน่ง และวันเกิด ด้านบนแสดงยอดรวมและสถานะการแจก':'Shows list by department with ID, name, nickname, position and birthday. Top shows total count and gift status'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-content">
+          <div class="help-step-title">${th?'บันทึกการรับของขวัญ':'Record Gift Received'}</div>
+          <div class="help-step-desc">${th?'ติ๊ก checkbox หลังจากแจกของขวัญให้พนักงานแต่ละคน ระบบจะบันทึกชื่อ HR ที่แจกและเวลาทันที แถวจะเปลี่ยนเป็นสีเขียว':'Check the checkbox after giving gift to each employee. System records HR name and time immediately. Row turns green'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">5</div><div class="help-step-content">
+          <div class="help-step-title">${th?'ตรวจสอบสถานะ':'Check Status'}</div>
+          <div class="help-step-desc">${th?'Counter ด้านบนแสดง เช่น 15/30 คนรับแล้ว เห็นได้ทันทีว่าเหลืออีกกี่คนที่ยังไม่ได้รับ ข้อมูลไม่หายแม้ปิด browser':'Counter at top shows e.g. 15/30 received. See instantly how many remaining. Data persists after browser close'}</div>
+        </div></div>
+        <div class="help-step"><div class="help-step-num">6</div><div class="help-step-content">
+          <div class="help-step-title">${th?'Export รายชื่อ':'Export List'}</div>
+          <div class="help-step-desc">${th?'กดปุ่ม ⬇ Export Excel มุมขวาบน ดาวน์โหลดเป็นไฟล์ CSV มีทั้งชื่อ TH/EN รหัสพนักงาน แผนก และวันเกิด นำไปใช้งานต่อได้เลย':'Click ⬇ Export Excel at top right. Downloads CSV with TH/EN names, employee ID, department and birthday'}</div>
+        </div></div>
+        <div class="help-tip">⚠️ ${th?'เฉพาะ HR ที่ Login อยู่ในระบบเท่านั้นที่จะถูกบันทึกว่าเป็นผู้แจกของขวัญ':'Only the HR currently logged in will be recorded as the gift giver'}</div>
       </div>
     </div>
   </div>
