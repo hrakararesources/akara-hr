@@ -1488,6 +1488,45 @@ tbody tr:hover{background:var(--blue-lt)}
   <div class="notif-popup-title">⚠️ <span id="notif-popup-title">Tasks needing attention</span></div>
   <div id="notif-popup-items"></div>
 </div>
+<!-- GIFT CONFIRM MODAL -->
+<div class="overlay" id="modal-gift-confirm">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head" style="background:var(--green-lt);border-bottom-color:var(--green)">
+      <div>
+        <h3 id="gift-confirm-title" style="color:var(--green)">ยืนยันการแจกของขวัญ</h3>
+        <p id="gift-confirm-sub" style="font-size:12px;color:var(--muted);margin-top:2px">กรุณาตรวจสอบข้อมูลก่อนยืนยัน</p>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('modal-gift-confirm').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:var(--gray);border-radius:var(--radius);padding:16px">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">พนักงานที่รับของขวัญ / Employee</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)" id="gift-confirm-name"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:var(--blue-lt);border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">เดือน / Month</div>
+            <div style="font-size:14px;font-weight:600;color:var(--blue)" id="gift-confirm-month"></div>
+          </div>
+          <div style="background:var(--gold-lt);border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">ผู้แจก / Given By</div>
+            <div style="font-size:14px;font-weight:600;color:#a07800" id="gift-confirm-giver"></div>
+          </div>
+        </div>
+        <div style="background:var(--green-lt);border:1px solid var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--green);display:flex;gap:8px;align-items:flex-start">
+          <span>✅</span>
+          <span id="gift-confirm-warn">การบันทึกนี้จะถูกเก็บในระบบ และระบุว่าคุณเป็นผู้แจกของขวัญ</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="gift-confirm-cancel">ยกเลิก</button>
+      <button class="btn btn-primary" id="gift-confirm-ok" style="background:var(--green)">✓ ยืนยันแจกแล้ว</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -3695,11 +3734,70 @@ async function loadGiftRecords(monthIdx) {
   } catch(e) { gift_records = {}; }
 }
 
+function showGiftConfirm(empName, monthName, th) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modal-gift-confirm');
+    const nameEl = document.getElementById('gift-confirm-name');
+    const monthEl = document.getElementById('gift-confirm-month');
+    const giverEl = document.getElementById('gift-confirm-giver');
+    const titleEl = document.getElementById('gift-confirm-title');
+    const subEl = document.getElementById('gift-confirm-sub');
+    const btnOk = document.getElementById('gift-confirm-ok');
+    const btnCancel = document.getElementById('gift-confirm-cancel');
+
+    if (titleEl) titleEl.textContent = th ? 'ยืนยันการแจกของขวัญ' : 'Confirm Gift Given';
+    if (subEl) subEl.textContent = th ? 'กรุณาตรวจสอบข้อมูลก่อนยืนยัน' : 'Please verify before confirming';
+    if (nameEl) nameEl.textContent = empName;
+    if (monthEl) monthEl.textContent = monthName;
+    if (giverEl) giverEl.textContent = currentMember?.name || '—';
+    if (btnOk) btnOk.textContent = th ? '✓ ยืนยันแจกแล้ว' : '✓ Confirm Given';
+    if (btnCancel) btnCancel.textContent = th ? 'ยกเลิก' : 'Cancel';
+
+    overlay.classList.add('open');
+
+    function cleanup() {
+      overlay.classList.remove('open');
+      btnOk.removeEventListener('click', onOk);
+      btnCancel.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+    }
+    function onOk() { cleanup(); resolve(true); }
+    function onCancel() { cleanup(); resolve(false); }
+    function onOverlay(e) { if (e.target === overlay) { cleanup(); resolve(false); } }
+
+    btnOk.addEventListener('click', onOk);
+    btnCancel.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+  });
+}
+
 async function toggleGiftReceived(empId, monthIdx, checkbox) {
   const year = new Date().getFullYear();
   const month = monthIdx + 1;
   const received = checkbox.checked;
   const existing = gift_records[empId];
+  const th = lang === 'th';
+
+  // Find employee name
+  const emp = employees_bday.find(e => e.id === empId);
+  const empName = emp ? (lang==='th' ? (emp.name_th||emp.name_en) : (emp.name_en||emp.name_th)) : empId;
+  const months = th ? MONTHS_TH : MONTHS_EN;
+
+  // Confirmation dialog
+  if (received) {
+    const confirmed = await showGiftConfirm(empName, months[monthIdx], th);
+    if (!confirmed) {
+      checkbox.checked = false; // revert
+      return;
+    }
+  } else {
+    // Uncheck confirmation
+    const msg = th ? ('ยกเลิกการบันทึกการรับของขวัญของ ' + empName) : ('Cancel gift record for ' + empName);
+    if (!confirm(msg)) {
+      checkbox.checked = true; // revert
+      return;
+    }
+  }
 
   try {
     if (existing) {
