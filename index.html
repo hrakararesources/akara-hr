@@ -3872,7 +3872,7 @@ function updateGiftCounter(monthIdx) {
 }
 
 function buildEmpRows(emps, todayMonth, todayDay, th, monthIdx) {
-  const rows = emps.map((e,i) => {
+  return emps.map((e,i) => {
     const parts = e.birthdate.split('-').map(Number);
     const mm = parts[1]; const dd = parts[2];
     const isToday = (mm-1)===todayMonth && dd===todayDay;
@@ -3888,28 +3888,37 @@ function buildEmpRows(emps, todayMonth, todayDay, th, monthIdx) {
     const empName = lang==='th' ? (e.name_th||e.name_en) : (e.name_en||e.name_th);
     const giverName = giver ? giver.name : '—';
     const statusHtml = received
-      ? '<span style="color:var(--green)">✓ ' + (th?'แจกโดย ':'By ') + giverName + (receivedAt ? '<br><span style="opacity:.7">' + receivedAt + '</span>' : '') + '</span>'
+      ? '<span style="color:var(--green)">\u2713 ' + (th?'แจกโดย ':'By ') + giverName + (receivedAt ? '<br><span style="opacity:.7">' + receivedAt + '</span>' : '') + '</span>'
       : '';
-    const tr = document.createElement('tr');
-    tr.id = 'gift-row-' + e.id;
-    tr.style.cssText = 'border-bottom:1px solid var(--border);' + rowBg;
-    tr.innerHTML = [
+    return [
+      '<tr id="gift-row-' + e.id + '" style="border-bottom:1px solid var(--border);' + rowBg + '">',
       '<td style="padding:10px 14px;color:var(--muted);font-size:12px">' + (i+1) + '</td>',
       '<td style="padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--blue)">' + e.id + '</td>',
-      '<td style="padding:10px 14px;font-weight:600">' + empName + (isToday?' 🎂':'') + '</td>',
-      '<td style="padding:10px 14px;color:var(--muted)">' + (e.nickname||'—') + '</td>',
-      '<td style="padding:10px 14px;font-size:12px;color:var(--muted)">' + (e.pos||'—') + '</td>',
+      '<td style="padding:10px 14px;font-weight:600">' + empName + (isToday?' \uD83C\uDF82':'') + '</td>',
+      '<td style="padding:10px 14px;color:var(--muted)">' + (e.nickname||'\u2014') + '</td>',
+      '<td style="padding:10px 14px;font-size:12px;color:var(--muted)">' + (e.pos||'\u2014') + '</td>',
       '<td style="padding:10px 14px;text-align:center;font-weight:600;color:' + dateColor + '">' + dateStr + '</td>',
-      '<td style="padding:10px 14px;text-align:center"><input type="checkbox" ' + (received?'checked':'') + ' style="width:16px;height:16px;accent-color:var(--green);cursor:pointer"></td>',
-      '<td id="gift-status-' + e.id + '" style="padding:6px 14px;font-size:11px">' + statusHtml + '</td>'
+      '<td style="padding:10px 14px;text-align:center">',
+        '<input type="checkbox"',
+        (received ? ' checked' : ''),
+        ' data-empid="' + e.id + '" data-monthidx="' + monthIdx + '"',
+        ' class="gift-checkbox"',
+        ' style="width:18px;height:18px;accent-color:var(--green);cursor:pointer">',
+      '</td>',
+      '<td id="gift-status-' + e.id + '" style="padding:6px 14px;font-size:11px">' + statusHtml + '</td>',
+      '</tr>'
     ].join('');
-    // Add event listener after element is created
-    const cb = tr.querySelector('input[type=checkbox]');
-    if (cb) cb.addEventListener('change', function() { toggleGiftReceived(e.id, monthIdx, this); });
-    return tr.outerHTML;
-  });
-  return rows.join('');
+  }).join('');
 }
+
+// Delegated event listener for gift checkboxes
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.classList.contains('gift-checkbox')) {
+    const empId = e.target.getAttribute('data-empid');
+    const monthIdx = parseInt(e.target.getAttribute('data-monthidx'));
+    toggleGiftReceived(empId, monthIdx, e.target);
+  }
+});
 
 function renderGiftSummary(monthIdx) {
   const th = lang === 'th';
@@ -4004,6 +4013,13 @@ ${buildEmpRows(emps, todayMonth, todayDay, th, monthIdx)}
   });
 
   el.innerHTML = html_content;
+
+  // Bind checkbox events via delegation
+  el.querySelectorAll('input[type=checkbox][data-empid]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      toggleGiftReceived(this.dataset.empid, parseInt(this.dataset.monthidx), this);
+    });
+  });
 }
 
 async function exportGiftList() {
