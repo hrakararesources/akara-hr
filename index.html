@@ -1947,6 +1947,8 @@ function applyLang() {
   if (activeMod) applyModuleLang(activeMod);
   // Re-render help if active
   if (document.getElementById('page-notifications')?.classList.contains('active')) renderNotifPage();
+  if (document.getElementById('page-onboarding')?.classList.contains('active')) { renderObKpi(); renderNewEmpList(); }
+  if (document.getElementById('page-settings')?.classList.contains('active')) renderSettingsPage();
   if (document.getElementById('page-birthday')?.classList.contains('active')) {
     renderBirthday();
     renderGiftMonthSelector();
