@@ -1075,6 +1075,9 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="sidebar-item" onclick="switchSidebar('help')" id="sb-help">
           <span class="sb-icon">📖</span><span class="sb-label" data-en="User Guide" data-th="คู่มือการใช้งาน">User Guide</span>
         </div>
+        <div class="sidebar-item" onclick="switchSidebar('settings')" id="sb-settings" style="display:none">
+          <span class="sb-icon">⚙️</span><span class="sb-label" data-en="Settings" data-th="ตั้งค่าระบบ">Settings</span>
+        </div>
 
         <div class="sidebar-divider"></div>
         <div style="padding:10px 16px;display:flex;align-items:center;gap:10px">
@@ -1375,6 +1378,17 @@ tbody tr:hover{background:var(--blue-lt)}
       </div>
     </div>
 
+    <!-- SETTINGS PAGE -->
+    <div class="page hr-module" id="page-settings">
+      <div class="section-header" style="margin-bottom:20px">
+        <div>
+          <h2 id="h-settings">⚙️ ตั้งค่าระบบ</h2>
+          <p id="settings-sub" style="font-size:13px;color:var(--muted);margin-top:2px">จัดการโครงสร้างองค์กร (เฉพาะ Admin)</p>
+        </div>
+      </div>
+      <div id="settings-content"></div>
+    </div>
+
     <!-- HELP PAGE -->
     <div class="page hr-module" id="page-help">
       <div class="section-header">
@@ -1615,8 +1629,21 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="fg"><label>ระยะทดลองงาน (วัน)</label><input id="ne-probdays" type="number" value="119"></div>
         <div class="fg full"><label>ตำแหน่ง (TH)</label><input id="ne-pos-th" placeholder="เจ้าหน้าที่..."></div>
         <div class="fg full"><label>ตำแหน่ง (EN)</label><input id="ne-pos-en" placeholder="Officer..."></div>
-        <div class="fg"><label>แผนก (TH)</label><input id="ne-dept-th" placeholder="ฝ่าย..."></div>
-        <div class="fg"><label>แผนก (EN)</label><input id="ne-dept-en" placeholder="Department..."></div>
+        <div class="fg full"><label>แผนก / Department *</label>
+          <select id="ne-dept-id" onchange="onDeptChange()">
+            <option value="">— เลือกแผนก —</option>
+          </select>
+        </div>
+        <div class="fg full"><label>ฝ่าย / Section</label>
+          <select id="ne-section-id" onchange="onSectionChange()">
+            <option value="">— เลือกฝ่าย —</option>
+          </select>
+        </div>
+        <div class="fg full"><label>ทีม / Team</label>
+          <select id="ne-team-id">
+            <option value="">— เลือกทีม —</option>
+          </select>
+        </div>
         <div class="fg"><label>Buddy (HR ดูแล)</label>
           <select id="ne-buddy">
             <option value="">— เลือก HR —</option>
@@ -1635,6 +1662,38 @@ tbody tr:hover{background:var(--blue-lt)}
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-emp')">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveNewEmp()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS ITEM MODAL -->
+<div class="overlay" id="modal-settings-item">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h3 id="settings-item-title">เพิ่มข้อมูล</h3>
+      <button class="modal-close" onclick="closeModal('modal-settings-item')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="si-type">
+      <input type="hidden" id="si-id">
+      <input type="hidden" id="si-parent-id">
+      <div class="fg" style="margin-bottom:14px">
+        <label id="si-label-th">ชื่อภาษาไทย *</label>
+        <input id="si-name-th" placeholder="ชื่อภาษาไทย">
+      </div>
+      <div class="fg" style="margin-bottom:14px">
+        <label id="si-label-en">ชื่อภาษาอังกฤษ</label>
+        <input id="si-name-en" placeholder="English name">
+      </div>
+      <div class="fg" style="margin-bottom:14px">
+        <label>ลำดับ (Order)</label>
+        <input id="si-order" type="number" value="0" min="0">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="si-btn-delete" onclick="deleteSettingsItem()" style="margin-right:auto;display:none">ลบ</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-settings-item')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveSettingsItem()">บันทึก</button>
     </div>
   </div>
 </div>
@@ -1681,7 +1740,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -2076,6 +2135,11 @@ function enterApp() {
   renderMyKpi();
   updateNotifBadge();
   setupMobile();
+  // Show settings menu for admin only
+  const settingsMenu = document.getElementById('sb-settings');
+  if (settingsMenu) settingsMenu.style.display = isAdmin() ? '' : 'none';
+  // Load org structure for dropdowns
+  loadOrgStructure();
 }
 
 // ── SESSION RESTORE ──
@@ -2152,7 +2216,7 @@ function toggleSidebar() {
   }
 }
 
-const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','birthday','help','notifications'];
+const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','birthday','help','notifications','settings'];
 const TASK_TABS = ['my-tasks','dept-overview','all-tasks'];
 
 function switchSidebar(page) {
@@ -2174,6 +2238,10 @@ function switchSidebar(page) {
       pageEl.classList.add('active');
       applyModuleLang(pageEl);
       if (page==='notifications') renderNotifPage();
+      if (page==='settings') {
+        if (!isAdmin()) { toast('🔒 Admin only'); switchSidebar('my-tasks'); return; }
+        loadOrgStructure().then(()=>renderSettingsPage());
+      }
       if (page==='onboarding') {
         loadNewEmployees().then(()=>{ renderObKpi(); renderNewEmpList(); });
       }
@@ -3660,7 +3728,23 @@ function getZodiac(month, day) {
 }
 
 let employees_bday = []; // separate from HR members
+let orgDepts = [];    // departments
+let orgSections = []; // sections
+let orgTeams = [];    // teams
 let gift_records = {}; // key: employee_id_year_month -> record
+
+async function loadOrgStructure() {
+  try {
+    const [depts, sections, teams] = await Promise.all([
+      sbFetch('departments?select=*&order=order_no,name_th&active=eq.true'),
+      sbFetch('sections?select=*&order=order_no,name_th&active=eq.true'),
+      sbFetch('teams?select=*&order=order_no,name_th&active=eq.true'),
+    ]);
+    orgDepts    = depts    || [];
+    orgSections = sections || [];
+    orgTeams    = teams    || [];
+  } catch(e) { orgDepts=[]; orgSections=[]; orgTeams=[]; }
+}
 
 async function loadBirthdayData() {
   try {
@@ -4565,6 +4649,7 @@ function openAddNewEmp() {
   document.getElementById('ne-status').value = 'probation';
   const buddySel = document.getElementById('ne-buddy');
   buddySel.innerHTML = `<option value="">— ${lang==='th'?'เลือก HR':'Select HR'} —</option>` + members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  populateDeptDropdown();
   openModal('modal-new-emp');
 }
 
@@ -4624,6 +4709,261 @@ async function saveNewEmp() {
     closeModal('modal-new-emp');
     renderNewEmpList(); renderObKpi();
     toast(th?'เพิ่มพนักงานใหม่แล้ว':'New employee added');
+  } catch(e) { toast('❌ '+e.message); }
+}
+
+// ── ORG STRUCTURE SETTINGS ──
+
+function onDeptChange() {
+  const deptId = document.getElementById('ne-dept-id').value;
+  const secSel = document.getElementById('ne-section-id');
+  const teamSel = document.getElementById('ne-team-id');
+  const th = lang === 'th';
+  const filtered = orgSections.filter(s => s.department_id === deptId);
+  secSel.innerHTML = `<option value="">— ${th?'เลือกฝ่าย':'Select Section'} —</option>`
+    + filtered.map(s=>`<option value="${s.id}">${th?s.name_th:s.name_en||s.name_th}</option>`).join('');
+  teamSel.innerHTML = `<option value="">— ${th?'เลือกทีม':'Select Team'} —</option>`;
+}
+
+function onSectionChange() {
+  const secId = document.getElementById('ne-section-id').value;
+  const teamSel = document.getElementById('ne-team-id');
+  const th = lang === 'th';
+  const filtered = orgTeams.filter(t => t.section_id === secId);
+  teamSel.innerHTML = `<option value="">— ${th?'เลือกทีม':'Select Team'} —</option>`
+    + filtered.map(t=>`<option value="${t.id}">${th?t.name_th:t.name_en||t.name_th}</option>`).join('');
+}
+
+function populateDeptDropdown(selectedDeptId='', selectedSecId='', selectedTeamId='') {
+  const th = lang === 'th';
+  const deptSel = document.getElementById('ne-dept-id');
+  if (!deptSel) return;
+  deptSel.innerHTML = `<option value="">— ${th?'เลือกแผนก':'Select Department'} —</option>`
+    + orgDepts.map(d=>`<option value="${d.id}" ${d.id===selectedDeptId?'selected':''}>${th?d.name_th:d.name_en||d.name_th}</option>`).join('');
+
+  if (selectedDeptId) {
+    const secSel = document.getElementById('ne-section-id');
+    const filtered = orgSections.filter(s=>s.department_id===selectedDeptId);
+    secSel.innerHTML = `<option value="">— ${th?'เลือกฝ่าย':'Select Section'} —</option>`
+      + filtered.map(s=>`<option value="${s.id}" ${s.id===selectedSecId?'selected':''}>${th?s.name_th:s.name_en||s.name_th}</option>`).join('');
+
+    if (selectedSecId) {
+      const teamSel = document.getElementById('ne-team-id');
+      const fteams = orgTeams.filter(t=>t.section_id===selectedSecId);
+      teamSel.innerHTML = `<option value="">— ${th?'เลือกทีม':'Select Team'} —</option>`
+        + fteams.map(t=>`<option value="${t.id}" ${t.id===selectedTeamId?'selected':''}>${th?t.name_th:t.name_en||t.name_th}</option>`).join('');
+    }
+  }
+}
+
+function renderSettingsPage() {
+  const el = document.getElementById('settings-content');
+  if (!el) return;
+  const th = lang === 'th';
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+
+      <!-- DEPARTMENTS -->
+      <div class="card">
+        <div class="card-header">
+          <h3>🏢 ${th?'แผนก':'Department'} (${orgDepts.length})</h3>
+          <button class="btn btn-gold btn-sm" onclick="openAddSettingsItem('dept','',null)">+ ${th?'เพิ่ม':'Add'}</button>
+        </div>
+        <div style="max-height:400px;overflow-y:auto">
+          ${orgDepts.length ? orgDepts.map(d=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-size:13px;font-weight:600">${th?d.name_th:d.name_en||d.name_th}</div>
+                <div style="font-size:11px;color:var(--muted)">${th?d.name_en||'':d.name_th}</div>
+              </div>
+              <button class="btn btn-ghost btn-xs" onclick="openEditSettingsItem('dept','${d.id}')">✏</button>
+            </div>`).join('')
+          : `<div class="empty" style="padding:20px"><p>${th?'ยังไม่มีข้อมูล':'No data'}</p></div>`}
+        </div>
+      </div>
+
+      <!-- SECTIONS -->
+      <div class="card">
+        <div class="card-header">
+          <h3>📂 ${th?'ฝ่าย':'Section'} (${orgSections.length})</h3>
+          <button class="btn btn-gold btn-sm" onclick="openAddSettingsItem('section','',null)">+ ${th?'เพิ่ม':'Add'}</button>
+        </div>
+        <div style="max-height:400px;overflow-y:auto">
+          ${orgSections.length ? orgSections.map(s=>{
+            const dept = orgDepts.find(d=>d.id===s.department_id);
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-size:13px;font-weight:600">${th?s.name_th:s.name_en||s.name_th}</div>
+                <div style="font-size:11px;color:var(--muted)">${dept?(th?dept.name_th:dept.name_en||dept.name_th):''}</div>
+              </div>
+              <button class="btn btn-ghost btn-xs" onclick="openEditSettingsItem('section','${s.id}')">✏</button>
+            </div>`;
+          }).join('')
+          : `<div class="empty" style="padding:20px"><p>${th?'ยังไม่มีข้อมูล':'No data'}</p></div>`}
+        </div>
+      </div>
+
+      <!-- TEAMS -->
+      <div class="card">
+        <div class="card-header">
+          <h3>👥 ${th?'ทีม':'Team'} (${orgTeams.length})</h3>
+          <button class="btn btn-gold btn-sm" onclick="openAddSettingsItem('team','',null)">+ ${th?'เพิ่ม':'Add'}</button>
+        </div>
+        <div style="max-height:400px;overflow-y:auto">
+          ${orgTeams.length ? orgTeams.map(t=>{
+            const sec = orgSections.find(s=>s.id===t.section_id);
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-size:13px;font-weight:600">${th?t.name_th:t.name_en||t.name_th}</div>
+                <div style="font-size:11px;color:var(--muted)">${sec?(th?sec.name_th:sec.name_en||sec.name_th):''}</div>
+              </div>
+              <button class="btn btn-ghost btn-xs" onclick="openEditSettingsItem('team','${t.id}')">✏</button>
+            </div>`;
+          }).join('')
+          : `<div class="empty" style="padding:20px"><p>${th?'ยังไม่มีข้อมูล':'No data'}</p></div>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+function openAddSettingsItem(type, parentId, parentLabel) {
+  const th = lang === 'th';
+  const labels = {
+    dept: th?'เพิ่มแผนก':'Add Department',
+    section: th?'เพิ่มฝ่าย':'Add Section',
+    team: th?'เพิ่มทีม':'Add Team'
+  };
+  document.getElementById('settings-item-title').textContent = labels[type]||'เพิ่ม';
+  document.getElementById('si-type').value = type;
+  document.getElementById('si-id').value = '';
+  document.getElementById('si-parent-id').value = parentId||'';
+  document.getElementById('si-name-th').value = '';
+  document.getElementById('si-name-en').value = '';
+  document.getElementById('si-order').value = 0;
+  document.getElementById('si-btn-delete').style.display = 'none';
+
+  // Add parent selector if needed
+  const modal = document.querySelector('#modal-settings-item .modal-body');
+  const oldParent = document.getElementById('si-parent-select-wrap');
+  if (oldParent) oldParent.remove();
+
+  if (type === 'section') {
+    const wrap = document.createElement('div');
+    wrap.id = 'si-parent-select-wrap';
+    wrap.className = 'fg';
+    wrap.style.marginBottom = '14px';
+    wrap.innerHTML = `<label>${th?'แผนก *':'Department *'}</label>
+      <select id="si-parent-select">
+        <option value="">— ${th?'เลือกแผนก':'Select Department'} —</option>
+        ${orgDepts.map(d=>`<option value="${d.id}" ${d.id===parentId?'selected':''}>${th?d.name_th:d.name_en||d.name_th}</option>`).join('')}
+      </select>`;
+    modal.insertBefore(wrap, modal.firstChild);
+  } else if (type === 'team') {
+    const wrap = document.createElement('div');
+    wrap.id = 'si-parent-select-wrap';
+    wrap.className = 'fg';
+    wrap.style.marginBottom = '14px';
+    wrap.innerHTML = `<label>${th?'ฝ่าย *':'Section *'}</label>
+      <select id="si-parent-select">
+        <option value="">— ${th?'เลือกฝ่าย':'Select Section'} —</option>
+        ${orgSections.map(s=>`<option value="${s.id}" ${s.id===parentId?'selected':''}>${th?s.name_th:s.name_en||s.name_th}</option>`).join('')}
+      </select>`;
+    modal.insertBefore(wrap, modal.firstChild);
+  }
+  openModal('modal-settings-item');
+}
+
+function openEditSettingsItem(type, id) {
+  const th = lang === 'th';
+  const labels = { dept: th?'แก้ไขแผนก':'Edit Department', section: th?'แก้ไขฝ่าย':'Edit Section', team: th?'แก้ไขทีม':'Edit Team' };
+  const sources = { dept: orgDepts, section: orgSections, team: orgTeams };
+  const item = sources[type]?.find(x=>x.id===id);
+  if (!item) return;
+
+  document.getElementById('settings-item-title').textContent = labels[type]||'แก้ไข';
+  document.getElementById('si-type').value = type;
+  document.getElementById('si-id').value = id;
+  document.getElementById('si-name-th').value = item.name_th||'';
+  document.getElementById('si-name-en').value = item.name_en||'';
+  document.getElementById('si-order').value = item.order_no||0;
+  document.getElementById('si-btn-delete').style.display = '';
+
+  const parentId = item.department_id || item.section_id || '';
+  document.getElementById('si-parent-id').value = parentId;
+
+  const modal = document.querySelector('#modal-settings-item .modal-body');
+  const oldParent = document.getElementById('si-parent-select-wrap');
+  if (oldParent) oldParent.remove();
+
+  if (type === 'section') {
+    const wrap = document.createElement('div');
+    wrap.id = 'si-parent-select-wrap';
+    wrap.className = 'fg';
+    wrap.style.marginBottom = '14px';
+    wrap.innerHTML = `<label>${th?'แผนก *':'Department *'}</label>
+      <select id="si-parent-select">
+        ${orgDepts.map(d=>`<option value="${d.id}" ${d.id===parentId?'selected':''}>${th?d.name_th:d.name_en||d.name_th}</option>`).join('')}
+      </select>`;
+    modal.insertBefore(wrap, modal.firstChild);
+  } else if (type === 'team') {
+    const wrap = document.createElement('div');
+    wrap.id = 'si-parent-select-wrap';
+    wrap.className = 'fg';
+    wrap.style.marginBottom = '14px';
+    wrap.innerHTML = `<label>${th?'ฝ่าย *':'Section *'}</label>
+      <select id="si-parent-select">
+        ${orgSections.map(s=>`<option value="${s.id}" ${s.id===parentId?'selected':''}>${th?s.name_th:s.name_en||s.name_th}</option>`).join('')}
+      </select>`;
+    modal.insertBefore(wrap, modal.firstChild);
+  }
+  openModal('modal-settings-item');
+}
+
+async function saveSettingsItem() {
+  const th = lang === 'th';
+  const type = document.getElementById('si-type').value;
+  const id = document.getElementById('si-id').value;
+  const nameTh = document.getElementById('si-name-th').value.trim();
+  if (!nameTh) { alert(th?'กรุณาใส่ชื่อภาษาไทย':'Please enter Thai name'); return; }
+
+  const parentSel = document.getElementById('si-parent-select');
+  const parentId = parentSel ? parentSel.value : document.getElementById('si-parent-id').value;
+
+  const tableMap = { dept:'departments', section:'sections', team:'teams' };
+  const table = tableMap[type];
+  const row = {
+    id: id || uid(),
+    name_th: nameTh,
+    name_en: document.getElementById('si-name-en').value.trim()||null,
+    order_no: parseInt(document.getElementById('si-order').value)||0,
+    active: true,
+    ...(type==='section' ? {department_id: parentId||null} : {}),
+    ...(type==='team' ? {section_id: parentId||null} : {}),
+  };
+
+  try {
+    await sbFetch(table+'?on_conflict=id', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
+    await loadOrgStructure();
+    closeModal('modal-settings-item');
+    renderSettingsPage();
+    toast(th?(id?'อัปเดตแล้ว':'เพิ่มแล้ว'):(id?'Updated':'Added'));
+  } catch(e) { toast('❌ '+e.message); }
+}
+
+async function deleteSettingsItem() {
+  const th = lang === 'th';
+  const type = document.getElementById('si-type').value;
+  const id = document.getElementById('si-id').value;
+  if (!id) return;
+  if (!confirm(th?'ลบรายการนี้?':'Delete this item?')) return;
+  const tableMap = { dept:'departments', section:'sections', team:'teams' };
+  try {
+    await sbFetch(tableMap[type]+'?id=eq.'+id, {method:'DELETE'});
+    await loadOrgStructure();
+    closeModal('modal-settings-item');
+    renderSettingsPage();
+    toast(th?'ลบแล้ว':'Deleted');
   } catch(e) { toast('❌ '+e.message); }
 }
 
