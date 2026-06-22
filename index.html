@@ -4480,8 +4480,10 @@ function renderNewEmpList() {
         <!-- Action buttons -->
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
           <button class="btn btn-ghost btn-sm" onclick="loadAndShowChecklist('${e.id}')">📋 ${th?'ดู Checklist':'View Checklist'}</button>
-          ${isManagerOrAdmin()?`
-          <button class="btn btn-ghost btn-sm" onclick="openEditNewEmp('${e.id}')">✏ ${th?'แก้ไข':'Edit'}</button>
+          ${(isManagerOrAdmin() || e.created_by === currentMember?.id)?`
+          <button class="btn btn-ghost btn-sm" onclick="openEditNewEmp('${e.id}')">✏ ${th?'แก้ไข':'Edit'}</button>`:''
+        }
+        ${isManagerOrAdmin()?`
           ${e.status==='probation'?`
           <button class="btn btn-primary btn-sm" onclick="updateProbationStatus('${e.id}','passed')">✓ ${th?'ผ่านทดลองงาน':'Mark Passed'}</button>
           <button class="btn btn-danger btn-sm" onclick="updateProbationStatus('${e.id}','failed')">✗ ${th?'ไม่ผ่าน':'Mark Failed'}</button>`:''}
