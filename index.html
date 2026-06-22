@@ -1064,6 +1064,7 @@ tbody tr:hover{background:var(--blue-lt)}
 
         <div class="sidebar-item" onclick="switchSidebar('announcements')" id="sb-announcements">
           <span class="sb-icon">📢</span><span class="sb-label" data-en="Announcements" data-th="ประกาศ">Announcements</span>
+          <span class="sb-badge" id="sb-ann-badge" style="display:none"></span>
         </div>
         <div class="sidebar-item" onclick="switchSidebar('meetings')" id="sb-meetings">
           <span class="sb-icon">📝</span><span class="sb-label" data-en="Meeting Notes" data-th="บันทึกประชุม">Meeting Notes</span>
@@ -2274,7 +2275,7 @@ function switchSidebar(page) {
         loadOrgStructure().then(()=>renderSettingsPage());
       }
       if (page==='onboarding') {
-        loadNewEmployees().then(()=>{ renderObKpi(); renderNewEmpList(); });
+        Promise.all([loadNewEmployees(), loadOrgStructure()]).then(()=>{ renderObKpi(); renderNewEmpList(); });
       }
       if (page==='birthday') {
         loadBirthdayData().then(()=>{
@@ -2282,7 +2283,9 @@ function switchSidebar(page) {
           renderGiftMonthSelector();
         });
       }
-      if (page==='announcements') renderAnnouncements();
+      if (page==='announcements') {
+        loadAnnouncements().then(()=>renderAnnouncements());
+      }
       if (page==='meetings') renderMeetings();
       if (page==='help') {
         renderHelp();
@@ -2819,9 +2822,60 @@ let tempActionItems = [];
 
 async function loadAnnouncements() {
   try {
-    const data = await sbFetch('announcements?select=*&order=created_at.desc');
+    const [data, reads] = await Promise.all([
+      sbFetch('announcements?select=*&order=created_at.desc'),
+      sbFetch('announcement_reads?member_id=eq.' + currentMember?.id + '&select=announcement_id')
+    ]);
     announcements = data || [];
+    announcementReads = new Set((reads||[]).map(r=>r.announcement_id));
+    updateAnnBadge();
   } catch(e) { announcements = []; }
+}
+
+function updateAnnBadge() {
+  const now = new Date();
+  const unread = announcements.filter(a => {
+    if (announcementReads.has(a.id)) return false;
+    if (a.expires_at && new Date(a.expires_at) < now) return false;
+    return true;
+  }).length;
+  const badge = document.getElementById('sb-ann-badge');
+  if (badge) {
+    badge.textContent = unread;
+    badge.style.display = unread > 0 ? '' : 'none';
+  }
+  // Also update mobile nav badge if on announcements
+  const mobAnn = document.getElementById('mob-announcements');
+  if (mobAnn) {
+    let mobBadge = document.getElementById('mob-ann-badge');
+    if (!mobBadge && unread > 0) {
+      mobBadge = document.createElement('span');
+      mobBadge.id = 'mob-ann-badge';
+      mobBadge.className = 'mobile-nav-badge';
+      mobAnn.appendChild(mobBadge);
+    }
+    if (mobBadge) {
+      mobBadge.textContent = unread;
+      mobBadge.style.display = unread > 0 ? '' : 'none';
+    }
+  }
+}
+
+async function markAnnouncementRead(annId) {
+  if (announcementReads.has(annId)) return;
+  try {
+    await sbFetch('announcement_reads', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates',
+      body: JSON.stringify({
+        id: uid(),
+        announcement_id: annId,
+        member_id: currentMember.id
+      })
+    });
+    announcementReads.add(annId);
+    updateAnnBadge();
+  } catch(e) {}
 }
 
 function renderAnnouncements() {
@@ -2832,15 +2886,28 @@ function renderAnnouncements() {
     return;
   }
   const now = new Date();
+  // Mark all visible announcements as read after 2 seconds
+  setTimeout(() => {
+    announcements.forEach(a => {
+      if (!a.expires_at || new Date(a.expires_at) >= now) {
+        markAnnouncementRead(a.id);
+      }
+    });
+  }, 2000);
+
   container.innerHTML = announcements.map(a => {
     const expired = a.expires_at && new Date(a.expires_at) < now;
+    const isUnread = !announcementReads.has(a.id) && !expired;
     const poster = members.find(m=>m.id===a.member_id);
     const prioLabel = {high: lang==='th'?'สำคัญมาก':'High', normal: lang==='th'?'ปกติ':'Normal', low: lang==='th'?'ทั่วไป':'Low'}[a.priority||'normal'];
-    const canDelete = isManager() || a.member_id === currentMember?.id;
-    return `<div class="ann-card ann-priority-${a.priority||'normal'}" style="${expired?'opacity:.6':''}">
+    const canDelete = isManagerOrAdmin() || a.member_id === currentMember?.id;
+    return `<div class="ann-card ann-priority-${a.priority||'normal'}" style="${expired?'opacity:.6':''}${isUnread?';border-left-width:5px':''}">
       <div class="ann-card-header">
         <div>
-          <div class="ann-title">${a.title} ${expired?`<span style="font-size:11px;color:var(--muted);font-weight:400">(${lang==='th'?'หมดอายุ':'Expired'})</span>`:''}</div>
+          <div class="ann-title">
+            ${isUnread?'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:6px;vertical-align:middle"></span>':''}
+            ${a.title} ${expired?`<span style="font-size:11px;color:var(--muted);font-weight:400">(${lang==='th'?'หมดอายุ':'Expired'})</span>`:''}
+          </div>
           <div style="margin-top:4px"><span class="prio-badge prio-${a.priority||'normal'}">${prioLabel}</span></div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
@@ -2881,6 +2948,13 @@ async function saveAnn() {
     await sbFetch('announcements', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
     announcements.unshift(row);
     closeModal('modal-ann');
+    // Auto-mark own announcement as read
+    announcementReads.add(row.id);
+    await sbFetch('announcement_reads', {
+      method:'POST', prefer:'resolution=merge-duplicates',
+      body: JSON.stringify({id:uid(), announcement_id:row.id, member_id:currentMember.id})
+    });
+    updateAnnBadge();
     renderAnnouncements();
     toast(lang==='th'?'โพสต์ประกาศแล้ว':'Announcement posted');
   } catch(e) { toast('❌ '+e.message); }
@@ -3760,6 +3834,7 @@ function getZodiac(month, day) {
 
 let employees_bday = []; // separate from HR members
 let orgDepts = [];    // departments
+let announcementReads = new Set(); // announcement IDs read by current user
 let orgSections = []; // sections
 let orgTeams = [];    // teams
 let gift_records = {}; // key: employee_id_year_month -> record
