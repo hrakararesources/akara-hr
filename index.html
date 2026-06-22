@@ -1951,6 +1951,16 @@ function applyLang() {
   if (document.getElementById('page-onboarding')?.classList.contains('active')) {
     renderObKpi();
     renderNewEmpList();
+    // Re-populate dropdowns if modal is open
+    if (document.getElementById('modal-new-emp')?.classList.contains('open')) {
+      const deptId = document.getElementById('ne-dept-id')?.value||'';
+      const secId  = document.getElementById('ne-section-id')?.value||'';
+      const teamId = document.getElementById('ne-team-id')?.value||'';
+      populateDeptDropdown(deptId, secId, teamId);
+      if (deptId) document.getElementById('ne-dept-id').value = deptId;
+      if (secId)  document.getElementById('ne-section-id').value = secId;
+      if (teamId) document.getElementById('ne-team-id').value = teamId;
+    }
     // Update filter labels
     const obStatusFilter = document.getElementById('ob-status-filter');
     if (obStatusFilter) {
@@ -4829,44 +4839,38 @@ async function saveNewEmp() {
 
 function onDeptChange() {
   const deptId = document.getElementById('ne-dept-id').value;
-  const secSel = document.getElementById('ne-section-id');
-  const teamSel = document.getElementById('ne-team-id');
-  const th = lang === 'th';
-  const filtered = orgSections.filter(s => s.department_id === deptId);
-  secSel.innerHTML = `<option value="">— ${th?'เลือกแผนก':'Select Section'} —</option>`
-    + filtered.map(s=>`<option value="${s.id}">${th?s.name_th:s.name_en||s.name_th}</option>`).join('');
-  teamSel.innerHTML = `<option value="">— ${th?'เลือกทีม':'Select Team'} —</option>`;
+  populateDeptDropdown(deptId, '', '');
+  document.getElementById('ne-dept-id').value = deptId;
 }
 
 function onSectionChange() {
-  const secId = document.getElementById('ne-section-id').value;
-  const teamSel = document.getElementById('ne-team-id');
-  const th = lang === 'th';
-  const filtered = orgTeams.filter(t => t.section_id === secId);
-  teamSel.innerHTML = `<option value="">— ${th?'เลือกทีม':'Select Team'} —</option>`
-    + filtered.map(t=>`<option value="${t.id}">${th?t.name_th:t.name_en||t.name_th}</option>`).join('');
+  const deptId = document.getElementById('ne-dept-id').value;
+  const secId  = document.getElementById('ne-section-id').value;
+  populateDeptDropdown(deptId, secId, '');
+  document.getElementById('ne-dept-id').value = deptId;
+  document.getElementById('ne-section-id').value = secId;
 }
 
 function populateDeptDropdown(selectedDeptId='', selectedSecId='', selectedTeamId='') {
   const th = lang === 'th';
   const deptSel = document.getElementById('ne-dept-id');
+  const secSel  = document.getElementById('ne-section-id');
+  const teamSel = document.getElementById('ne-team-id');
   if (!deptSel) return;
+
+  // Populate departments
   deptSel.innerHTML = `<option value="">— ${th?'เลือกฝ่าย':'Select Department'} —</option>`
     + orgDepts.map(d=>`<option value="${d.id}" ${d.id===selectedDeptId?'selected':''}>${th?d.name_th:d.name_en||d.name_th}</option>`).join('');
 
-  if (selectedDeptId) {
-    const secSel = document.getElementById('ne-section-id');
-    const filtered = orgSections.filter(s=>s.department_id===selectedDeptId);
-    secSel.innerHTML = `<option value="">— ${th?'เลือกแผนก':'Select Section'} —</option>`
-      + filtered.map(s=>`<option value="${s.id}" ${s.id===selectedSecId?'selected':''}>${th?s.name_th:s.name_en||s.name_th}</option>`).join('');
+  // Populate sections (filter by selected dept or show all if none selected)
+  const filteredSecs = selectedDeptId ? orgSections.filter(s=>s.department_id===selectedDeptId) : [];
+  secSel.innerHTML = `<option value="">— ${th?'เลือกแผนก':'Select Section'} —</option>`
+    + filteredSecs.map(s=>`<option value="${s.id}" ${s.id===selectedSecId?'selected':''}>${th?s.name_th:s.name_en||s.name_th}</option>`).join('');
 
-    if (selectedSecId) {
-      const teamSel = document.getElementById('ne-team-id');
-      const fteams = orgTeams.filter(t=>t.section_id===selectedSecId);
-      teamSel.innerHTML = `<option value="">— ${th?'เลือกทีม':'Select Team'} —</option>`
-        + fteams.map(t=>`<option value="${t.id}" ${t.id===selectedTeamId?'selected':''}>${th?t.name_th:t.name_en||t.name_th}</option>`).join('');
-    }
-  }
+  // Populate teams (filter by selected section or show all if none selected)
+  const filteredTeams = selectedSecId ? orgTeams.filter(t=>t.section_id===selectedSecId) : [];
+  teamSel.innerHTML = `<option value="">— ${th?'เลือกทีม':'Select Team'} —</option>`
+    + filteredTeams.map(t=>`<option value="${t.id}" ${t.id===selectedTeamId?'selected':''}>${th?t.name_th:t.name_en||t.name_th}</option>`).join('');
 }
 
 function renderSettingsPage() {
