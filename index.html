@@ -1629,14 +1629,14 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="fg"><label>ระยะทดลองงาน (วัน)</label><input id="ne-probdays" type="number" value="119"></div>
         <div class="fg full"><label>ตำแหน่ง (TH)</label><input id="ne-pos-th" placeholder="เจ้าหน้าที่..."></div>
         <div class="fg full"><label>ตำแหน่ง (EN)</label><input id="ne-pos-en" placeholder="Officer..."></div>
-        <div class="fg full"><label>แผนก / Department *</label>
+        <div class="fg full"><label>ฝ่าย / Department *</label>
           <select id="ne-dept-id" onchange="onDeptChange()">
-            <option value="">— เลือกแผนก —</option>
+            <option value="">— เลือกฝ่าย —</option>
           </select>
         </div>
-        <div class="fg full"><label>ฝ่าย / Section</label>
+        <div class="fg full"><label>แผนก / Section</label>
           <select id="ne-section-id" onchange="onSectionChange()">
-            <option value="">— เลือกฝ่าย —</option>
+            <option value="">— เลือกแผนก —</option>
           </select>
         </div>
         <div class="fg full"><label>ทีม / Team</label>
@@ -1740,7 +1740,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -4405,7 +4405,7 @@ function renderNewEmpList() {
   if (deptSel) {
     const currentDept = deptSel.value;
     const depts = [...new Set(newEmployees.map(e=>th?e.department_th:e.department_en).filter(Boolean))].sort();
-    deptSel.innerHTML = `<option value="">${th?'ทุกแผนก':'All Dept'}</option>`
+    deptSel.innerHTML = `<option value="">${th?'ทุกฝ่าย':'All Dept'}</option>`
       + depts.map(d=>`<option value="${d}" ${d===currentDept?'selected':''}>${d}</option>`).join('');
   }
 
@@ -4720,7 +4720,7 @@ function onDeptChange() {
   const teamSel = document.getElementById('ne-team-id');
   const th = lang === 'th';
   const filtered = orgSections.filter(s => s.department_id === deptId);
-  secSel.innerHTML = `<option value="">— ${th?'เลือกฝ่าย':'Select Section'} —</option>`
+  secSel.innerHTML = `<option value="">— ${th?'เลือกแผนก':'Select Section'} —</option>`
     + filtered.map(s=>`<option value="${s.id}">${th?s.name_th:s.name_en||s.name_th}</option>`).join('');
   teamSel.innerHTML = `<option value="">— ${th?'เลือกทีม':'Select Team'} —</option>`;
 }
@@ -4738,13 +4738,13 @@ function populateDeptDropdown(selectedDeptId='', selectedSecId='', selectedTeamI
   const th = lang === 'th';
   const deptSel = document.getElementById('ne-dept-id');
   if (!deptSel) return;
-  deptSel.innerHTML = `<option value="">— ${th?'เลือกแผนก':'Select Department'} —</option>`
+  deptSel.innerHTML = `<option value="">— ${th?'เลือกฝ่าย':'Select Department'} —</option>`
     + orgDepts.map(d=>`<option value="${d.id}" ${d.id===selectedDeptId?'selected':''}>${th?d.name_th:d.name_en||d.name_th}</option>`).join('');
 
   if (selectedDeptId) {
     const secSel = document.getElementById('ne-section-id');
     const filtered = orgSections.filter(s=>s.department_id===selectedDeptId);
-    secSel.innerHTML = `<option value="">— ${th?'เลือกฝ่าย':'Select Section'} —</option>`
+    secSel.innerHTML = `<option value="">— ${th?'เลือกแผนก':'Select Section'} —</option>`
       + filtered.map(s=>`<option value="${s.id}" ${s.id===selectedSecId?'selected':''}>${th?s.name_th:s.name_en||s.name_th}</option>`).join('');
 
     if (selectedSecId) {
@@ -4767,7 +4767,7 @@ function renderSettingsPage() {
       <!-- DEPARTMENTS -->
       <div class="card">
         <div class="card-header">
-          <h3>🏢 ${th?'แผนก':'Department'} (${orgDepts.length})</h3>
+          <h3>🏢 ${th?'ฝ่าย':'Department'} (${orgDepts.length})</h3>
           <button class="btn btn-gold btn-sm" onclick="openAddSettingsItem('dept','',null)">+ ${th?'เพิ่ม':'Add'}</button>
         </div>
         <div style="max-height:400px;overflow-y:auto">
@@ -4786,7 +4786,7 @@ function renderSettingsPage() {
       <!-- SECTIONS -->
       <div class="card">
         <div class="card-header">
-          <h3>📂 ${th?'ฝ่าย':'Section'} (${orgSections.length})</h3>
+          <h3>📂 ${th?'แผนก':'Section'} (${orgSections.length})</h3>
           <button class="btn btn-gold btn-sm" onclick="openAddSettingsItem('section','',null)">+ ${th?'เพิ่ม':'Add'}</button>
         </div>
         <div style="max-height:400px;overflow-y:auto">
@@ -4853,9 +4853,9 @@ function openAddSettingsItem(type, parentId, parentLabel) {
     wrap.id = 'si-parent-select-wrap';
     wrap.className = 'fg';
     wrap.style.marginBottom = '14px';
-    wrap.innerHTML = `<label>${th?'แผนก *':'Department *'}</label>
+    wrap.innerHTML = `<label>${th?'ฝ่าย *':'Department *'}</label>
       <select id="si-parent-select">
-        <option value="">— ${th?'เลือกแผนก':'Select Department'} —</option>
+        <option value="">— ${th?'เลือกฝ่าย':'Select Department'} —</option>
         ${orgDepts.map(d=>`<option value="${d.id}" ${d.id===parentId?'selected':''}>${th?d.name_th:d.name_en||d.name_th}</option>`).join('')}
       </select>`;
     modal.insertBefore(wrap, modal.firstChild);
@@ -4864,9 +4864,9 @@ function openAddSettingsItem(type, parentId, parentLabel) {
     wrap.id = 'si-parent-select-wrap';
     wrap.className = 'fg';
     wrap.style.marginBottom = '14px';
-    wrap.innerHTML = `<label>${th?'ฝ่าย *':'Section *'}</label>
+    wrap.innerHTML = `<label>${th?'แผนก *':'Section *'}</label>
       <select id="si-parent-select">
-        <option value="">— ${th?'เลือกฝ่าย':'Select Section'} —</option>
+        <option value="">— ${th?'เลือกแผนก':'Select Section'} —</option>
         ${orgSections.map(s=>`<option value="${s.id}" ${s.id===parentId?'selected':''}>${th?s.name_th:s.name_en||s.name_th}</option>`).join('')}
       </select>`;
     modal.insertBefore(wrap, modal.firstChild);
@@ -4901,7 +4901,7 @@ function openEditSettingsItem(type, id) {
     wrap.id = 'si-parent-select-wrap';
     wrap.className = 'fg';
     wrap.style.marginBottom = '14px';
-    wrap.innerHTML = `<label>${th?'แผนก *':'Department *'}</label>
+    wrap.innerHTML = `<label>${th?'ฝ่าย *':'Department *'}</label>
       <select id="si-parent-select">
         ${orgDepts.map(d=>`<option value="${d.id}" ${d.id===parentId?'selected':''}>${th?d.name_th:d.name_en||d.name_th}</option>`).join('')}
       </select>`;
@@ -4911,7 +4911,7 @@ function openEditSettingsItem(type, id) {
     wrap.id = 'si-parent-select-wrap';
     wrap.className = 'fg';
     wrap.style.marginBottom = '14px';
-    wrap.innerHTML = `<label>${th?'ฝ่าย *':'Section *'}</label>
+    wrap.innerHTML = `<label>${th?'แผนก *':'Section *'}</label>
       <select id="si-parent-select">
         ${orgSections.map(s=>`<option value="${s.id}" ${s.id===parentId?'selected':''}>${th?s.name_th:s.name_en||s.name_th}</option>`).join('')}
       </select>`;
