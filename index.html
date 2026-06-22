@@ -1947,7 +1947,36 @@ function applyLang() {
   if (activeMod) applyModuleLang(activeMod);
   // Re-render help if active
   if (document.getElementById('page-notifications')?.classList.contains('active')) renderNotifPage();
-  if (document.getElementById('page-onboarding')?.classList.contains('active')) { renderObKpi(); renderNewEmpList(); }
+  if (document.getElementById('page-onboarding')?.classList.contains('active')) {
+    renderObKpi();
+    renderNewEmpList();
+    // Update filter labels
+    const obStatusFilter = document.getElementById('ob-status-filter');
+    if (obStatusFilter) {
+      const th2 = lang === 'th';
+      obStatusFilter.options[0].text = th2?'ทุกสถานะ':'All Status';
+      obStatusFilter.options[1].text = th2?'กำลัง Probation':'In Probation';
+      obStatusFilter.options[2].text = th2?'ผ่านทดลองงาน':'Passed';
+      obStatusFilter.options[3].text = th2?'ไม่ผ่านทดลองงาน':'Failed';
+    }
+    const obDeptFilter = document.getElementById('ob-dept-filter');
+    if (obDeptFilter && obDeptFilter.options[0]) {
+      obDeptFilter.options[0].text = lang==='th'?'ทุกฝ่าย':'All Dept';
+    }
+    // Update tab labels
+    const tObList = document.getElementById('t-ob-list');
+    const tObAlert = document.getElementById('t-ob-alert');
+    if (tObList) tObList.textContent = lang==='th'?'พนักงานใหม่':'New Employees';
+    if (tObAlert) tObAlert.textContent = lang==='th'?'แจ้งเตือนประเมิน':'Evaluation Alerts';
+    // Update buttons
+    const btnAdd = document.getElementById('btn-add-newemp');
+    const btnImport = document.getElementById('btn-import-newemp');
+    if (btnAdd) btnAdd.textContent = lang==='th'?'+ เพิ่มพนักงานใหม่':'+ Add New Employee';
+    if (btnImport) btnImport.textContent = lang==='th'?'⬆ Import Excel':'⬆ Import Excel';
+    // Update KPI labels
+    document.getElementById('h-onboarding') && (document.getElementById('h-onboarding').textContent = lang==='th'?'🌟 พนักงานใหม่':'🌟 New Employees');
+    document.getElementById('ob-sub') && (document.getElementById('ob-sub').textContent = lang==='th'?'ติดตาม Onboarding และ Probation':'Track Onboarding and Probation');
+  }
   if (document.getElementById('page-settings')?.classList.contains('active')) renderSettingsPage();
   if (document.getElementById('page-birthday')?.classList.contains('active')) {
     renderBirthday();
@@ -4412,7 +4441,9 @@ function renderNewEmpList() {
   }
 
   let list = newEmployees.filter(e => {
-    const dept = th ? e.department_th : e.department_en;
+    const deptObj = orgDepts.find(d=>d.id===e.department_id);
+    const secObj = orgSections.find(s=>s.id===e.section_id);
+    const dept = deptObj ? (th?deptObj.name_th:deptObj.name_en||deptObj.name_th) : (th?e.department_th:e.department_en)||'';
     return (!statusFilter || e.status===statusFilter) && (!deptFilter || dept===deptFilter);
   });
 
@@ -4430,7 +4461,9 @@ function renderNewEmpList() {
     const isOverdue = remaining < 0 && e.status==='probation';
     const buddy = members.find(m=>m.id===e.buddy_id);
     const name = th ? e.full_name_th : (e.full_name_en||e.full_name_th);
-    const dept = th ? e.department_th : e.department_en;
+    const deptObj = orgDepts.find(d=>d.id===e.department_id);
+    const secObj = orgSections.find(s=>s.id===e.section_id);
+    const dept = deptObj ? (th?deptObj.name_th:deptObj.name_en||deptObj.name_th) : (th?e.department_th:e.department_en)||'';
     const pos = th ? e.job_title_th : e.job_title_en;
     const statusLabel = {probation:th?'กำลัง Probation':'In Probation', passed:th?'ผ่านทดลองงาน':'Passed', failed:th?'ไม่ผ่าน':'Failed'}[e.status]||e.status;
     const statusClass = {probation:'ob-probation', passed:'ob-passed', failed:'ob-failed'}[e.status]||'ob-probation';
@@ -4614,7 +4647,9 @@ function renderObAlerts() {
 
   el.innerHTML = alerts.map(e => {
     const name = th ? e.full_name_th : (e.full_name_en||e.full_name_th);
-    const dept = th ? e.department_th : e.department_en;
+    const deptObj = orgDepts.find(d=>d.id===e.department_id);
+    const secObj = orgSections.find(s=>s.id===e.section_id);
+    const dept = deptObj ? (th?deptObj.name_th:deptObj.name_en||deptObj.name_th) : (th?e.department_th:e.department_en)||'';
     const isOverdue = e.remaining < 0;
     const isNear90 = e.rem90 >= 0 && e.rem90 <= 14;
     const isNearEnd = e.remaining >= 0 && e.remaining <= 30;
@@ -4700,8 +4735,6 @@ async function saveNewEmp() {
     department_id: document.getElementById('ne-dept-id')?.value||null,
     section_id: document.getElementById('ne-section-id')?.value||null,
     team_id: document.getElementById('ne-team-id')?.value||null,
-    department_th: (() => { const d = orgDepts.find(x=>x.id===document.getElementById('ne-dept-id')?.value); return d?d.name_th:null; })(),
-    department_en: (() => { const d = orgDepts.find(x=>x.id===document.getElementById('ne-dept-id')?.value); return d?d.name_en:null; })(),
     buddy_id: document.getElementById('ne-buddy').value||null,
     status: document.getElementById('ne-status').value,
     note: document.getElementById('ne-note').value.trim()||null,
