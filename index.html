@@ -4671,8 +4671,6 @@ function openEditNewEmp(id) {
   document.getElementById('ne-probdays').value = e.probation_days||119;
   document.getElementById('ne-pos-th').value = e.job_title_th||'';
   document.getElementById('ne-pos-en').value = e.job_title_en||'';
-  document.getElementById('ne-dept-th').value = e.department_th||'';
-  document.getElementById('ne-dept-en').value = e.department_en||'';
   document.getElementById('ne-status').value = e.status||'probation';
   document.getElementById('ne-note').value = e.note||'';
   const buddySel = document.getElementById('ne-buddy');
@@ -4697,8 +4695,11 @@ async function saveNewEmp() {
     probation_days: parseInt(document.getElementById('ne-probdays').value)||119,
     job_title_th: document.getElementById('ne-pos-th').value.trim()||null,
     job_title_en: document.getElementById('ne-pos-en').value.trim()||null,
-    department_th: document.getElementById('ne-dept-th').value.trim()||null,
-    department_en: document.getElementById('ne-dept-en').value.trim()||null,
+    department_id: document.getElementById('ne-dept-id')?.value||null,
+    section_id: document.getElementById('ne-section-id')?.value||null,
+    team_id: document.getElementById('ne-team-id')?.value||null,
+    department_th: (() => { const d = orgDepts.find(x=>x.id===document.getElementById('ne-dept-id')?.value); return d?d.name_th:null; })(),
+    department_en: (() => { const d = orgDepts.find(x=>x.id===document.getElementById('ne-dept-id')?.value); return d?d.name_en:null; })(),
     buddy_id: document.getElementById('ne-buddy').value||null,
     status: document.getElementById('ne-status').value,
     note: document.getElementById('ne-note').value.trim()||null,
