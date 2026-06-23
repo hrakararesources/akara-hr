@@ -1741,7 +1741,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+   const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -2685,6 +2685,35 @@ async function saveTask() {
   const data={title, desc:document.getElementById('tf-desc').value.trim(), prio:document.getElementById('tf-prio').value, status:document.getElementById('tf-status').value, due:document.getElementById('tf-due').value||null, prog:Math.min(100,Math.max(0,parseInt(document.getElementById('tf-prog').value)||0)), note:document.getElementById('tf-note').value.trim(), memberId:assigneeId};
   const row={id:taskId, member_id:data.memberId, title:data.title, description:data.desc, prio:data.prio, status:data.status, due:data.due, prog:data.prog, note:data.note};
   try {
+    // Track changes if editing
+    if (editTaskId) {
+      const old = tasks.find(t=>t.id===editTaskId);
+      if (old) {
+        const trackFields = [
+          {field:'due',  oldVal:old.due||'',      newVal:data.due||''},
+          {field:'status', oldVal:old.status||'', newVal:data.status||''},
+          {field:'prio',   oldVal:old.prio||'',   newVal:data.prio||''},
+          {field:'prog',   oldVal:String(old.prog||0), newVal:String(data.prog)},
+        ];
+        for (const f of trackFields) {
+          if (f.oldVal !== f.newVal) {
+            try {
+              await sbFetch('task_history', {
+                method:'POST', prefer:'resolution=merge-duplicates',
+                body: JSON.stringify({
+                  id: uid(), task_id: taskId,
+                  member_id: old.memberId,
+                  changed_by: currentMember.id,
+                  field_name: f.field,
+                  old_value: f.oldVal,
+                  new_value: f.newVal
+                })
+              });
+            } catch(he) { console.warn('history error:', he.message); }
+          }
+        }
+      }
+    }
     await sbFetch('tasks?on_conflict=id', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
     if (editTaskId) { const i=tasks.findIndex(t=>t.id===editTaskId); tasks[i]={...tasks[i],...data,id:taskId}; }
     else { tasks.push({...data,id:taskId}); }
