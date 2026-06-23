@@ -1741,7 +1741,7 @@ tbody tr:hover{background:var(--blue-lt)}
 <div id="toast"></div>
 
 <script>
-    const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
+  const SUPABASE_URL = 'https://allwoertbjgyfqnqgetu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHdvZXJ0YmpneWZxbnFnZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTc4NzgsImV4cCI6MjA5NzQ3Mzg3OH0.kpzH27gZyBeBE7K132wYdlDVjZhCN2uNBTa8XWrUOBc';
 
 // ── LANGUAGE ──
@@ -4428,6 +4428,7 @@ async function exportGiftList() {
 
 // ── ONBOARDING / NEW EMPLOYEES ──
 let newEmployees = [];
+let editNewEmpId = null;
 
 const CHECKLIST_TEMPLATE = [
   { category: 'ก่อนเริ่มงาน', category_en: 'Pre-Start', title: 'เตรียมบัตรพนักงาน', title_en: 'Prepare employee ID card', due_day: 0 },
@@ -4777,6 +4778,20 @@ function openAddNewEmp() {
   openModal('modal-new-emp');
 }
 
+async function deleteNewEmp() {
+  const th = lang === 'th';
+  if (!editNewEmpId) return;
+  if (!confirm(th?'ลบข้อมูลพนักงานใหม่คนนี้?':'Delete this new employee record?')) return;
+  try {
+    await sbFetch('new_employees?id=eq.'+editNewEmpId, {method:'DELETE'});
+    newEmployees = newEmployees.filter(e=>e.id!==editNewEmpId);
+    editNewEmpId = null;
+    closeModal('modal-new-emp');
+    renderNewEmpList(); renderObKpi();
+    toast(th?'ลบแล้ว':'Deleted');
+  } catch(e) { toast('❌ '+e.message); }
+}
+
 function openImportNewEmp() {
   toast(lang==='th'?'ฟีเจอร์ Import Excel สำหรับพนักงานใหม่ — เร็วๆ นี้':'Import Excel for new employees — Coming soon');
 }
@@ -4784,7 +4799,11 @@ function openImportNewEmp() {
 function openEditNewEmp(id) {
   const e = newEmployees.find(x=>x.id===id);
   if (!e) return;
+  editNewEmpId = id;
   document.getElementById('new-emp-modal-title').textContent = lang==='th'?'แก้ไขพนักงานใหม่':'Edit New Employee';
+  // Show delete button
+  const delBtn = document.getElementById('ne-btn-delete');
+  if (delBtn) delBtn.style.display = '';
   document.getElementById('ne-empid').value = e.employee_id||'';
   document.getElementById('ne-name-th').value = e.full_name_th||'';
   document.getElementById('ne-name-en').value = e.full_name_en||'';
@@ -4808,7 +4827,7 @@ async function saveNewEmp() {
   if (!nameTh||!startDate) { alert(th?'กรุณากรอกชื่อและวันเริ่มงาน':'Please fill name and start date'); return; }
 
   const row = {
-    id: uid(),
+    id: editNewEmpId || uid(),
     employee_id: document.getElementById('ne-empid').value.trim()||null,
     full_name_th: nameTh,
     full_name_en: document.getElementById('ne-name-en').value.trim()||null,
@@ -4828,10 +4847,17 @@ async function saveNewEmp() {
 
   try {
     await sbFetch('new_employees?on_conflict=id', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
-    newEmployees.unshift(row);
+    if (editNewEmpId) {
+      const idx = newEmployees.findIndex(e=>e.id===editNewEmpId);
+      if (idx>=0) newEmployees[idx] = {...newEmployees[idx], ...row};
+      else newEmployees.unshift(row);
+    } else {
+      newEmployees.unshift(row);
+    }
+    editNewEmpId = null;
     closeModal('modal-new-emp');
     renderNewEmpList(); renderObKpi();
-    toast(th?'เพิ่มพนักงานใหม่แล้ว':'New employee added');
+    toast(th?(editNewEmpId?'อัปเดตแล้ว':'เพิ่มพนักงานใหม่แล้ว'):(editNewEmpId?'Updated':'New employee added'));
   } catch(e) { toast('❌ '+e.message); }
 }
 
