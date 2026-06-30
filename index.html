@@ -925,6 +925,91 @@ tbody tr:hover{background:var(--blue-lt)}
   .chart-grid{grid-template-columns:1fr}
 }
 @media(max-width:480px){.kanban{grid-template-columns:1fr}}
+/* ===================== Org Chart module ===================== */
+#page-orgchart .oc-subtab.active { color:var(--blue); border-bottom-color:var(--gold) !important; }
+#page-orgchart .oc-controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+#page-orgchart .oc-controls input { padding:9px 11px; font-size:14px; border:1px solid var(--border); border-radius:8px; min-width:220px; font-family:inherit; }
+#page-orgchart .oc-seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+#page-orgchart .oc-seg button { background:#fff; border:none; padding:9px 14px; font-size:13px; cursor:pointer; color:var(--muted); border-left:1px solid var(--border); font-family:inherit; }
+#page-orgchart .oc-seg button:first-child { border-left:none; }
+#page-orgchart .oc-seg button.active { background:var(--blue); color:#fff; }
+#page-orgchart .oc-btn { background:#fff; border:1px solid var(--border); color:var(--text); padding:9px 14px; border-radius:8px; font-size:13px; cursor:pointer; font-family:inherit; }
+#page-orgchart .oc-btn:hover { background:var(--blue-lt); }
+#page-orgchart .oc-badge { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11.5px; font-weight:500; }
+#page-orgchart .oc-badge.filled { background:var(--green-lt); color:var(--green); }
+#page-orgchart .oc-badge.vacant { background:var(--red-lt); color:var(--red); }
+#page-orgchart .oc-badge.pending, #page-orgchart .oc-badge.filled_pending_name { background:var(--orange-lt); color:var(--orange); }
+#page-orgchart .oc-badge.unknown { background:var(--gray); color:var(--muted); }
+#page-orgchart .oc-grade { font-size:11px; color:var(--muted); border:1px solid var(--border); border-radius:5px; padding:0 6px; }
+#page-orgchart .oc-breadcrumb { display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin-bottom:16px; font-size:13px; }
+#page-orgchart .oc-crumb { background:var(--blue-lt); border:1px solid var(--border); color:var(--blue); padding:4px 10px; border-radius:999px; cursor:pointer; white-space:nowrap; }
+#page-orgchart .oc-crumb.current { background:var(--blue); color:#fff; cursor:default; }
+#page-orgchart .oc-sep { color:var(--muted); }
+#page-orgchart .oc-focus { border:2px solid var(--blue); border-radius:10px; padding:16px 18px; background:var(--blue-lt); margin-bottom:8px; }
+#page-orgchart .oc-focus .t { font-size:18px; font-weight:700; color:var(--blue); }
+#page-orgchart .oc-focus .m { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px; font-size:13px; }
+#page-orgchart .oc-vac-person { color:var(--red); font-style:italic; }
+#page-orgchart .oc-rhead { font-size:13px; color:var(--muted); margin:18px 0 10px; font-weight:600; }
+#page-orgchart .oc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
+#page-orgchart .oc-card { border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:#fff; position:relative; }
+#page-orgchart .oc-card.kids { cursor:pointer; }
+#page-orgchart .oc-card.kids:hover { border-color:var(--blue); box-shadow:0 4px 14px rgba(43,91,174,.12); }
+#page-orgchart .oc-card .ct { font-weight:600; font-size:14px; padding-right:20px; }
+#page-orgchart .oc-card .cp { font-size:13px; margin-top:4px; }
+#page-orgchart .oc-card .crow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }
+#page-orgchart .oc-card .cdept { font-size:11.5px; color:var(--muted); }
+#page-orgchart .oc-card .ckids { font-size:11.5px; color:var(--blue); background:var(--blue-lt); border-radius:999px; padding:1px 8px; }
+#page-orgchart .oc-card .cchev { position:absolute; top:12px; right:12px; color:var(--blue); }
+#page-orgchart .oc-sr { border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:16px; }
+#page-orgchart .oc-sr .it { padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--border); }
+#page-orgchart .oc-sr .it:last-child { border-bottom:none; }
+#page-orgchart .oc-sr .it:hover { background:var(--blue-lt); }
+#page-orgchart .oc-sr .t { font-weight:600; font-size:13.5px; }
+#page-orgchart .oc-sr .s { font-size:12px; color:var(--muted); }
+#page-orgchart .oc-zoombar { display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+#page-orgchart .oc-scroll { overflow:auto; padding:8px 4px 16px; max-height:calc(100vh - 290px); text-align:center; }
+#page-orgchart .oc-zoom { display:inline-block; }
+#page-orgchart .octree, #page-orgchart .octree ul { position:relative; padding:16px 0 0; white-space:nowrap; margin:0 auto; text-align:center; }
+#page-orgchart .octree li { display:inline-block; vertical-align:top; text-align:center; list-style:none; position:relative; padding:16px 6px 0; }
+#page-orgchart .octree li::before, #page-orgchart .octree li::after { content:''; position:absolute; top:0; right:50%; border-top:2px solid #c7cdd8; width:50%; height:16px; }
+#page-orgchart .octree li::after { right:auto; left:50%; border-left:2px solid #c7cdd8; }
+#page-orgchart .octree li:only-child::before, #page-orgchart .octree li:only-child::after { display:none; }
+#page-orgchart .octree li:only-child { padding-top:16px; }
+#page-orgchart .octree li:first-child::before, #page-orgchart .octree li:last-child::after { border:0 none; }
+#page-orgchart .octree li:last-child::before { border-right:2px solid #c7cdd8; border-radius:0 6px 0 0; }
+#page-orgchart .octree li:first-child::after { border-radius:6px 0 0 0; }
+#page-orgchart .octree ul ul::before { content:''; position:absolute; top:0; left:50%; border-left:2px solid #c7cdd8; width:0; height:16px; }
+#page-orgchart .octree > li { padding-top:0; }
+#page-orgchart .octree > li::before, #page-orgchart .octree > li::after { display:none; }
+#page-orgchart .oc-box { display:inline-block; white-space:normal; vertical-align:top; border:1px solid var(--border); border-top:3px solid var(--muted); border-radius:8px; padding:8px 11px; background:#fff; min-width:150px; max-width:210px; cursor:pointer; text-align:center; }
+#page-orgchart .oc-box:hover { border-color:var(--blue); box-shadow:0 4px 14px rgba(43,91,174,.12); }
+#page-orgchart .oc-box.filled { border-top-color:var(--green); }
+#page-orgchart .oc-box.vacant { border-top-color:var(--red); }
+#page-orgchart .oc-box.filled_pending_name { border-top-color:var(--orange); }
+#page-orgchart .octree > li > .oc-box { border-color:var(--blue); }
+#page-orgchart .ocb-title { font-weight:600; font-size:13px; }
+#page-orgchart .ocb-person { font-size:12px; margin-top:3px; }
+#page-orgchart .ocb-meta { margin-top:5px; display:flex; gap:5px; justify-content:center; align-items:center; flex-wrap:wrap; }
+#page-orgchart .ocb-dept { font-size:10.5px; color:var(--muted); margin-top:4px; }
+#page-orgchart .ocb-more { font-size:11px; color:var(--blue); margin-top:6px; background:var(--blue-lt); border-radius:999px; padding:1px 7px; display:inline-block; }
+#page-orgchart .oc-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:18px; }
+#page-orgchart .oc-stat { border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+#page-orgchart .oc-stat .v { font-size:26px; font-weight:700; }
+#page-orgchart .oc-stat .l { font-size:12.5px; color:var(--muted); margin-top:2px; }
+#page-orgchart .oc-stat.vac .v { color:var(--red); }
+#page-orgchart .oc-stat.fill .v { color:var(--green); }
+#page-orgchart .oc-bar { display:grid; grid-template-columns:220px 1fr 92px; align-items:center; gap:10px; margin:7px 0; font-size:13px; }
+#page-orgchart .oc-bar .lbl { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#page-orgchart .oc-bar .track { background:var(--gray); border-radius:6px; height:18px; overflow:hidden; }
+#page-orgchart .oc-bar .fill { height:100%; background:linear-gradient(90deg,var(--gold),#c99419); border-radius:6px; }
+#page-orgchart .oc-bar.high .fill { background:linear-gradient(90deg,#f5917b,var(--red)); }
+#page-orgchart .oc-bar .pct { text-align:right; color:var(--muted); }
+#page-orgchart .oc-tablewrap { max-height:460px; overflow:auto; border:1px solid var(--border); border-radius:8px; }
+#page-orgchart table.oc-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+#page-orgchart table.oc-table th { text-align:left; padding:9px 10px; color:var(--muted); font-weight:500; border-bottom:1px solid var(--border); position:sticky; top:0; background:#fff; }
+#page-orgchart table.oc-table td { padding:9px 10px; border-bottom:1px solid var(--border); }
+#page-orgchart .oc-empty { text-align:center; color:var(--muted); padding:40px 20px; font-size:14px; }
+#page-orgchart .oc-muted { color:var(--muted); font-size:12.5px; }
 </style>
 </head>
 <body>
@@ -1057,6 +1142,9 @@ tbody tr:hover{background:var(--blue-lt)}
         </div>
         <div class="sidebar-item" onclick="switchSidebar('leave')" id="sb-leave">
           <span class="sb-icon">🗓️</span><span class="sb-label" data-en="Leave Management" data-th="การลา">Leave Management</span>
+        </div>
+        <div class="sidebar-item" onclick="switchSidebar('orgchart')" id="sb-orgchart" style="display:none">
+          <span class="sb-icon">🗂️</span><span class="sb-label" data-en="Org Chart" data-th="ผังองค์กร">Org Chart</span>
         </div>
 
         <div class="sidebar-divider"></div>
@@ -1223,6 +1311,60 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
       </div>
     </div>
+
+    <!-- ORG CHART PAGE -->
+    <div class="page hr-module" id="page-orgchart">
+      <div class="section-header" style="margin-bottom:8px">
+        <div>
+          <h2>🗂️ <span data-en="Organization Chart" data-th="ผังองค์กร">ผังองค์กร</span></h2>
+          <p style="font-size:13px;color:var(--muted);margin-top:2px" data-en="Live org structure & vacancies" data-th="โครงสร้างองค์กรและตำแหน่งว่าง (ข้อมูลสด)">โครงสร้างองค์กรและตำแหน่งว่าง (ข้อมูลสด)</p>
+        </div>
+      </div>
+      <div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:18px">
+        <div class="oc-subtab active" id="oc-subtab-chart" onclick="ocSwitchTab('chart')" style="padding:10px 20px;cursor:pointer;font-size:13.5px;font-weight:600;border-bottom:3px solid var(--gold);margin-bottom:-2px">🗂️ <span data-en="Org Chart" data-th="ผังองค์กร">ผังองค์กร</span></div>
+        <div class="oc-subtab" id="oc-subtab-vacant" onclick="ocSwitchTab('vacant')" style="padding:10px 20px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">📊 <span data-en="Vacancies" data-th="ตำแหน่งว่าง">ตำแหน่งว่าง</span></div>
+      </div>
+
+      <!-- Chart view -->
+      <div id="oc-view-chart">
+        <div class="oc-controls">
+          <input type="text" id="oc-search" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อคน...">
+          <div class="oc-seg">
+            <button class="active" id="oc-modeCards" onclick="ocSetMode('cards')">การ์ด</button>
+            <button id="oc-modeChart" onclick="ocSetMode('chart')">แผนภูมิเส้น</button>
+          </div>
+          <button class="oc-btn" onclick="ocSetFocus(null)">▲ บนสุด</button>
+        </div>
+        <div class="oc-sr" id="oc-searchResults" style="display:none"></div>
+        <div id="oc-drillView">
+          <nav class="oc-breadcrumb" id="oc-breadcrumb"></nav>
+          <div id="oc-cardsView">
+            <div id="oc-focusBox"></div>
+            <div class="oc-rhead" id="oc-rhead"></div>
+            <div class="oc-grid" id="oc-grid"></div>
+          </div>
+          <div id="oc-chartView" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- Vacant view -->
+      <div id="oc-view-vacant" style="display:none">
+        <div class="oc-stats" id="oc-stats"></div>
+        <div class="oc-controls">
+          <select id="oc-vacDivision" onchange="ocRenderVacant()" style="padding:9px 11px;font-size:14px;border:1px solid var(--border);border-radius:8px;font-family:inherit"><option value="">ทุก Division</option></select>
+          <input type="text" id="oc-vacSearch" placeholder="ค้นหาชื่อตำแหน่ง..." oninput="ocRenderVacTable()">
+        </div>
+        <div id="oc-bars" style="margin-bottom:18px"></div>
+        <div class="oc-tablewrap">
+          <table class="oc-table">
+            <thead><tr><th>Division</th><th>Department</th><th>Grade</th><th>ตำแหน่ง</th><th>สถานะ</th><th>รักษาการ</th><th>รายงานต่อ</th></tr></thead>
+            <tbody id="oc-vacRows"></tbody>
+          </table>
+        </div>
+        <p class="oc-muted" id="oc-vacCount" style="margin-top:10px"></p>
+      </div>
+    </div>
+
     <!-- ONBOARDING PAGE -->
     <div class="page hr-module" id="page-onboarding">
       <!-- Sub tabs -->
@@ -2182,6 +2324,8 @@ function enterApp() {
   // Show settings menu for admin only
   const settingsMenu = document.getElementById('sb-settings');
   if (settingsMenu) settingsMenu.style.display = isAdmin() ? '' : 'none';
+  // Show Org Chart menu only for users in orgchart.hr_admins
+  checkOrgChartAccess();
   // Load org structure for dropdowns
   loadOrgStructure();
 }
@@ -2260,7 +2404,7 @@ function toggleSidebar() {
   }
 }
 
-const HR_MODULES = ['recruitment','onboarding','training','performance','leave','announcements','meetings','birthday','help','notifications','settings'];
+const HR_MODULES = ['recruitment','onboarding','training','performance','leave','orgchart','announcements','meetings','birthday','help','notifications','settings'];
 const TASK_TABS = ['my-tasks','dept-overview','all-tasks'];
 
 function switchSidebar(page) {
@@ -2282,6 +2426,10 @@ function switchSidebar(page) {
       pageEl.classList.add('active');
       applyModuleLang(pageEl);
       if (page==='notifications') renderNotifPage();
+      if (page==='orgchart') {
+        if (!ocAllowed) { toast('🔒 เฉพาะผู้มีสิทธิ์'); switchSidebar('my-tasks'); return; }
+        ocInit();
+      }
       if (page==='settings') {
         if (!isAdmin()) { toast('🔒 Admin only'); switchSidebar('my-tasks'); return; }
         loadOrgStructure().then(()=>renderSettingsPage());
@@ -5301,6 +5449,147 @@ async function submitResetPw(token) {
     errEl.style.display = 'block';
   }
 }
+
+// ===================== ORG CHART MODULE (schema: orgchart) =====================
+let ocAllowed = false, ocLoaded = false;
+let ocAllRows = [], ocById = new Map(), ocRoots = [], ocHeadcount = [];
+let ocFocusId = null, ocViewMode = 'cards', ocChartZoom = 1;
+const OC_CHART_MAX_DEPTH = 2;
+
+async function checkOrgChartAccess() {
+  try {
+    const r = await sbFetch('rpc/is_hr_admin', { method:'POST', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify({}) });
+    ocAllowed = (r === true);
+  } catch(e) { ocAllowed = false; }
+  const el = document.getElementById('sb-orgchart');
+  if (el) el.style.display = ocAllowed ? '' : 'none';
+}
+
+async function ocInit() {
+  ocSwitchTab('chart');
+  if (ocLoaded) return;
+  showLoading('Loading org chart...');
+  try {
+    const rows = await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active&is_active=eq.true', { headers:{'Accept-Profile':'orgchart'} });
+    ocAllRows = rows || [];
+    const hc = await sbFetch('headcount_summary?select=*', { headers:{'Accept-Profile':'orgchart'} });
+    ocHeadcount = hc || [];
+    ocLoaded = true;
+    const divs = [...new Set(ocAllRows.map(r=>r.division))].sort();
+    const vsel = document.getElementById('oc-vacDivision');
+    divs.forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; vsel.appendChild(o); });
+    ocBuildIndex();
+    ocFocusId = ocRoots.length===1 ? ocRoots[0].position_id : null;
+    ocRenderDrill();
+    ocRenderVacant();
+  } catch(e) {
+    document.getElementById('oc-drillView').innerHTML = '<div class="oc-empty">โหลดผังองค์กรไม่สำเร็จ: '+ocEsc(e.message)+'</div>';
+  }
+  hideLoading();
+}
+
+function ocSwitchTab(t) {
+  const c=document.getElementById('oc-subtab-chart'), v=document.getElementById('oc-subtab-vacant');
+  c.style.borderBottomColor = t==='chart'?'var(--gold)':'transparent'; c.style.color = t==='chart'?'var(--blue)':'var(--muted)';
+  v.style.borderBottomColor = t==='vacant'?'var(--gold)':'transparent'; v.style.color = t==='vacant'?'var(--blue)':'var(--muted)';
+  document.getElementById('oc-view-chart').style.display = t==='chart'?'block':'none';
+  document.getElementById('oc-view-vacant').style.display = t==='vacant'?'block':'none';
+}
+
+function ocEsc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ocStatusLabel(s){ return {filled:'Filled',vacant:'Vacant',filled_pending_name:'Pending',unknown:'Unknown'}[s]||s; }
+
+function ocBuildIndex(){
+  ocById = new Map(ocAllRows.map(r=>[r.position_id,{...r,children:[]}]));
+  ocRoots = [];
+  for(const n of ocById.values()){
+    const p = n.reports_to_position_id ? ocById.get(n.reports_to_position_id) : null;
+    if(p) p.children.push(n); else ocRoots.push(n);
+  }
+  const sf=(a,b)=>(a.department||'').localeCompare(b.department||'')||(a.title||'').localeCompare(b.title||'');
+  ocById.forEach(n=>n.children.sort(sf)); ocRoots.sort(sf);
+}
+function ocDescCount(n){ let c=0; for(const ch of n.children) c+=1+ocDescCount(ch); return c; }
+function ocAncestors(n){ const ch=[]; let cur=n.reports_to_position_id?ocById.get(n.reports_to_position_id):null; while(cur){ch.unshift(cur);cur=cur.reports_to_position_id?ocById.get(cur.reports_to_position_id):null;} return ch; }
+
+function ocSetFocus(id){
+  ocFocusId=id;
+  document.getElementById('oc-search').value='';
+  document.getElementById('oc-searchResults').style.display='none';
+  document.getElementById('oc-drillView').style.display='block';
+  ocRenderDrill();
+}
+function ocPerson(n,cls){ return n.incumbent?`<span class="${cls}">${ocEsc(n.incumbent)}</span>`:`<span class="${cls} oc-vac-person">— ${n.acting_coverage?'รักษาการ: '+ocEsc(n.acting_coverage):'ว่าง'}</span>`; }
+
+function ocSetMode(m){
+  ocViewMode=m;
+  document.getElementById('oc-modeCards').classList.toggle('active', m==='cards');
+  document.getElementById('oc-modeChart').classList.toggle('active', m==='chart');
+  document.getElementById('oc-cardsView').style.display = m==='cards'?'block':'none';
+  document.getElementById('oc-chartView').style.display = m==='chart'?'block':'none';
+  ocRenderDrill();
+}
+
+function ocRenderDrill(){
+  const focus = ocFocusId?ocById.get(ocFocusId):null;
+  const cr=[`<span class="oc-crumb ${focus?'':'current'}" onclick="ocSetFocus(null)">องค์กร</span>`];
+  if(focus){ ocAncestors(focus).forEach(a=>{cr.push('<span class="oc-sep">›</span>');cr.push(`<span class="oc-crumb" onclick="ocSetFocus('${a.position_id}')">${ocEsc(a.title)}</span>`);}); cr.push('<span class="oc-sep">›</span>'); cr.push(`<span class="oc-crumb current">${ocEsc(focus.title)}</span>`); }
+  document.getElementById('oc-breadcrumb').innerHTML=cr.join(' ');
+  if(ocViewMode==='chart') ocRenderChart(focus); else ocRenderCards(focus);
+}
+
+function ocRenderCards(focus){
+  const fb=document.getElementById('oc-focusBox'), rh=document.getElementById('oc-rhead'), rg=document.getElementById('oc-grid');
+  let reports;
+  if(focus){
+    fb.style.display='block';
+    fb.innerHTML=`<div class="oc-focus"><div class="t">${ocEsc(focus.title)}</div><div class="m">${ocPerson(focus,'')}<span class="oc-badge ${focus.status}">${ocStatusLabel(focus.status)}</span>${focus.grade?`<span class="oc-grade">${ocEsc(focus.grade)}</span>`:''}<span style="color:var(--muted)">${ocEsc(focus.division)} / ${ocEsc(focus.department)}</span></div></div>`;
+    reports=focus.children;
+  } else { fb.style.display='none'; fb.innerHTML=''; reports=ocRoots; }
+  rh.textContent = focus ? (reports.length?`ผู้ใต้บังคับบัญชาโดยตรง (${reports.length})`:'ไม่มีตำแหน่งใต้สังกัด') : `ตำแหน่งระดับบนสุด (${reports.length})`;
+  rg.innerHTML = reports.map(n=>{ const k=n.children.length; return `<div class="oc-card ${k?'kids':''}" ${k?`onclick="ocSetFocus('${n.position_id}')"`:''}><span class="cchev">${k?'▸':''}</span><div class="ct">${ocEsc(n.title)}</div>${ocPerson(n,'cp')}<div class="crow"><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${n.grade?`<span class="oc-grade">${ocEsc(n.grade)}</span>`:''}<span class="cdept">${ocEsc(n.department)}</span>${k?`<span class="ckids">▸ ${k} ตรง · ${ocDescCount(n)} ใต้สังกัด</span>`:''}</div></div>`; }).join('') || `<div class="oc-empty">ตำแหน่งนี้ไม่มีผู้ใต้บังคับบัญชา</div>`;
+}
+
+function ocChartBox(n){ const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-title">${ocEsc(n.title)}</div>${n.incumbent?`<div class="ocb-person">${ocEsc(n.incumbent)}</div>`:`<div class="ocb-person oc-vac-person">— ${n.acting_coverage?'รักษาการ: '+ocEsc(n.acting_coverage):'ว่าง'}</div>`}<div class="ocb-meta"><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${n.grade?`<span class="oc-grade">${ocEsc(n.grade)}</span>`:''}</div><div class="ocb-dept">${ocEsc(n.department)}</div>${k?`<div class="ocb-more">▾ ${k} ตรง · ${ocDescCount(n)} ใต้สังกัด</div>`:''}</div>`; }
+function ocChartNode(n,d){ let h='<li>'+ocChartBox(n); if(n.children.length&&d<OC_CHART_MAX_DEPTH){ h+='<ul>'+n.children.map(c=>ocChartNode(c,d+1)).join('')+'</ul>'; } h+='</li>'; return h; }
+function ocRenderChart(focus){
+  const cv=document.getElementById('oc-chartView');
+  const tops=focus?[focus]:ocRoots;
+  if(!tops.length){ cv.innerHTML='<div class="oc-empty">ไม่มีข้อมูล</div>'; return; }
+  cv.innerHTML=`<div class="oc-zoombar"><button class="oc-btn" onclick="ocZoomBy(-0.1)">−</button><span class="oc-muted" id="oc-zoomPct" style="min-width:48px;text-align:center">100%</span><button class="oc-btn" onclick="ocZoomBy(0.1)">+</button><button class="oc-btn" onclick="ocZoomFit()">พอดีหน้าจอ</button><span class="oc-muted">· คลิกกล่องที่มี ▾ เพื่อเจาะลง</span></div><div class="oc-scroll" id="oc-ocScroll"><div class="oc-zoom" id="oc-ocZoom"><ul class="octree">${tops.map(n=>ocChartNode(n,0)).join('')}</ul></div></div>`;
+  requestAnimationFrame(ocZoomFit);
+}
+function ocApplyZoom(){ const z=document.getElementById('oc-ocZoom'); if(z)z.style.zoom=ocChartZoom; const p=document.getElementById('oc-zoomPct'); if(p)p.textContent=Math.round(ocChartZoom*100)+'%'; }
+function ocZoomBy(d){ ocChartZoom=Math.min(1.5,Math.max(0.3,+(ocChartZoom+d).toFixed(2))); ocApplyZoom(); }
+function ocZoomFit(){ const sc=document.getElementById('oc-ocScroll'),z=document.getElementById('oc-ocZoom'); if(!sc||!z)return; z.style.zoom=1; const nat=z.scrollWidth,av=sc.clientWidth-24; ocChartZoom=(nat>av)?Math.max(0.3,Math.floor(av/nat*100)/100):1; ocApplyZoom(); }
+
+function ocRenderSearch(){
+  const q=document.getElementById('oc-search').value.trim().toLowerCase();
+  const sr=document.getElementById('oc-searchResults'), dv=document.getElementById('oc-drillView');
+  if(q.length<1){ sr.style.display='none'; dv.style.display='block'; return; }
+  const m=ocAllRows.filter(r=>(r.title||'').toLowerCase().includes(q)||(r.incumbent||'').toLowerCase().includes(q)).slice(0,50);
+  dv.style.display='none'; sr.style.display='block';
+  sr.innerHTML=m.length?m.map(r=>`<div class="it" onclick="ocSetFocus('${r.position_id}')"><div class="t">${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):'<span class="oc-badge vacant">ว่าง</span>'}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}${r.grade?' · '+ocEsc(r.grade):''}</div></div>`).join(''):`<div class="oc-empty">ไม่พบตำแหน่งที่ตรงกับคำค้นหา</div>`;
+}
+
+function ocRenderVacant(){
+  const df=document.getElementById('oc-vacDivision').value;
+  const rows=ocHeadcount.filter(h=>!df||h.division===df);
+  const f=rows.reduce((s,r)=>s+Number(r.filled),0), v=rows.reduce((s,r)=>s+Number(r.vacant),0), p=rows.reduce((s,r)=>s+Number(r.pending),0), tot=rows.reduce((s,r)=>s+Number(r.total),0);
+  const pc=tot?Math.round(100*v/tot):0;
+  document.getElementById('oc-stats').innerHTML=`<div class="oc-stat fill"><div class="v">${f}</div><div class="l">มีคน (Filled)</div></div><div class="oc-stat vac"><div class="v">${v}</div><div class="l">ว่าง (Vacant)</div></div><div class="oc-stat"><div class="v">${p}</div><div class="l">รอชื่อ (Pending)</div></div><div class="oc-stat"><div class="v">${tot}</div><div class="l">ทั้งหมด</div></div><div class="oc-stat vac"><div class="v">${pc}%</div><div class="l">ว่างเฉลี่ย</div></div>`;
+  const bars=rows.map(r=>({...r,pct:Number(r.total)?Math.round(100*Number(r.vacant)/Number(r.total)):0})).filter(r=>Number(r.vacant)>0).sort((a,b)=>b.pct-a.pct);
+  document.getElementById('oc-bars').innerHTML=bars.length?bars.map(r=>`<div class="oc-bar ${r.pct>=40?'high':''}"><span class="lbl" title="${ocEsc(r.division)} / ${ocEsc(r.department)}">${ocEsc(r.department)}</span><span class="track"><span class="fill" style="width:${r.pct}%"></span></span><span class="pct">${r.pct}% (${r.vacant}/${r.total})</span></div>`).join(''):`<div class="oc-empty">ไม่มีตำแหน่งว่างใน Division นี้</div>`;
+  ocRenderVacTable();
+}
+function ocRenderVacTable(){
+  const df=document.getElementById('oc-vacDivision').value;
+  const q=document.getElementById('oc-vacSearch').value.trim().toLowerCase();
+  const rows=ocAllRows.filter(r=>(r.status==='vacant'||r.status==='filled_pending_name')&&(!df||r.division===df)&&(!q||(r.title||'').toLowerCase().includes(q))).sort((a,b)=>(a.division||'').localeCompare(b.division||'')||(a.department||'').localeCompare(b.department||''));
+  document.getElementById('oc-vacRows').innerHTML=rows.map(r=>`<tr><td>${ocEsc(r.division)}</td><td>${ocEsc(r.department)}</td><td>${ocEsc(r.grade||'—')}</td><td>${ocEsc(r.title)}</td><td><span class="oc-badge ${r.status}">${ocStatusLabel(r.status)}</span></td><td>${r.acting_coverage?ocEsc(r.acting_coverage):'—'}</td><td>${ocEsc(r.reports_to_title||'สูงสุดในองค์กร')}</td></tr>`).join('')||`<tr><td colspan="7"><div class="oc-empty">ไม่พบตำแหน่งว่าง</div></td></tr>`;
+  document.getElementById('oc-vacCount').textContent=`${rows.length} ตำแหน่งว่าง`;
+}
+{ const ocS=document.getElementById('oc-search'); if(ocS) ocS.addEventListener('input', ocRenderSearch); }
 
 // ── INIT ──
 async function init() {
