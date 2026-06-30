@@ -996,8 +996,10 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-orgchart .ocb-name.vac { color:var(--red); font-weight:600; }
 #page-orgchart .ocb-title { font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 #page-orgchart .ocb-title2 { font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-#page-orgchart .oc-tnode { position:absolute; width:214px; z-index:1; }
-#page-orgchart .oc-tnode .oc-box { height:118px; overflow:hidden; box-sizing:border-box; }
+#page-orgchart .oc-tnode { position:absolute; width:180px; z-index:1; }
+#page-orgchart .oc-tnode .oc-box { width:180px; height:116px; overflow:hidden; box-sizing:border-box; padding:8px 10px; }
+#page-orgchart .oc-tnode .ocb-name { font-size:12px; }
+#page-orgchart .oc-tnode .oc-av { width:30px; height:30px; flex:0 0 30px; font-size:11px; }
 #page-orgchart .oc-rowlabel { position:absolute; left:0; width:48px; font-size:12px; font-weight:700; color:#fff; background:var(--blue); border-radius:6px; padding:3px 0; text-align:center; z-index:2; }
 #page-orgchart .ocb-foot { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:9px; }
 #page-orgchart .ocb-level { font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-lt); border:1px solid #cfdcf3; border-radius:6px; padding:1px 8px; white-space:nowrap; }
@@ -5564,7 +5566,7 @@ async function submitResetPw(token) {
 // ===================== ORG CHART MODULE (schema: orgchart) =====================
 let ocAllowed = false, ocLoaded = false;
 let ocAllRows = [], ocById = new Map(), ocRoots = [], ocHeadcount = [];
-let ocFocusId = null, ocViewMode = 'cards', ocChartZoom = 1;
+let ocFocusId = null, ocViewMode = 'cards', ocChartZoom = 1, ocChartDepth = 2;
 const OC_CHART_MAX_DEPTH = 2;
 
 async function checkOrgChartAccess() {
@@ -5691,14 +5693,15 @@ function ocRenderChart(focus){
   const cv=document.getElementById('oc-chartView');
   const root = focus || (ocRoots.length===1?ocRoots[0]:null);
   if(!root){ cv.innerHTML='<div class="oc-empty">ไม่มีข้อมูล</div>'; return; }
-  const nodes=[]; (function rec(n){ nodes.push(n); n.children.forEach(rec); })(root);
+  const MAXD=ocChartDepth;
+  const nodes=[]; (function rec(n,d){ nodes.push(n); if(d<MAXD) n.children.forEach(c=>rec(c,d+1)); })(root,0);
   const gk=n=>n.grade||'(ไม่ระบุ)';
   const present=[...new Set(nodes.map(gk))].sort((a,b)=>ocGRank(a==='(ไม่ระบุ)'?'zz':a)-ocGRank(b==='(ไม่ระบุ)'?'zz':b));
   const rowOf={}; present.forEach((g,i)=>rowOf[g]=i);
   // tidy x: leaves get sequential slots, parents centered over children
   const X=new Map(); let nx=0;
-  (function po(n){ if(!n.children.length){ X.set(n.position_id,nx++); } else { n.children.forEach(po); const xs=n.children.map(c=>X.get(c.position_id)); X.set(n.position_id,(Math.min(...xs)+Math.max(...xs))/2); } })(root);
-  const SLOT=238, ROWH=158, LABELW=54, BW=214, BH=118, PADT=10;
+  (function po(n,d){ const kids=d<MAXD?n.children:[]; if(!kids.length){ X.set(n.position_id,nx++); } else { kids.forEach(c=>po(c,d+1)); const xs=kids.map(c=>X.get(c.position_id)); X.set(n.position_id,(Math.min(...xs)+Math.max(...xs))/2); } })(root,0);
+  const SLOT=196, ROWH=150, LABELW=50, BW=180, BH=116, PADT=10;
   const maxX=Math.max(0,...X.values());
   const W=LABELW+(maxX+1)*SLOT, H=PADT+present.length*ROWH;
   const xpx=pid=>LABELW + X.get(pid)*SLOT;
@@ -5714,9 +5717,10 @@ function ocRenderChart(focus){
     const px=xpx(p.position_id)+BW/2, pb=ytop(gk(p))+BH, my=pb+(ct-pb)/2;
     paths+=`<path d="M${px} ${pb} V${my} H${cx} V${ct}" fill="none" stroke="#b9c2d6" stroke-width="2"/>`;
   });
-  cv.innerHTML=`<div class="oc-zoombar"><button class="oc-btn" onclick="ocZoomBy(-0.1)">−</button><span class="oc-muted" id="oc-zoomPct" style="min-width:48px;text-align:center">100%</span><button class="oc-btn" onclick="ocZoomBy(0.1)">+</button><button class="oc-btn" onclick="ocZoomFit()">พอดีหน้าจอ</button><span class="oc-muted">· แถว = ระดับ (grade) · คลิกกล่องเพื่อโฟกัส</span></div><div class="oc-scroll" id="oc-ocScroll"><div class="oc-zoom" id="oc-ocZoom" style="position:relative;width:${W}px;height:${H}px"><svg class="oc-svg" width="${W}" height="${H}">${paths}</svg>${labels}${boxes}</div></div>`;
+  cv.innerHTML=`<div class="oc-zoombar"><button class="oc-btn" onclick="ocDepthBy(-1)">− ชั้น</button><span class="oc-muted" id="oc-depth" style="min-width:44px;text-align:center">ชั้น ${ocChartDepth}</span><button class="oc-btn" onclick="ocDepthBy(1)">+ ชั้น</button><span style="display:inline-block;width:10px"></span><button class="oc-btn" onclick="ocZoomBy(-0.1)">−</button><span class="oc-muted" id="oc-zoomPct" style="min-width:44px;text-align:center">100%</span><button class="oc-btn" onclick="ocZoomBy(0.1)">+</button><button class="oc-btn" onclick="ocZoomFit()">พอดีหน้าจอ</button><span class="oc-muted">· แถว = ระดับ · คลิกกล่องเพื่อเจาะลง</span></div><div class="oc-scroll" id="oc-ocScroll"><div class="oc-zoom" id="oc-ocZoom" style="position:relative;width:${W}px;height:${H}px"><svg class="oc-svg" width="${W}" height="${H}">${paths}</svg>${labels}${boxes}</div></div>`;
   requestAnimationFrame(ocZoomFit);
 }
+function ocDepthBy(d){ ocChartDepth=Math.min(6,Math.max(1,ocChartDepth+d)); ocRenderDrill(); }
 function ocApplyZoom(){ const z=document.getElementById('oc-ocZoom'); if(z)z.style.zoom=ocChartZoom; const p=document.getElementById('oc-zoomPct'); if(p)p.textContent=Math.round(ocChartZoom*100)+'%'; }
 function ocZoomBy(d){ ocChartZoom=Math.min(1.5,Math.max(0.3,+(ocChartZoom+d).toFixed(2))); ocApplyZoom(); }
 function ocZoomFit(){ const sc=document.getElementById('oc-ocScroll'),z=document.getElementById('oc-ocZoom'); if(!sc||!z)return; z.style.zoom=1; const nat=z.scrollWidth,av=sc.clientWidth-24; ocChartZoom=(nat>av)?Math.max(0.3,Math.floor(av/nat*100)/100):1; ocApplyZoom(); }
