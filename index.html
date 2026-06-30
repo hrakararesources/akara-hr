@@ -983,17 +983,20 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-orgchart .octree ul ul::before { content:''; position:absolute; top:0; left:50%; border-left:2px solid #c7cdd8; width:0; height:16px; }
 #page-orgchart .octree > li { padding-top:0; }
 #page-orgchart .octree > li::before, #page-orgchart .octree > li::after { display:none; }
-#page-orgchart .oc-box { display:inline-block; white-space:normal; vertical-align:top; border:1px solid var(--border); border-top:3px solid var(--muted); border-radius:8px; padding:8px 11px; background:#fff; min-width:150px; max-width:210px; cursor:pointer; text-align:center; }
-#page-orgchart .oc-box:hover { border-color:var(--blue); box-shadow:0 4px 14px rgba(43,91,174,.12); }
+#page-orgchart .oc-box { display:inline-block; white-space:normal; vertical-align:top; width:214px; border:1px solid var(--border); border-top:3px solid var(--muted); border-radius:12px; padding:10px 12px; background:#fff; cursor:pointer; text-align:left; box-shadow:0 1px 3px rgba(20,30,60,.05); }
+#page-orgchart .oc-box:hover { border-color:var(--blue); box-shadow:0 6px 18px rgba(43,91,174,.14); }
 #page-orgchart .oc-box.filled { border-top-color:var(--green); }
 #page-orgchart .oc-box.vacant { border-top-color:var(--red); }
 #page-orgchart .oc-box.filled_pending_name { border-top-color:var(--orange); }
-#page-orgchart .octree > li > .oc-box { border-color:var(--blue); }
-#page-orgchart .ocb-title { font-weight:600; font-size:13px; }
-#page-orgchart .ocb-person { font-size:12px; margin-top:3px; }
-#page-orgchart .ocb-meta { margin-top:5px; display:flex; gap:5px; justify-content:center; align-items:center; flex-wrap:wrap; }
-#page-orgchart .ocb-dept { font-size:10.5px; color:var(--muted); margin-top:4px; }
-#page-orgchart .ocb-more { font-size:11px; color:var(--blue); margin-top:6px; background:var(--blue-lt); border-radius:999px; padding:1px 7px; display:inline-block; }
+#page-orgchart .octree > li > .oc-box { border-color:var(--blue); box-shadow:0 4px 14px rgba(43,91,174,.14); }
+#page-orgchart .ocb-head { display:flex; align-items:center; gap:9px; }
+#page-orgchart .oc-box .oc-av { width:34px; height:34px; flex:0 0 34px; font-size:12px; }
+#page-orgchart .ocb-info { min-width:0; flex:1; }
+#page-orgchart .ocb-name { font-weight:700; font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#page-orgchart .ocb-name.vac { color:var(--red); font-weight:600; }
+#page-orgchart .ocb-title { font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+#page-orgchart .ocb-foot { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:9px; }
+#page-orgchart .ocb-cnt { font-size:10.5px; font-weight:600; color:var(--blue); background:var(--blue-lt); border-radius:6px; padding:1px 6px; white-space:nowrap; }
 #page-orgchart .oc-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:18px; }
 #page-orgchart .oc-stat { border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
 #page-orgchart .oc-stat .v { font-size:26px; font-weight:700; }
@@ -5650,7 +5653,7 @@ function ocRenderCards(focus){
   rg.innerHTML = reports.map(n=>{ const k=n.children.length; return `<div class="oc-card ${k?'kids':''}" ${k?`onclick="ocSetFocus('${n.position_id}')"`:''}>${ocCardInner(n,false)}${k?`<span class="oc-countbadge" title="${k} ตรง / ${ocDescCount(n)} ใต้สังกัด">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`; }).join('') || `<div class="oc-empty">ตำแหน่งนี้ไม่มีผู้ใต้บังคับบัญชา</div>`;
 }
 
-function ocChartBox(n){ const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-title">${ocEsc(n.title)}</div>${n.incumbent?`<div class="ocb-person">${ocEsc(n.incumbent)}</div>`:`<div class="ocb-person oc-vac-person">— ${n.acting_coverage?'รักษาการ: '+ocEsc(n.acting_coverage):'ว่าง'}</div>`}<div class="ocb-meta"><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${n.grade?`<span class="oc-grade">${ocEsc(n.grade)}</span>`:''}</div><div class="ocb-dept">${ocEsc(n.department)}</div>${k?`<div class="ocb-more">▾ ${k} ตรง · ${ocDescCount(n)} ใต้สังกัด</div>`:''}</div>`; }
+function ocChartBox(n){ const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-head">${ocAvatar(n)}<div class="ocb-info"><div class="ocb-name ${n.incumbent?'':'vac'}">${ocEsc(n.incumbent||'ตำแหน่งว่าง')}</div><div class="ocb-title">${ocEsc(n.title)}${n.grade?' · '+ocEsc(n.grade):''}</div></div></div><div class="ocb-foot"><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${k?`<span class="ocb-cnt">▾ ${k}/${ocDescCount(n)}</span>`:''}</div></div>`; }
 function ocChartNode(n,d){ let h='<li>'+ocChartBox(n); if(n.children.length&&d<OC_CHART_MAX_DEPTH){ h+='<ul>'+n.children.map(c=>ocChartNode(c,d+1)).join('')+'</ul>'; } h+='</li>'; return h; }
 function ocRenderChart(focus){
   const cv=document.getElementById('oc-chartView');
