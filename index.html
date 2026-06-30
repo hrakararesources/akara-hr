@@ -945,21 +945,23 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-orgchart .oc-crumb { background:var(--blue-lt); border:1px solid var(--border); color:var(--blue); padding:4px 10px; border-radius:999px; cursor:pointer; white-space:nowrap; }
 #page-orgchart .oc-crumb.current { background:var(--blue); color:#fff; cursor:default; }
 #page-orgchart .oc-sep { color:var(--muted); }
-#page-orgchart .oc-focus { border:2px solid var(--blue); border-radius:10px; padding:16px 18px; background:var(--blue-lt); margin-bottom:8px; }
-#page-orgchart .oc-focus .t { font-size:18px; font-weight:700; color:var(--blue); }
-#page-orgchart .oc-focus .m { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px; font-size:13px; }
 #page-orgchart .oc-vac-person { color:var(--red); font-style:italic; }
-#page-orgchart .oc-rhead { font-size:13px; color:var(--muted); margin:18px 0 10px; font-weight:600; }
-#page-orgchart .oc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
-#page-orgchart .oc-card { border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:#fff; position:relative; }
-#page-orgchart .oc-card.kids { cursor:pointer; }
-#page-orgchart .oc-card.kids:hover { border-color:var(--blue); box-shadow:0 4px 14px rgba(43,91,174,.12); }
-#page-orgchart .oc-card .ct { font-weight:600; font-size:14px; padding-right:20px; }
-#page-orgchart .oc-card .cp { font-size:13px; margin-top:4px; }
-#page-orgchart .oc-card .crow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }
-#page-orgchart .oc-card .cdept { font-size:11.5px; color:var(--muted); }
-#page-orgchart .oc-card .ckids { font-size:11.5px; color:var(--blue); background:var(--blue-lt); border-radius:999px; padding:1px 8px; }
-#page-orgchart .oc-card .cchev { position:absolute; top:12px; right:12px; color:var(--blue); }
+#page-orgchart .oc-rhead { font-size:13px; color:var(--muted); margin:20px 0 12px; font-weight:600; text-align:center; }
+#page-orgchart .oc-focuscard { display:flex; align-items:center; gap:14px; max-width:460px; margin:0 auto 4px; border:2px solid var(--blue); border-radius:14px; padding:14px 18px; background:linear-gradient(180deg,#f4f8ff,#fff); box-shadow:0 4px 16px rgba(43,91,174,.12); position:relative; }
+#page-orgchart .oc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; align-items:stretch; }
+#page-orgchart .oc-card { display:flex; align-items:center; gap:12px; min-height:86px; border:1px solid var(--border); border-radius:14px; padding:12px 16px; background:#fff; position:relative; box-shadow:0 1px 3px rgba(20,30,60,.05); }
+#page-orgchart .oc-card.kids { cursor:pointer; transition:border-color .12s, box-shadow .12s, transform .05s; }
+#page-orgchart .oc-card.kids:hover { border-color:var(--blue); box-shadow:0 8px 22px rgba(43,91,174,.15); transform:translateY(-1px); }
+#page-orgchart .oc-av { width:48px; height:48px; flex:0 0 48px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px; text-transform:uppercase; }
+#page-orgchart .oc-focuscard .oc-av { width:54px; height:54px; flex-basis:54px; font-size:17px; }
+#page-orgchart .oc-av-vac { background:#eef0f3; color:var(--muted); border:1.5px dashed var(--border); font-weight:400; }
+#page-orgchart .oc-cinfo { flex:1; min-width:0; }
+#page-orgchart .oc-cn { font-weight:700; font-size:14px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#page-orgchart .oc-cn.vac { color:var(--red); font-weight:600; }
+#page-orgchart .oc-ct { font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+#page-orgchart .oc-cstatus { font-size:11.5px; color:var(--blue); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+#page-orgchart .oc-cdept { font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+#page-orgchart .oc-countbadge { position:absolute; top:10px; right:10px; display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:600; color:var(--blue); background:var(--blue-lt); border-radius:6px; padding:2px 7px; }
 #page-orgchart .oc-sr { border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:16px; }
 #page-orgchart .oc-sr .it { padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--border); }
 #page-orgchart .oc-sr .it:last-child { border-bottom:none; }
@@ -5625,16 +5627,27 @@ function ocRenderDrill(){
   if(ocViewMode==='chart') ocRenderChart(focus); else ocRenderCards(focus);
 }
 
+function ocAvatar(n){
+  if(n.incumbent){ const c=(typeof avatarColor==='function')?avatarColor(n.incumbent):'#2B5BAE'; return `<div class="oc-av" style="background:${c}">${ocEsc(n.incumbent.trim().slice(0,2))}</div>`; }
+  return `<div class="oc-av oc-av-vac">○</div>`;
+}
+function ocCardInner(n,isFocus){
+  const vac=!n.incumbent;
+  const third = n.acting_coverage
+    ? `<div class="oc-cstatus">รักษาการ: ${ocEsc(n.acting_coverage)}</div>`
+    : `<div class="oc-cdept">${ocEsc(isFocus?(n.division+' / '+n.department):n.department)}</div>`;
+  return `${ocAvatar(n)}<div class="oc-cinfo"><div class="oc-cn ${vac?'vac':''}">${ocEsc(n.incumbent||'ตำแหน่งว่าง')}</div><div class="oc-ct">${ocEsc(n.title)}${n.grade?' · '+ocEsc(n.grade):''}</div>${third}</div>`;
+}
 function ocRenderCards(focus){
   const fb=document.getElementById('oc-focusBox'), rh=document.getElementById('oc-rhead'), rg=document.getElementById('oc-grid');
   let reports;
   if(focus){
     fb.style.display='block';
-    fb.innerHTML=`<div class="oc-focus"><div class="t">${ocEsc(focus.title)}</div><div class="m">${ocPerson(focus,'')}<span class="oc-badge ${focus.status}">${ocStatusLabel(focus.status)}</span>${focus.grade?`<span class="oc-grade">${ocEsc(focus.grade)}</span>`:''}<span style="color:var(--muted)">${ocEsc(focus.division)} / ${ocEsc(focus.department)}</span></div></div>`;
+    fb.innerHTML=`<div class="oc-focuscard">${ocCardInner(focus,true)}<span class="oc-badge ${focus.status}">${ocStatusLabel(focus.status)}</span></div>`;
     reports=focus.children;
   } else { fb.style.display='none'; fb.innerHTML=''; reports=ocRoots; }
   rh.textContent = focus ? (reports.length?`ผู้ใต้บังคับบัญชาโดยตรง (${reports.length})`:'ไม่มีตำแหน่งใต้สังกัด') : `ตำแหน่งระดับบนสุด (${reports.length})`;
-  rg.innerHTML = reports.map(n=>{ const k=n.children.length; return `<div class="oc-card ${k?'kids':''}" ${k?`onclick="ocSetFocus('${n.position_id}')"`:''}><span class="cchev">${k?'▸':''}</span><div class="ct">${ocEsc(n.title)}</div>${ocPerson(n,'cp')}<div class="crow"><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${n.grade?`<span class="oc-grade">${ocEsc(n.grade)}</span>`:''}<span class="cdept">${ocEsc(n.department)}</span>${k?`<span class="ckids">▸ ${k} ตรง · ${ocDescCount(n)} ใต้สังกัด</span>`:''}</div></div>`; }).join('') || `<div class="oc-empty">ตำแหน่งนี้ไม่มีผู้ใต้บังคับบัญชา</div>`;
+  rg.innerHTML = reports.map(n=>{ const k=n.children.length; return `<div class="oc-card ${k?'kids':''}" ${k?`onclick="ocSetFocus('${n.position_id}')"`:''}>${ocCardInner(n,false)}${k?`<span class="oc-countbadge" title="${k} ตรง / ${ocDescCount(n)} ใต้สังกัด">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`; }).join('') || `<div class="oc-empty">ตำแหน่งนี้ไม่มีผู้ใต้บังคับบัญชา</div>`;
 }
 
 function ocChartBox(n){ const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-title">${ocEsc(n.title)}</div>${n.incumbent?`<div class="ocb-person">${ocEsc(n.incumbent)}</div>`:`<div class="ocb-person oc-vac-person">— ${n.acting_coverage?'รักษาการ: '+ocEsc(n.acting_coverage):'ว่าง'}</div>`}<div class="ocb-meta"><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${n.grade?`<span class="oc-grade">${ocEsc(n.grade)}</span>`:''}</div><div class="ocb-dept">${ocEsc(n.department)}</div>${k?`<div class="ocb-more">▾ ${k} ตรง · ${ocDescCount(n)} ใต้สังกัด</div>`:''}</div>`; }
