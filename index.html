@@ -1368,10 +1368,10 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="oc-controls">
           <input type="text" id="oc-search" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อคน...">
           <div class="oc-seg">
-            <button class="active" id="oc-modeCards" onclick="ocSetMode('cards')">การ์ด</button>
-            <button id="oc-modeChart" onclick="ocSetMode('chart')">แผนภูมิเส้น</button>
+            <button class="active" id="oc-modeCards" onclick="ocSetMode('cards')" data-en="Cards" data-th="การ์ด">การ์ด</button>
+            <button id="oc-modeChart" onclick="ocSetMode('chart')" data-en="Tree chart" data-th="แผนภูมิเส้น">แผนภูมิเส้น</button>
           </div>
-          <button class="oc-btn" onclick="ocSetFocus(null)">▲ บนสุด</button>
+          <button class="oc-btn" onclick="ocSetFocus(null)" data-en="▲ Top" data-th="▲ บนสุด">▲ บนสุด</button>
         </div>
         <div class="oc-sr" id="oc-searchResults" style="display:none"></div>
         <div id="oc-drillView">
@@ -1395,7 +1395,7 @@ tbody tr:hover{background:var(--blue-lt)}
         <div id="oc-bars" style="margin-bottom:18px"></div>
         <div class="oc-tablewrap">
           <table class="oc-table">
-            <thead><tr><th>Division</th><th>Department</th><th>Grade</th><th>ตำแหน่ง</th><th>สถานะ</th><th>รักษาการ</th><th>รายงานต่อ</th></tr></thead>
+            <thead><tr><th>Division</th><th>Department</th><th>Grade</th><th data-en="Position" data-th="ตำแหน่ง">ตำแหน่ง</th><th data-en="Status" data-th="สถานะ">สถานะ</th><th data-en="Acting" data-th="รักษาการ">รักษาการ</th><th data-en="Reports to" data-th="รายงานต่อ">รายงานต่อ</th></tr></thead>
             <tbody id="oc-vacRows"></tbody>
           </table>
         </div>
@@ -1405,76 +1405,76 @@ tbody tr:hover{background:var(--blue-lt)}
       <!-- Add position -->
       <div id="oc-view-add" class="oc-form" style="display:none;max-width:760px">
         <div class="oc-row2">
-          <div><label>Division</label><select id="oc-addDivision" onchange="ocmAddDivisionChange()"><option value="">เลือก Division</option></select></div>
-          <div><label>Department</label><select id="oc-addDepartment"><option value="">เลือก Division ก่อน</option></select></div>
+          <div><label>Division</label><select id="oc-addDivision" onchange="ocmAddDivisionChange()"><option value="" data-en="Select Division" data-th="เลือก Division">เลือก Division</option></select></div>
+          <div><label>Department</label><select id="oc-addDepartment"><option value="" data-en="Select Division first" data-th="เลือก Division ก่อน">เลือก Division ก่อน</option></select></div>
         </div>
         <div class="oc-row2">
-          <div><label>ชื่อตำแหน่ง</label><input type="text" id="oc-addTitle" placeholder="เช่น Senior Accounting Officer"></div>
-          <div><label>Grade</label><select id="oc-addGrade"><option value="">— ไม่ระบุ —</option><option>CEO</option><option>M4</option><option>M3</option><option>M2</option><option>M1 Senior</option><option>M1</option><option>S3</option><option>S2</option><option>S1</option><option>O3</option><option>O2</option><option>O1</option></select></div>
+          <div><label data-en="Position title" data-th="ชื่อตำแหน่ง">ชื่อตำแหน่ง</label><input type="text" id="oc-addTitle" placeholder="เช่น Senior Accounting Officer"></div>
+          <div><label>Grade</label><select id="oc-addGrade"><option value="" data-en="— none —" data-th="— ไม่ระบุ —">— ไม่ระบุ —</option><option>CEO</option><option>M4</option><option>M3</option><option>M2</option><option>M1 Senior</option><option>M1</option><option>S3</option><option>S2</option><option>S1</option><option>O3</option><option>O2</option><option>O1</option></select></div>
         </div>
-        <label>รายงานต่อ (Reports To)</label>
+        <label data-en="Reports To" data-th="รายงานต่อ (Reports To)">รายงานต่อ (Reports To)</label>
         <div class="oc-acwrap"><input type="text" id="oc-addReportsToSearch" placeholder="ค้นหาตำแหน่ง/ชื่อผู้บังคับบัญชา..."><div class="oc-ac" id="oc-addReportsToResults" style="display:none"></div></div>
         <div id="oc-addReportsToChip"></div>
         <div class="oc-chain" id="oc-addChain" style="display:none"></div>
-        <label>สถานะตำแหน่งใหม่</label>
-        <select id="oc-addStatus" onchange="ocmAddStatusChange()"><option value="vacant">ว่าง (Vacant)</option><option value="filled">มอบหมายคนทันที (Filled)</option></select>
+        <label data-en="New position status" data-th="สถานะตำแหน่งใหม่">สถานะตำแหน่งใหม่</label>
+        <select id="oc-addStatus" onchange="ocmAddStatusChange()"><option value="vacant" data-en="Vacant" data-th="ว่าง (Vacant)">ว่าง (Vacant)</option><option value="filled" data-en="Assign someone now (Filled)" data-th="มอบหมายคนทันที (Filled)">มอบหมายคนทันที (Filled)</option></select>
         <div id="oc-addEmpBlock" style="display:none">
-          <label>ผู้ดำรงตำแหน่ง</label>
+          <label data-en="Position holder" data-th="ผู้ดำรงตำแหน่ง">ผู้ดำรงตำแหน่ง</label>
           <div class="oc-acwrap"><input type="text" id="oc-addEmpSearch" placeholder="ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่..."><div class="oc-ac" id="oc-addEmpResults" style="display:none"></div></div>
           <div id="oc-addEmpChip"></div>
         </div>
-        <button class="btn btn-gold oc-savebtn" id="oc-addBtn" onclick="ocmSubmitAdd()">บันทึกตำแหน่งใหม่</button>
+        <button class="btn btn-gold oc-savebtn" id="oc-addBtn" onclick="ocmSubmitAdd()" data-en="Save new position" data-th="บันทึกตำแหน่งใหม่">บันทึกตำแหน่งใหม่</button>
       </div>
 
       <!-- Assign / Move -->
       <div id="oc-view-assign" class="oc-form" style="display:none;max-width:760px">
-        <label>ตำแหน่งที่จะแก้ไข</label>
+        <label data-en="Position to edit" data-th="ตำแหน่งที่จะแก้ไข">ตำแหน่งที่จะแก้ไข</label>
         <div class="oc-acwrap"><input type="text" id="oc-asgPosSearch" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่งปัจจุบัน..."><div class="oc-ac" id="oc-asgPosResults" style="display:none"></div></div>
         <div id="oc-asgPosChip"></div>
         <div class="oc-chain" id="oc-asgChain" style="display:none"></div>
         <div id="oc-asgForm" style="display:none">
-          <label>สถานะใหม่</label>
-          <select id="oc-asgStatus" onchange="ocmAssignStatusChange()"><option value="filled">มอบหมายคน (Filled)</option><option value="vacant">ว่าง (Vacant)</option><option value="filled_pending_name">ว่าง — รอชื่อผู้สมัคร (Pending)</option></select>
+          <label data-en="New status" data-th="สถานะใหม่">สถานะใหม่</label>
+          <select id="oc-asgStatus" onchange="ocmAssignStatusChange()"><option value="filled" data-en="Assign person (Filled)" data-th="มอบหมายคน (Filled)">มอบหมายคน (Filled)</option><option value="vacant" data-en="Vacant" data-th="ว่าง (Vacant)">ว่าง (Vacant)</option><option value="filled_pending_name" data-en="Vacant — awaiting candidate (Pending)" data-th="ว่าง — รอชื่อผู้สมัคร (Pending)">ว่าง — รอชื่อผู้สมัคร (Pending)</option></select>
           <div id="oc-asgEmpBlock">
-            <label>ผู้ดำรงตำแหน่งคนใหม่</label>
+            <label data-en="New position holder" data-th="ผู้ดำรงตำแหน่งคนใหม่">ผู้ดำรงตำแหน่งคนใหม่</label>
             <div class="oc-acwrap"><input type="text" id="oc-asgEmpSearch" placeholder="ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่..."><div class="oc-ac" id="oc-asgEmpResults" style="display:none"></div></div>
             <div id="oc-asgEmpChip"></div>
           </div>
           <div id="oc-asgActBlock">
-            <label>ผู้รักษาการ (ถ้ามี)</label>
+            <label data-en="Acting (if any)" data-th="ผู้รักษาการ (ถ้ามี)">ผู้รักษาการ (ถ้ามี)</label>
             <div class="oc-acwrap"><input type="text" id="oc-asgActSearch" placeholder="ค้นหาชื่อพนักงาน..."><div class="oc-ac" id="oc-asgActResults" style="display:none"></div></div>
             <div id="oc-asgActChip"></div>
           </div>
-          <button class="btn btn-gold oc-savebtn" onclick="ocmSubmitAssign()">บันทึกการเปลี่ยนแปลง</button>
+          <button class="btn btn-gold oc-savebtn" onclick="ocmSubmitAssign()" data-en="Save changes" data-th="บันทึกการเปลี่ยนแปลง">บันทึกการเปลี่ยนแปลง</button>
         </div>
       </div>
 
       <!-- Edit reporting line (reports_to) -->
       <div id="oc-view-reports" class="oc-form" style="display:none;max-width:760px">
-        <p class="oc-muted" style="margin-bottom:12px">แก้ไขว่าตำแหน่งนี้ "รายงานต่อ" ใคร — ใช้แก้สายบังคับบัญชาที่ผิด (ระบบจะกันการวนเป็นวงกลมอัตโนมัติ)</p>
-        <label>ตำแหน่งที่จะแก้สายงาน</label>
+        <p class="oc-muted" style="margin-bottom:12px" data-en="Change who this position reports to — fix wrong reporting lines (cycles are prevented automatically)" data-th='แก้ไขว่าตำแหน่งนี้ "รายงานต่อ" ใคร — ใช้แก้สายบังคับบัญชาที่ผิด (ระบบจะกันการวนเป็นวงกลมอัตโนมัติ)'>แก้ไขว่าตำแหน่งนี้ "รายงานต่อ" ใคร — ใช้แก้สายบังคับบัญชาที่ผิด (ระบบจะกันการวนเป็นวงกลมอัตโนมัติ)</p>
+        <label data-en="Position to re-link" data-th="ตำแหน่งที่จะแก้สายงาน">ตำแหน่งที่จะแก้สายงาน</label>
         <div class="oc-acwrap"><input type="text" id="oc-repPosSearch" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่ง..."><div class="oc-ac" id="oc-repPosResults" style="display:none"></div></div>
         <div id="oc-repPosChip"></div>
         <div id="oc-repForm" style="display:none">
           <div class="oc-muted" id="oc-repCurrent" style="margin-top:12px"></div>
-          <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:14px"><input type="checkbox" id="oc-repTop" onchange="ocmRepTopToggle()" style="width:auto"> ตั้งเป็นระดับบนสุด (ไม่รายงานต่อใคร)</label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:14px"><input type="checkbox" id="oc-repTop" onchange="ocmRepTopToggle()" style="width:auto"> <span data-en="Set as top level (reports to no one)" data-th="ตั้งเป็นระดับบนสุด (ไม่รายงานต่อใคร)">ตั้งเป็นระดับบนสุด (ไม่รายงานต่อใคร)</span></label>
           <div id="oc-repParentWrap">
-            <label>รายงานต่อ (ผู้บังคับบัญชาใหม่)</label>
+            <label data-en="Reports to (new supervisor)" data-th="รายงานต่อ (ผู้บังคับบัญชาใหม่)">รายงานต่อ (ผู้บังคับบัญชาใหม่)</label>
             <div class="oc-acwrap"><input type="text" id="oc-repParentSearch" placeholder="ค้นหาตำแหน่งผู้บังคับบัญชาใหม่..."><div class="oc-ac" id="oc-repParentResults" style="display:none"></div></div>
             <div id="oc-repParentChip"></div>
           </div>
           <div class="oc-chain" id="oc-repChain" style="display:none"></div>
-          <button class="btn btn-gold oc-savebtn" onclick="ocmSubmitReports()">บันทึกสายบังคับบัญชา</button>
+          <button class="btn btn-gold oc-savebtn" onclick="ocmSubmitReports()" data-en="Save reporting line" data-th="บันทึกสายบังคับบัญชา">บันทึกสายบังคับบัญชา</button>
         </div>
       </div>
 
       <!-- Deactivate -->
       <div id="oc-view-deactivate" class="oc-form" style="display:none;max-width:760px">
-        <p class="oc-muted" style="margin-bottom:12px">ใช้เมื่อยกเลิกตำแหน่งถาวร — ข้อมูลประวัติยังเก็บไว้ (soft delete)</p>
-        <label>ตำแหน่งที่จะปิดใช้งาน</label>
+        <p class="oc-muted" style="margin-bottom:12px" data-en="Use when permanently removing a position — history is kept (soft delete)" data-th="ใช้เมื่อยกเลิกตำแหน่งถาวร — ข้อมูลประวัติยังเก็บไว้ (soft delete)">ใช้เมื่อยกเลิกตำแหน่งถาวร — ข้อมูลประวัติยังเก็บไว้ (soft delete)</p>
+        <label data-en="Position to deactivate" data-th="ตำแหน่งที่จะปิดใช้งาน">ตำแหน่งที่จะปิดใช้งาน</label>
         <div class="oc-acwrap"><input type="text" id="oc-deacPosSearch" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่ง..."><div class="oc-ac" id="oc-deacPosResults" style="display:none"></div></div>
         <div id="oc-deacPosChip"></div>
-        <button class="btn oc-savebtn" id="oc-deacBtn" style="display:none;background:var(--red);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer" onclick="ocmSubmitDeactivate()">ยืนยันปิดใช้งานตำแหน่งนี้</button>
+        <button class="btn oc-savebtn" id="oc-deacBtn" style="display:none;background:var(--red);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer" onclick="ocmSubmitDeactivate()" data-en="Confirm deactivate this position" data-th="ยืนยันปิดใช้งานตำแหน่งนี้">ยืนยันปิดใช้งานตำแหน่งนี้</button>
       </div>
     </div>
 
@@ -2203,6 +2203,7 @@ function applyLang() {
   // Apply lang to active HR module
   const activeMod = document.querySelector('.page.active.hr-module');
   if (activeMod) applyModuleLang(activeMod);
+  if (document.getElementById('page-orgchart')?.classList.contains('active') && typeof ocApplyLang==='function') ocApplyLang();
   // Re-render help if active
   if (document.getElementById('page-notifications')?.classList.contains('active')) renderNotifPage();
   if (document.getElementById('page-onboarding')?.classList.contains('active')) {
@@ -5600,12 +5601,13 @@ async function ocInit() {
     const adsel = document.getElementById('oc-addDivision');
     if (adsel && adsel.options.length<=1) ocmDivisions.forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; adsel.appendChild(o); });
     ocmSetup();
+    ocSetPlaceholders();
     ocBuildIndex();
     ocFocusId = ocRoots.length===1 ? ocRoots[0].position_id : null;
     ocRenderDrill();
     ocRenderVacant();
   } catch(e) {
-    document.getElementById('oc-drillView').innerHTML = '<div class="oc-empty">โหลดผังองค์กรไม่สำเร็จ: '+ocEsc(e.message)+'</div>';
+    document.getElementById('oc-drillView').innerHTML = `<div class="oc-empty">${ocT('โหลดผังองค์กรไม่สำเร็จ','Failed to load org chart')}: `+ocEsc(e.message)+'</div>';
   }
   hideLoading();
 }
@@ -5623,6 +5625,23 @@ function ocSwitchTab(t) {
 
 function ocEsc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function ocStatusLabel(s){ return {filled:'Filled',vacant:'Vacant',filled_pending_name:'Pending',unknown:'Unknown'}[s]||s; }
+function ocT(th,en){ return (typeof lang!=='undefined' && lang==='en') ? en : th; }
+function ocSetPlaceholders(){
+  const ph={ 'oc-search':ocT('ค้นหาชื่อตำแหน่ง/ชื่อคน...','Search position / name...'),
+    'oc-vacSearch':ocT('ค้นหาชื่อตำแหน่ง...','Search position...'),
+    'oc-addTitle':ocT('เช่น Senior Accounting Officer','e.g. Senior Accounting Officer'),
+    'oc-addReportsToSearch':ocT('ค้นหาตำแหน่ง/ชื่อผู้บังคับบัญชา...','Search supervisor position / name...'),
+    'oc-addEmpSearch':ocT('ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่...','Search employee or type new...'),
+    'oc-asgPosSearch':ocT('ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่งปัจจุบัน...','Search position / current holder...'),
+    'oc-asgEmpSearch':ocT('ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่...','Search employee or type new...'),
+    'oc-asgActSearch':ocT('ค้นหาชื่อพนักงาน...','Search employee...'),
+    'oc-repPosSearch':ocT('ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่ง...','Search position / holder...'),
+    'oc-repParentSearch':ocT('ค้นหาตำแหน่งผู้บังคับบัญชาใหม่...','Search new supervisor position...'),
+    'oc-deacPosSearch':ocT('ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่ง...','Search position / holder...') };
+  Object.entries(ph).forEach(([id,t])=>{ const e=document.getElementById(id); if(e) e.placeholder=t; });
+  const vd=document.getElementById('oc-vacDivision'); if(vd&&vd.options[0]) vd.options[0].textContent=ocT('ทุก Division','All Divisions');
+}
+function ocApplyLang(){ ocSetPlaceholders(); if(ocLoaded){ ocRenderDrill(); ocRenderVacant(); } }
 
 function ocBuildIndex(){
   ocById = new Map(ocAllRows.map(r=>[r.position_id,{...r,children:[]}]));
@@ -5644,7 +5663,7 @@ function ocSetFocus(id){
   document.getElementById('oc-drillView').style.display='block';
   ocRenderDrill();
 }
-function ocPerson(n,cls){ return n.incumbent?`<span class="${cls}">${ocEsc(n.incumbent)}</span>`:`<span class="${cls} oc-vac-person">— ${n.acting_coverage?'รักษาการ: '+ocEsc(n.acting_coverage):'ว่าง'}</span>`; }
+function ocPerson(n,cls){ return n.incumbent?`<span class="${cls}">${ocEsc(n.incumbent)}</span>`:`<span class="${cls} oc-vac-person">— ${n.acting_coverage?ocT('รักษาการ','Acting')+': '+ocEsc(n.acting_coverage):ocT('ว่าง','Vacant')}</span>`; }
 
 function ocSetMode(m){
   ocViewMode=m;
@@ -5657,7 +5676,7 @@ function ocSetMode(m){
 
 function ocRenderDrill(){
   const focus = ocFocusId?ocById.get(ocFocusId):null;
-  const cr=[`<span class="oc-crumb ${focus?'':'current'}" onclick="ocSetFocus(null)">องค์กร</span>`];
+  const cr=[`<span class="oc-crumb ${focus?'':'current'}" onclick="ocSetFocus(null)">${ocT('องค์กร','Organization')}</span>`];
   if(focus){ ocAncestors(focus).forEach(a=>{cr.push('<span class="oc-sep">›</span>');cr.push(`<span class="oc-crumb" onclick="ocSetFocus('${a.position_id}')">${ocEsc(a.title)}</span>`);}); cr.push('<span class="oc-sep">›</span>'); cr.push(`<span class="oc-crumb current">${ocEsc(focus.title)}</span>`); }
   document.getElementById('oc-breadcrumb').innerHTML=cr.join(' ');
   if(ocViewMode==='chart') ocRenderChart(focus); else ocRenderCards(focus);
@@ -5670,9 +5689,9 @@ function ocAvatar(n){
 function ocCardInner(n,isFocus){
   const vac=!n.incumbent;
   const third = n.acting_coverage
-    ? `<div class="oc-cstatus">รักษาการ: ${ocEsc(n.acting_coverage)}</div>`
+    ? `<div class="oc-cstatus">${ocT('รักษาการ','Acting')}: ${ocEsc(n.acting_coverage)}</div>`
     : `<div class="oc-cdept">${ocEsc(isFocus?(n.division+' / '+n.department):n.department)}</div>`;
-  return `${ocAvatar(n)}<div class="oc-cinfo"><div class="oc-cn ${vac?'vac':''}">${ocEsc(n.incumbent||'ตำแหน่งว่าง')}</div><div class="oc-ct">${ocEsc(n.title)}${n.grade?' · '+ocEsc(n.grade):''}</div>${third}</div>`;
+  return `${ocAvatar(n)}<div class="oc-cinfo"><div class="oc-cn ${vac?'vac':''}">${ocEsc(n.incumbent||ocT('ตำแหน่งว่าง','Vacant'))}</div><div class="oc-ct">${ocEsc(n.title)}${n.grade?' · '+ocEsc(n.grade):''}</div>${third}</div>`;
 }
 function ocRenderCards(focus){
   const fb=document.getElementById('oc-focusBox'), rh=document.getElementById('oc-rhead'), rg=document.getElementById('oc-grid');
@@ -5682,17 +5701,17 @@ function ocRenderCards(focus){
     fb.innerHTML=`<div class="oc-focuscard">${ocCardInner(focus,true)}<span class="oc-badge ${focus.status}">${ocStatusLabel(focus.status)}</span></div>`;
     reports=focus.children;
   } else { fb.style.display='none'; fb.innerHTML=''; reports=ocRoots; }
-  rh.textContent = focus ? (reports.length?`ผู้ใต้บังคับบัญชาโดยตรง (${reports.length})`:'ไม่มีตำแหน่งใต้สังกัด') : `ตำแหน่งระดับบนสุด (${reports.length})`;
-  rg.innerHTML = reports.map(n=>{ const k=n.children.length; return `<div class="oc-card ${k?'kids':''}" ${k?`onclick="ocSetFocus('${n.position_id}')"`:''}>${ocCardInner(n,false)}${k?`<span class="oc-countbadge" title="${k} ตรง / ${ocDescCount(n)} ใต้สังกัด">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`; }).join('') || `<div class="oc-empty">ตำแหน่งนี้ไม่มีผู้ใต้บังคับบัญชา</div>`;
+  rh.textContent = focus ? (reports.length?`${ocT('ผู้ใต้บังคับบัญชาโดยตรง','Direct reports')} (${reports.length})`:ocT('ไม่มีตำแหน่งใต้สังกัด','No subordinates')) : `${ocT('ตำแหน่งระดับบนสุด','Top level')} (${reports.length})`;
+  rg.innerHTML = reports.map(n=>{ const k=n.children.length; return `<div class="oc-card ${k?'kids':''}" ${k?`onclick="ocSetFocus('${n.position_id}')"`:''}>${ocCardInner(n,false)}${k?`<span class="oc-countbadge" title="${k} ${ocT('ตรง','direct')} / ${ocDescCount(n)} ${ocT('ใต้สังกัด','total')}">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`; }).join('') || `<div class="oc-empty">${ocT('ตำแหน่งนี้ไม่มีผู้ใต้บังคับบัญชา','This position has no subordinates')}</div>`;
 }
 
-function ocChartBox(n){ const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-head">${ocAvatar(n)}<div class="ocb-info"><div class="ocb-name ${n.incumbent?'':'vac'}">${ocEsc(n.incumbent||'ตำแหน่งว่าง')}</div></div></div><div class="ocb-title2">${ocEsc(n.title)}</div><div class="ocb-foot"><span class="ocb-level">${n.grade?'ระดับ '+ocEsc(n.grade):'—'}</span><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${k?`<span class="ocb-cnt">▾ ${k}/${ocDescCount(n)}</span>`:''}</div></div>`; }
+function ocChartBox(n){ const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-head">${ocAvatar(n)}<div class="ocb-info"><div class="ocb-name ${n.incumbent?'':'vac'}">${ocEsc(n.incumbent||ocT('ตำแหน่งว่าง','Vacant'))}</div></div></div><div class="ocb-title2">${ocEsc(n.title)}</div><div class="ocb-foot"><span class="ocb-level">${n.grade?ocT('ระดับ','Level')+' '+ocEsc(n.grade):'—'}</span><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${k?`<span class="ocb-cnt">▾ ${k}/${ocDescCount(n)}</span>`:''}</div></div>`; }
 const OC_GRADES=['CEO','M4','M3','M2','M1 Senior','M1','S3','S2','S1','O3','O2','O1'];
 function ocGRank(g){ const i=OC_GRADES.indexOf(g); return i<0?99:i; }
 function ocRenderChart(focus){
   const cv=document.getElementById('oc-chartView');
   const root = focus || (ocRoots.length===1?ocRoots[0]:null);
-  if(!root){ cv.innerHTML='<div class="oc-empty">ไม่มีข้อมูล</div>'; return; }
+  if(!root){ cv.innerHTML=`<div class="oc-empty">${ocT('ไม่มีข้อมูล','No data')}</div>`; return; }
   const MAXD=ocChartDepth;
   const nodes=[]; (function rec(n,d){ nodes.push(n); if(d<MAXD) n.children.forEach(c=>rec(c,d+1)); })(root,0);
   const gk=n=>n.grade||'(ไม่ระบุ)';
@@ -5717,7 +5736,7 @@ function ocRenderChart(focus){
     const px=xpx(p.position_id)+BW/2, pb=ytop(gk(p))+BH, my=pb+(ct-pb)/2;
     paths+=`<path d="M${px} ${pb} V${my} H${cx} V${ct}" fill="none" stroke="#b9c2d6" stroke-width="2"/>`;
   });
-  cv.innerHTML=`<div class="oc-zoombar"><button class="oc-btn" onclick="ocDepthBy(-1)">− ชั้น</button><span class="oc-muted" id="oc-depth" style="min-width:44px;text-align:center">ชั้น ${ocChartDepth}</span><button class="oc-btn" onclick="ocDepthBy(1)">+ ชั้น</button><span style="display:inline-block;width:10px"></span><button class="oc-btn" onclick="ocZoomBy(-0.1)">−</button><span class="oc-muted" id="oc-zoomPct" style="min-width:44px;text-align:center">100%</span><button class="oc-btn" onclick="ocZoomBy(0.1)">+</button><button class="oc-btn" onclick="ocZoomFit()">พอดีหน้าจอ</button><span class="oc-muted">· แถว = ระดับ · คลิกกล่องเพื่อเจาะลง</span></div><div class="oc-scroll" id="oc-ocScroll"><div class="oc-zoom" id="oc-ocZoom" style="position:relative;width:${W}px;height:${H}px"><svg class="oc-svg" width="${W}" height="${H}">${paths}</svg>${labels}${boxes}</div></div>`;
+  cv.innerHTML=`<div class="oc-zoombar"><button class="oc-btn" onclick="ocDepthBy(-1)">− ${ocT('ชั้น','level')}</button><span class="oc-muted" id="oc-depth" style="min-width:54px;text-align:center">${ocT('ชั้น','Levels')} ${ocChartDepth}</span><button class="oc-btn" onclick="ocDepthBy(1)">+ ${ocT('ชั้น','level')}</button><span style="display:inline-block;width:10px"></span><button class="oc-btn" onclick="ocZoomBy(-0.1)">−</button><span class="oc-muted" id="oc-zoomPct" style="min-width:44px;text-align:center">100%</span><button class="oc-btn" onclick="ocZoomBy(0.1)">+</button><button class="oc-btn" onclick="ocZoomFit()">${ocT('พอดีหน้าจอ','Fit')}</button><span class="oc-muted">· ${ocT('แถว = ระดับ · คลิกกล่องเพื่อเจาะลง','Rows = grade · click a box to drill in')}</span></div><div class="oc-scroll" id="oc-ocScroll"><div class="oc-zoom" id="oc-ocZoom" style="position:relative;width:${W}px;height:${H}px"><svg class="oc-svg" width="${W}" height="${H}">${paths}</svg>${labels}${boxes}</div></div>`;
   requestAnimationFrame(ocZoomFit);
 }
 function ocDepthBy(d){ ocChartDepth=Math.min(6,Math.max(1,ocChartDepth+d)); ocRenderDrill(); }
@@ -5731,7 +5750,7 @@ function ocRenderSearch(){
   if(q.length<1){ sr.style.display='none'; dv.style.display='block'; return; }
   const m=ocAllRows.filter(r=>(r.title||'').toLowerCase().includes(q)||(r.incumbent||'').toLowerCase().includes(q)).slice(0,50);
   dv.style.display='none'; sr.style.display='block';
-  sr.innerHTML=m.length?m.map(r=>`<div class="it" onclick="ocSetFocus('${r.position_id}')"><div class="t">${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):'<span class="oc-badge vacant">ว่าง</span>'}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}${r.grade?' · '+ocEsc(r.grade):''}</div></div>`).join(''):`<div class="oc-empty">ไม่พบตำแหน่งที่ตรงกับคำค้นหา</div>`;
+  sr.innerHTML=m.length?m.map(r=>`<div class="it" onclick="ocSetFocus('${r.position_id}')"><div class="t">${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):`<span class="oc-badge vacant">${ocT('ว่าง','Vacant')}</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}${r.grade?' · '+ocEsc(r.grade):''}</div></div>`).join(''):`<div class="oc-empty">${ocT('ไม่พบตำแหน่งที่ตรงกับคำค้นหา','No matching positions')}</div>`;
 }
 
 function ocRenderVacant(){
@@ -5739,17 +5758,17 @@ function ocRenderVacant(){
   const rows=ocHeadcount.filter(h=>!df||h.division===df);
   const f=rows.reduce((s,r)=>s+Number(r.filled),0), v=rows.reduce((s,r)=>s+Number(r.vacant),0), p=rows.reduce((s,r)=>s+Number(r.pending),0), tot=rows.reduce((s,r)=>s+Number(r.total),0);
   const pc=tot?Math.round(100*v/tot):0;
-  document.getElementById('oc-stats').innerHTML=`<div class="oc-stat fill"><div class="v">${f}</div><div class="l">มีคน (Filled)</div></div><div class="oc-stat vac"><div class="v">${v}</div><div class="l">ว่าง (Vacant)</div></div><div class="oc-stat"><div class="v">${p}</div><div class="l">รอชื่อ (Pending)</div></div><div class="oc-stat"><div class="v">${tot}</div><div class="l">ทั้งหมด</div></div><div class="oc-stat vac"><div class="v">${pc}%</div><div class="l">ว่างเฉลี่ย</div></div>`;
+  document.getElementById('oc-stats').innerHTML=`<div class="oc-stat fill"><div class="v">${f}</div><div class="l">${ocT('มีคน (Filled)','Filled')}</div></div><div class="oc-stat vac"><div class="v">${v}</div><div class="l">${ocT('ว่าง (Vacant)','Vacant')}</div></div><div class="oc-stat"><div class="v">${p}</div><div class="l">${ocT('รอชื่อ (Pending)','Pending')}</div></div><div class="oc-stat"><div class="v">${tot}</div><div class="l">${ocT('ทั้งหมด','Total')}</div></div><div class="oc-stat vac"><div class="v">${pc}%</div><div class="l">${ocT('ว่างเฉลี่ย','Avg vacant')}</div></div>`;
   const bars=rows.map(r=>({...r,pct:Number(r.total)?Math.round(100*Number(r.vacant)/Number(r.total)):0})).filter(r=>Number(r.vacant)>0).sort((a,b)=>b.pct-a.pct);
-  document.getElementById('oc-bars').innerHTML=bars.length?bars.map(r=>`<div class="oc-bar ${r.pct>=40?'high':''}"><span class="lbl" title="${ocEsc(r.division)} / ${ocEsc(r.department)}">${ocEsc(r.department)}</span><span class="track"><span class="fill" style="width:${r.pct}%"></span></span><span class="pct">${r.pct}% (${r.vacant}/${r.total})</span></div>`).join(''):`<div class="oc-empty">ไม่มีตำแหน่งว่างใน Division นี้</div>`;
+  document.getElementById('oc-bars').innerHTML=bars.length?bars.map(r=>`<div class="oc-bar ${r.pct>=40?'high':''}"><span class="lbl" title="${ocEsc(r.division)} / ${ocEsc(r.department)}">${ocEsc(r.department)}</span><span class="track"><span class="fill" style="width:${r.pct}%"></span></span><span class="pct">${r.pct}% (${r.vacant}/${r.total})</span></div>`).join(''):`<div class="oc-empty">${ocT('ไม่มีตำแหน่งว่างใน Division นี้','No vacancies in this division')}</div>`;
   ocRenderVacTable();
 }
 function ocRenderVacTable(){
   const df=document.getElementById('oc-vacDivision').value;
   const q=document.getElementById('oc-vacSearch').value.trim().toLowerCase();
   const rows=ocAllRows.filter(r=>(r.status==='vacant'||r.status==='filled_pending_name')&&(!df||r.division===df)&&(!q||(r.title||'').toLowerCase().includes(q))).sort((a,b)=>(a.division||'').localeCompare(b.division||'')||(a.department||'').localeCompare(b.department||''));
-  document.getElementById('oc-vacRows').innerHTML=rows.map(r=>`<tr><td>${ocEsc(r.division)}</td><td>${ocEsc(r.department)}</td><td>${ocEsc(r.grade||'—')}</td><td>${ocEsc(r.title)}</td><td><span class="oc-badge ${r.status}">${ocStatusLabel(r.status)}</span></td><td>${r.acting_coverage?ocEsc(r.acting_coverage):'—'}</td><td>${ocEsc(r.reports_to_title||'สูงสุดในองค์กร')}</td></tr>`).join('')||`<tr><td colspan="7"><div class="oc-empty">ไม่พบตำแหน่งว่าง</div></td></tr>`;
-  document.getElementById('oc-vacCount').textContent=`${rows.length} ตำแหน่งว่าง`;
+  document.getElementById('oc-vacRows').innerHTML=rows.map(r=>`<tr><td>${ocEsc(r.division)}</td><td>${ocEsc(r.department)}</td><td>${ocEsc(r.grade||'—')}</td><td>${ocEsc(r.title)}</td><td><span class="oc-badge ${r.status}">${ocStatusLabel(r.status)}</span></td><td>${r.acting_coverage?ocEsc(r.acting_coverage):'—'}</td><td>${ocEsc(r.reports_to_title||ocT('สูงสุดในองค์กร','Top of org'))}</td></tr>`).join('')||`<tr><td colspan="7"><div class="oc-empty">${ocT('ไม่พบตำแหน่งว่าง','No vacancies')}</div></td></tr>`;
+  document.getElementById('oc-vacCount').textContent=`${rows.length} ${ocT('ตำแหน่งว่าง','vacancies')}`;
 }
 { const ocS=document.getElementById('oc-search'); if(ocS) ocS.addEventListener('input', ocRenderSearch); }
 
@@ -5783,9 +5802,9 @@ function ocmAutoPos(inId,resId,chipId,onPick,onClear){
   const input=document.getElementById(inId), res=document.getElementById(resId); let timer;
   input.addEventListener('input',()=>{ clearTimeout(timer); const q=input.value.trim(); if(q.length<2){res.style.display='none';return;} timer=setTimeout(async()=>{
     let data=[]; try{ data=await ocmSearchPositions(q); }catch(e){ return; }
-    res.innerHTML = data.length ? data.map(r=>`<div class="it"><div>${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):'<span class="s">(ว่าง)</span>'}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}</div></div>`).join('') : '<div class="empty">ไม่พบตำแหน่ง</div>';
+    res.innerHTML = data.length ? data.map(r=>`<div class="it"><div>${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):`<span class="s">(${ocT('ว่าง','Vacant')})</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}</div></div>`).join('') : `<div class="empty">${ocT('ไม่พบตำแหน่ง','No positions found')}</div>`;
     res.style.display='block';
-    res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const r=data[i]; input.value=''; res.style.display='none'; ocmChip(chipId, r.title+(r.incumbent?' — '+r.incumbent:' (ว่าง)'), onClear); onPick({ id:r.position_id, title:r.title, reportsToObj: r.reports_to_position_id?{id:r.reports_to_position_id,title:r.reports_to_title}:null }); }); });
+    res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const r=data[i]; input.value=''; res.style.display='none'; ocmChip(chipId, r.title+(r.incumbent?' — '+r.incumbent:' ('+ocT('ว่าง','Vacant')+')'), onClear); onPick({ id:r.position_id, title:r.title, reportsToObj: r.reports_to_position_id?{id:r.reports_to_position_id,title:r.reports_to_title}:null }); }); });
   },250); });
   document.addEventListener('click',e=>{ if(!input.contains(e.target)&&!res.contains(e.target)) res.style.display='none'; });
 }
@@ -5794,7 +5813,7 @@ function ocmAutoEmp(inId,resId,chipId,onPick,onClear){
   input.addEventListener('input',()=>{ clearTimeout(timer); const q=input.value.trim(); if(q.length<2){res.style.display='none';return;} timer=setTimeout(async()=>{
     let data=[]; try{ data=await ocmSearchEmployees(q); }catch(e){ data=[]; }
     let html=data.map(e=>`<div class="it">${ocEsc(e.full_name)}</div>`).join('');
-    html+=`<div class="it" data-new="1">+ เพิ่ม "${ocEsc(q)}" เป็นพนักงานใหม่</div>`;
+    html+=`<div class="it" data-new="1">+ ${ocT('เพิ่ม','Add')} "${ocEsc(q)}" ${ocT('เป็นพนักงานใหม่','as new employee')}</div>`;
     res.innerHTML=html; res.style.display='block';
     res.querySelectorAll('.it').forEach((el,i)=>{ el.addEventListener('click',async()=>{
       let emp;
@@ -5826,7 +5845,7 @@ function ocmSetup(){
   ocmAutoEmp('oc-asgActSearch','oc-asgActResults','oc-asgActChip',(e)=>{ ocmSel.asgAct=e; }, ()=>{ ocmSel.asgAct=null; });
   ocmAutoPos('oc-deacPosSearch','oc-deacPosResults','oc-deacPosChip',(p)=>{ ocmSel.deacPos=p; document.getElementById('oc-deacBtn').style.display='inline-block'; }, ()=>{ ocmSel.deacPos=null; document.getElementById('oc-deacBtn').style.display='none'; });
   ocmAutoPos('oc-repPosSearch','oc-repPosResults','oc-repPosChip',(p)=>{ ocmSel.repPos=p; document.getElementById('oc-repForm').style.display='block';
-      document.getElementById('oc-repCurrent').textContent = 'ปัจจุบันรายงานต่อ: ' + (p.reportsToObj ? p.reportsToObj.title : '— (ระดับบนสุด)');
+      document.getElementById('oc-repCurrent').textContent = ocT('ปัจจุบันรายงานต่อ','Currently reports to') + ': ' + (p.reportsToObj ? p.reportsToObj.title : ocT('— (ระดับบนสุด)','— (top level)'));
       ocmSel.repParent=null; document.getElementById('oc-repParentChip').innerHTML=''; document.getElementById('oc-repTop').checked=false; ocmRepTopToggle(); document.getElementById('oc-repChain').style.display='none';
     }, ()=>{ ocmSel.repPos=null; document.getElementById('oc-repForm').style.display='none'; });
   ocmAutoPos('oc-repParentSearch','oc-repParentResults','oc-repParentChip',(p)=>{ ocmSel.repParent=p; if(ocmSel.repPos) ocmRenderChain('oc-repChain', p, ocmSel.repPos.title); }, ()=>{ ocmSel.repParent=null; document.getElementById('oc-repChain').style.display='none'; });
