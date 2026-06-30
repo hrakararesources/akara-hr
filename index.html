@@ -1010,6 +1010,22 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-orgchart table.oc-table td { padding:9px 10px; border-bottom:1px solid var(--border); }
 #page-orgchart .oc-empty { text-align:center; color:var(--muted); padding:40px 20px; font-size:14px; }
 #page-orgchart .oc-muted { color:var(--muted); font-size:12.5px; }
+#page-orgchart .oc-form label { display:block; font-size:13px; font-weight:500; margin:14px 0 6px; }
+#page-orgchart .oc-form input[type=text], #page-orgchart .oc-form select { width:100%; padding:9px 11px; font-size:14px; border:1px solid var(--border); border-radius:8px; font-family:inherit; background:#fff; color:var(--text); }
+#page-orgchart .oc-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:640px){ #page-orgchart .oc-row2 { grid-template-columns:1fr; } }
+#page-orgchart .oc-acwrap { position:relative; }
+#page-orgchart .oc-ac { position:absolute; z-index:30; left:0; right:0; top:calc(100% + 4px); background:#fff; border:1px solid var(--border); border-radius:8px; max-height:260px; overflow-y:auto; box-shadow:0 6px 20px rgba(20,30,60,.12); }
+#page-orgchart .oc-ac .it { padding:9px 12px; cursor:pointer; font-size:13.5px; }
+#page-orgchart .oc-ac .it:hover { background:var(--blue-lt); }
+#page-orgchart .oc-ac .s { color:var(--muted); font-size:12px; }
+#page-orgchart .oc-ac .empty { padding:10px 12px; color:var(--muted); font-size:13px; }
+#page-orgchart .oc-chip { margin-top:8px; display:inline-flex; align-items:center; gap:8px; background:var(--blue-lt); border:1px solid var(--border); border-radius:999px; padding:6px 8px 6px 12px; font-size:13px; }
+#page-orgchart .oc-chip button { background:none; border:none; cursor:pointer; color:var(--muted); font-size:15px; line-height:1; }
+#page-orgchart .oc-chain { margin-top:12px; padding:12px 14px; background:var(--gold-lt); border:1px dashed #c99419; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+#page-orgchart .oc-chain .nn { font-weight:600; color:var(--blue); }
+#page-orgchart .oc-chain .arr { color:var(--muted); }
+#page-orgchart .oc-savebtn { margin-top:18px; }
 </style>
 </head>
 <body>
@@ -1320,9 +1336,12 @@ tbody tr:hover{background:var(--blue-lt)}
           <p style="font-size:13px;color:var(--muted);margin-top:2px" data-en="Live org structure & vacancies" data-th="โครงสร้างองค์กรและตำแหน่งว่าง (ข้อมูลสด)">โครงสร้างองค์กรและตำแหน่งว่าง (ข้อมูลสด)</p>
         </div>
       </div>
-      <div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:18px">
-        <div class="oc-subtab active" id="oc-subtab-chart" onclick="ocSwitchTab('chart')" style="padding:10px 20px;cursor:pointer;font-size:13.5px;font-weight:600;border-bottom:3px solid var(--gold);margin-bottom:-2px">🗂️ <span data-en="Org Chart" data-th="ผังองค์กร">ผังองค์กร</span></div>
-        <div class="oc-subtab" id="oc-subtab-vacant" onclick="ocSwitchTab('vacant')" style="padding:10px 20px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">📊 <span data-en="Vacancies" data-th="ตำแหน่งว่าง">ตำแหน่งว่าง</span></div>
+      <div style="display:flex;flex-wrap:wrap;border-bottom:2px solid var(--border);margin-bottom:18px">
+        <div class="oc-subtab" id="oc-subtab-chart" onclick="ocSwitchTab('chart')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:600;border-bottom:3px solid var(--gold);color:var(--blue);margin-bottom:-2px">🗂️ <span data-en="Org Chart" data-th="ผังองค์กร">ผังองค์กร</span></div>
+        <div class="oc-subtab" id="oc-subtab-vacant" onclick="ocSwitchTab('vacant')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">📊 <span data-en="Vacancies" data-th="ตำแหน่งว่าง">ตำแหน่งว่าง</span></div>
+        <div class="oc-subtab" id="oc-subtab-add" onclick="ocSwitchTab('add')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">➕ <span data-en="Add Position" data-th="เพิ่มตำแหน่ง">เพิ่มตำแหน่ง</span></div>
+        <div class="oc-subtab" id="oc-subtab-assign" onclick="ocSwitchTab('assign')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🔄 <span data-en="Assign / Move" data-th="ย้าย / มอบหมาย">ย้าย / มอบหมาย</span></div>
+        <div class="oc-subtab" id="oc-subtab-deactivate" onclick="ocSwitchTab('deactivate')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🚫 <span data-en="Deactivate" data-th="ปิดใช้งาน">ปิดใช้งาน</span></div>
       </div>
 
       <!-- Chart view -->
@@ -1362,6 +1381,62 @@ tbody tr:hover{background:var(--blue-lt)}
           </table>
         </div>
         <p class="oc-muted" id="oc-vacCount" style="margin-top:10px"></p>
+      </div>
+
+      <!-- Add position -->
+      <div id="oc-view-add" class="oc-form" style="display:none;max-width:760px">
+        <div class="oc-row2">
+          <div><label>Division</label><select id="oc-addDivision" onchange="ocmAddDivisionChange()"><option value="">เลือก Division</option></select></div>
+          <div><label>Department</label><select id="oc-addDepartment"><option value="">เลือก Division ก่อน</option></select></div>
+        </div>
+        <div class="oc-row2">
+          <div><label>ชื่อตำแหน่ง</label><input type="text" id="oc-addTitle" placeholder="เช่น Senior Accounting Officer"></div>
+          <div><label>Grade</label><select id="oc-addGrade"><option value="">— ไม่ระบุ —</option><option>CEO</option><option>M4</option><option>M3</option><option>M2</option><option>M1 Senior</option><option>M1</option><option>S3</option><option>S2</option><option>S1</option><option>O3</option><option>O2</option><option>O1</option></select></div>
+        </div>
+        <label>รายงานต่อ (Reports To)</label>
+        <div class="oc-acwrap"><input type="text" id="oc-addReportsToSearch" placeholder="ค้นหาตำแหน่ง/ชื่อผู้บังคับบัญชา..."><div class="oc-ac" id="oc-addReportsToResults" style="display:none"></div></div>
+        <div id="oc-addReportsToChip"></div>
+        <div class="oc-chain" id="oc-addChain" style="display:none"></div>
+        <label>สถานะตำแหน่งใหม่</label>
+        <select id="oc-addStatus" onchange="ocmAddStatusChange()"><option value="vacant">ว่าง (Vacant)</option><option value="filled">มอบหมายคนทันที (Filled)</option></select>
+        <div id="oc-addEmpBlock" style="display:none">
+          <label>ผู้ดำรงตำแหน่ง</label>
+          <div class="oc-acwrap"><input type="text" id="oc-addEmpSearch" placeholder="ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่..."><div class="oc-ac" id="oc-addEmpResults" style="display:none"></div></div>
+          <div id="oc-addEmpChip"></div>
+        </div>
+        <button class="btn btn-gold oc-savebtn" id="oc-addBtn" onclick="ocmSubmitAdd()">บันทึกตำแหน่งใหม่</button>
+      </div>
+
+      <!-- Assign / Move -->
+      <div id="oc-view-assign" class="oc-form" style="display:none;max-width:760px">
+        <label>ตำแหน่งที่จะแก้ไข</label>
+        <div class="oc-acwrap"><input type="text" id="oc-asgPosSearch" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่งปัจจุบัน..."><div class="oc-ac" id="oc-asgPosResults" style="display:none"></div></div>
+        <div id="oc-asgPosChip"></div>
+        <div class="oc-chain" id="oc-asgChain" style="display:none"></div>
+        <div id="oc-asgForm" style="display:none">
+          <label>สถานะใหม่</label>
+          <select id="oc-asgStatus" onchange="ocmAssignStatusChange()"><option value="filled">มอบหมายคน (Filled)</option><option value="vacant">ว่าง (Vacant)</option><option value="filled_pending_name">ว่าง — รอชื่อผู้สมัคร (Pending)</option></select>
+          <div id="oc-asgEmpBlock">
+            <label>ผู้ดำรงตำแหน่งคนใหม่</label>
+            <div class="oc-acwrap"><input type="text" id="oc-asgEmpSearch" placeholder="ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่..."><div class="oc-ac" id="oc-asgEmpResults" style="display:none"></div></div>
+            <div id="oc-asgEmpChip"></div>
+          </div>
+          <div id="oc-asgActBlock">
+            <label>ผู้รักษาการ (ถ้ามี)</label>
+            <div class="oc-acwrap"><input type="text" id="oc-asgActSearch" placeholder="ค้นหาชื่อพนักงาน..."><div class="oc-ac" id="oc-asgActResults" style="display:none"></div></div>
+            <div id="oc-asgActChip"></div>
+          </div>
+          <button class="btn btn-gold oc-savebtn" onclick="ocmSubmitAssign()">บันทึกการเปลี่ยนแปลง</button>
+        </div>
+      </div>
+
+      <!-- Deactivate -->
+      <div id="oc-view-deactivate" class="oc-form" style="display:none;max-width:760px">
+        <p class="oc-muted" style="margin-bottom:12px">ใช้เมื่อยกเลิกตำแหน่งถาวร — ข้อมูลประวัติยังเก็บไว้ (soft delete)</p>
+        <label>ตำแหน่งที่จะปิดใช้งาน</label>
+        <div class="oc-acwrap"><input type="text" id="oc-deacPosSearch" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่ง..."><div class="oc-ac" id="oc-deacPosResults" style="display:none"></div></div>
+        <div id="oc-deacPosChip"></div>
+        <button class="btn oc-savebtn" id="oc-deacBtn" style="display:none;background:var(--red);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer" onclick="ocmSubmitDeactivate()">ยืนยันปิดใช้งานตำแหน่งนี้</button>
       </div>
     </div>
 
@@ -5478,6 +5553,15 @@ async function ocInit() {
     const divs = [...new Set(ocAllRows.map(r=>r.division))].sort();
     const vsel = document.getElementById('oc-vacDivision');
     divs.forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; vsel.appendChild(o); });
+    // reference data + form wiring for management tabs
+    const [mdivs,mdeps] = await Promise.all([
+      sbFetch('divisions?select=id,name&order=name', { headers:{'Accept-Profile':'orgchart'} }),
+      sbFetch('departments?select=id,name,division_id&order=name', { headers:{'Accept-Profile':'orgchart'} })
+    ]);
+    ocmDivisions = mdivs||[]; ocmDepartments = mdeps||[];
+    const adsel = document.getElementById('oc-addDivision');
+    if (adsel && adsel.options.length<=1) ocmDivisions.forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; adsel.appendChild(o); });
+    ocmSetup();
     ocBuildIndex();
     ocFocusId = ocRoots.length===1 ? ocRoots[0].position_id : null;
     ocRenderDrill();
@@ -5488,12 +5572,15 @@ async function ocInit() {
   hideLoading();
 }
 
+const OC_TABS = ['chart','vacant','add','assign','deactivate'];
 function ocSwitchTab(t) {
-  const c=document.getElementById('oc-subtab-chart'), v=document.getElementById('oc-subtab-vacant');
-  c.style.borderBottomColor = t==='chart'?'var(--gold)':'transparent'; c.style.color = t==='chart'?'var(--blue)':'var(--muted)';
-  v.style.borderBottomColor = t==='vacant'?'var(--gold)':'transparent'; v.style.color = t==='vacant'?'var(--blue)':'var(--muted)';
-  document.getElementById('oc-view-chart').style.display = t==='chart'?'block':'none';
-  document.getElementById('oc-view-vacant').style.display = t==='vacant'?'block':'none';
+  OC_TABS.forEach(x => {
+    const tab = document.getElementById('oc-subtab-'+x);
+    const view = document.getElementById('oc-view-'+x);
+    const on = (x === t);
+    if (tab) { tab.style.borderBottomColor = on?'var(--gold)':'transparent'; tab.style.color = on?'var(--blue)':'var(--muted)'; tab.style.fontWeight = on?'600':'500'; }
+    if (view) view.style.display = on?'block':'none';
+  });
 }
 
 function ocEsc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -5590,6 +5677,139 @@ function ocRenderVacTable(){
   document.getElementById('oc-vacCount').textContent=`${rows.length} ตำแหน่งว่าง`;
 }
 { const ocS=document.getElementById('oc-search'); if(ocS) ocS.addEventListener('input', ocRenderSearch); }
+
+// ===================== ORG CHART MANAGEMENT (add / assign / deactivate) =====================
+let ocmDivisions=[], ocmDepartments=[], ocmSetupDone=false;
+let ocmSel={ addReportsTo:null, addEmp:null, asgPos:null, asgEmp:null, asgAct:null, deacPos:null };
+
+function ocUuid(){ return (crypto.randomUUID? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16);})); }
+async function ocmPost(table,obj){ return sbFetch(table,{method:'POST',prefer:'return=minimal',headers:{'Content-Profile':'orgchart'},body:JSON.stringify(obj)}); }
+async function ocmPatch(table,q,obj){ return sbFetch(table+'?'+q,{method:'PATCH',prefer:'return=minimal',headers:{'Content-Profile':'orgchart'},body:JSON.stringify(obj)}); }
+function ocmSan(q){ return q.replace(/[,()*]/g,' '); }
+
+async function ocmReload(){
+  try{
+    const rows=await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active&is_active=eq.true',{headers:{'Accept-Profile':'orgchart'}});
+    ocAllRows=rows||[];
+    const hc=await sbFetch('headcount_summary?select=*',{headers:{'Accept-Profile':'orgchart'}});
+    ocHeadcount=hc||[];
+    ocBuildIndex();
+    if(!ocById.has(ocFocusId)) ocFocusId = ocRoots.length===1?ocRoots[0].position_id:null;
+    ocRenderDrill(); ocRenderVacant();
+  }catch(e){}
+}
+
+async function ocmSearchPositions(q){ const s=encodeURIComponent(ocmSan(q)); return (await sbFetch(`v_org_chart_current?select=position_id,title,incumbent,department,division,status,reports_to_position_id,reports_to_title&is_active=eq.true&or=(title.ilike.*${s}*,incumbent.ilike.*${s}*)&limit=15`,{headers:{'Accept-Profile':'orgchart'}}))||[]; }
+async function ocmSearchEmployees(q){ const s=encodeURIComponent(q); return (await sbFetch(`employees?select=id,full_name&full_name=ilike.*${s}*&limit=10`,{headers:{'Accept-Profile':'orgchart'}}))||[]; }
+
+function ocmChip(chipId,label,onClear){ const el=document.getElementById(chipId); el.innerHTML=`<span class="oc-chip">${ocEsc(label)}<button type="button" aria-label="ลบ">×</button></span>`; el.querySelector('button').addEventListener('click',()=>{ el.innerHTML=''; if(onClear)onClear(); }); }
+
+function ocmAutoPos(inId,resId,chipId,onPick,onClear){
+  const input=document.getElementById(inId), res=document.getElementById(resId); let timer;
+  input.addEventListener('input',()=>{ clearTimeout(timer); const q=input.value.trim(); if(q.length<2){res.style.display='none';return;} timer=setTimeout(async()=>{
+    let data=[]; try{ data=await ocmSearchPositions(q); }catch(e){ return; }
+    res.innerHTML = data.length ? data.map(r=>`<div class="it"><div>${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):'<span class="s">(ว่าง)</span>'}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}</div></div>`).join('') : '<div class="empty">ไม่พบตำแหน่ง</div>';
+    res.style.display='block';
+    res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const r=data[i]; input.value=''; res.style.display='none'; ocmChip(chipId, r.title+(r.incumbent?' — '+r.incumbent:' (ว่าง)'), onClear); onPick({ id:r.position_id, title:r.title, reportsToObj: r.reports_to_position_id?{id:r.reports_to_position_id,title:r.reports_to_title}:null }); }); });
+  },250); });
+  document.addEventListener('click',e=>{ if(!input.contains(e.target)&&!res.contains(e.target)) res.style.display='none'; });
+}
+function ocmAutoEmp(inId,resId,chipId,onPick,onClear){
+  const input=document.getElementById(inId), res=document.getElementById(resId); let timer;
+  input.addEventListener('input',()=>{ clearTimeout(timer); const q=input.value.trim(); if(q.length<2){res.style.display='none';return;} timer=setTimeout(async()=>{
+    let data=[]; try{ data=await ocmSearchEmployees(q); }catch(e){ data=[]; }
+    let html=data.map(e=>`<div class="it">${ocEsc(e.full_name)}</div>`).join('');
+    html+=`<div class="it" data-new="1">+ เพิ่ม "${ocEsc(q)}" เป็นพนักงานใหม่</div>`;
+    res.innerHTML=html; res.style.display='block';
+    res.querySelectorAll('.it').forEach((el,i)=>{ el.addEventListener('click',async()=>{
+      let emp;
+      if(el.dataset.new){ const id=ocUuid(); try{ await ocmPost('employees',{id,full_name:q}); }catch(err){ toast('เพิ่มพนักงานไม่สำเร็จ'); return; } emp={id,full_name:q}; }
+      else { emp=data[i]; }
+      input.value=''; res.style.display='none'; ocmChip(chipId, emp.full_name, onClear); onPick(emp);
+    }); });
+  },250); });
+  document.addEventListener('click',e=>{ if(!input.contains(e.target)&&!res.contains(e.target)) res.style.display='none'; });
+}
+
+async function ocmRenderChain(elId, parentPos, newLabel){
+  const el=document.getElementById(elId);
+  if(!parentPos){ el.style.display='none'; return; }
+  el.style.display='flex'; el.innerHTML='<span class="oc-muted">กำลังโหลดสายบังคับบัญชา...</span>';
+  let data;
+  try{ data=await sbFetch('rpc/get_reporting_chain',{method:'POST',headers:{'Content-Profile':'orgchart'},body:JSON.stringify({p_position_id:parentPos.id})}); }
+  catch(e){ el.innerHTML='<span class="oc-muted">โหลดสายบังคับบัญชาไม่สำเร็จ</span>'; return; }
+  const nodes=(data||[]).map(r=>`<span>${ocEsc(r.title)}${r.incumbent?' ('+ocEsc(r.incumbent)+')':''}</span>`);
+  el.innerHTML=[`<span class="nn">${ocEsc(newLabel)}</span>`,...nodes].join('<span class="arr">→</span>');
+}
+
+function ocmSetup(){
+  if(ocmSetupDone) return; ocmSetupDone=true;
+  ocmAutoPos('oc-addReportsToSearch','oc-addReportsToResults','oc-addReportsToChip',(p)=>{ ocmSel.addReportsTo=p; ocmRenderChain('oc-addChain', p, document.getElementById('oc-addTitle').value||'ตำแหน่งใหม่'); }, ()=>{ ocmSel.addReportsTo=null; document.getElementById('oc-addChain').style.display='none'; });
+  ocmAutoEmp('oc-addEmpSearch','oc-addEmpResults','oc-addEmpChip',(e)=>{ ocmSel.addEmp=e; }, ()=>{ ocmSel.addEmp=null; });
+  ocmAutoPos('oc-asgPosSearch','oc-asgPosResults','oc-asgPosChip',(p)=>{ ocmSel.asgPos=p; document.getElementById('oc-asgForm').style.display='block'; ocmRenderChain('oc-asgChain', p.reportsToObj, p.title); ocmAssignStatusChange(); }, ()=>{ ocmSel.asgPos=null; document.getElementById('oc-asgForm').style.display='none'; document.getElementById('oc-asgChain').style.display='none'; });
+  ocmAutoEmp('oc-asgEmpSearch','oc-asgEmpResults','oc-asgEmpChip',(e)=>{ ocmSel.asgEmp=e; }, ()=>{ ocmSel.asgEmp=null; });
+  ocmAutoEmp('oc-asgActSearch','oc-asgActResults','oc-asgActChip',(e)=>{ ocmSel.asgAct=e; }, ()=>{ ocmSel.asgAct=null; });
+  ocmAutoPos('oc-deacPosSearch','oc-deacPosResults','oc-deacPosChip',(p)=>{ ocmSel.deacPos=p; document.getElementById('oc-deacBtn').style.display='inline-block'; }, ()=>{ ocmSel.deacPos=null; document.getElementById('oc-deacBtn').style.display='none'; });
+}
+
+function ocmAddDivisionChange(){
+  const divId=document.getElementById('oc-addDivision').value;
+  const dsel=document.getElementById('oc-addDepartment');
+  const filtered=ocmDepartments.filter(d=>d.division_id===divId);
+  if(!divId||!filtered.length){ dsel.innerHTML='<option value="">เลือก Division ก่อน</option>'; return; }
+  dsel.innerHTML='<option value="">เลือก Department</option>'+filtered.map(d=>`<option value="${d.id}">${ocEsc(d.name)}</option>`).join('');
+}
+function ocmAddStatusChange(){ document.getElementById('oc-addEmpBlock').style.display = document.getElementById('oc-addStatus').value==='filled'?'block':'none'; }
+async function ocmSubmitAdd(){
+  const btn=document.getElementById('oc-addBtn');
+  const deptId=document.getElementById('oc-addDepartment').value;
+  const title=document.getElementById('oc-addTitle').value.trim();
+  const grade=document.getElementById('oc-addGrade').value||null;
+  const status=document.getElementById('oc-addStatus').value;
+  if(!deptId){ toast('กรุณาเลือก Department'); return; }
+  if(!title){ toast('กรุณาใส่ชื่อตำแหน่ง'); return; }
+  if(status==='filled'&&!ocmSel.addEmp){ toast('กรุณาเลือกผู้ดำรงตำแหน่ง'); return; }
+  btn.disabled=true;
+  try{
+    const posId=ocUuid();
+    await ocmPost('positions',{ id:posId, department_id:deptId, title, grade, reports_to_position_id: ocmSel.addReportsTo?ocmSel.addReportsTo.id:null });
+    await ocmPost('position_assignments',{ position_id:posId, employee_id: status==='filled'?ocmSel.addEmp.id:null, status, is_current:true });
+    toast('เพิ่มตำแหน่ง "'+title+'" เรียบร้อย');
+    document.getElementById('oc-addTitle').value=''; document.getElementById('oc-addReportsToChip').innerHTML=''; document.getElementById('oc-addChain').style.display='none'; document.getElementById('oc-addEmpChip').innerHTML='';
+    ocmSel.addReportsTo=null; ocmSel.addEmp=null;
+    await ocmReload();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message); }
+  btn.disabled=false;
+}
+
+function ocmAssignStatusChange(){
+  const s=document.getElementById('oc-asgStatus').value;
+  document.getElementById('oc-asgEmpBlock').style.display = s==='filled'?'block':'none';
+  document.getElementById('oc-asgActBlock').style.display = (s==='vacant'||s==='filled_pending_name')?'block':'none';
+}
+async function ocmSubmitAssign(){
+  if(!ocmSel.asgPos){ toast('กรุณาเลือกตำแหน่งก่อน'); return; }
+  const status=document.getElementById('oc-asgStatus').value;
+  if(status==='filled'&&!ocmSel.asgEmp){ toast('กรุณาเลือกผู้ดำรงตำแหน่งคนใหม่'); return; }
+  try{
+    await ocmPost('position_assignments',{ position_id:ocmSel.asgPos.id, employee_id: status==='filled'?ocmSel.asgEmp.id:null, acting_employee_id: (status!=='filled'&&ocmSel.asgAct)?ocmSel.asgAct.id:null, status, is_current:true });
+    toast('บันทึกการเปลี่ยนแปลงเรียบร้อย — ประวัติเดิมถูกเก็บอัตโนมัติ');
+    document.getElementById('oc-asgPosChip').innerHTML=''; document.getElementById('oc-asgForm').style.display='none'; document.getElementById('oc-asgChain').style.display='none'; document.getElementById('oc-asgEmpChip').innerHTML=''; document.getElementById('oc-asgActChip').innerHTML='';
+    ocmSel.asgPos=null; ocmSel.asgEmp=null; ocmSel.asgAct=null;
+    await ocmReload();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message); }
+}
+
+async function ocmSubmitDeactivate(){
+  if(!ocmSel.deacPos) return;
+  if(!confirm('ยืนยันปิดใช้งานตำแหน่ง "'+ocmSel.deacPos.title+'" ?')) return;
+  try{
+    await ocmPatch('positions','id=eq.'+ocmSel.deacPos.id,{ is_active:false });
+    toast('ปิดใช้งานตำแหน่งเรียบร้อย');
+    document.getElementById('oc-deacPosChip').innerHTML=''; document.getElementById('oc-deacBtn').style.display='none'; ocmSel.deacPos=null;
+    await ocmReload();
+  }catch(e){ toast('ปิดใช้งานไม่สำเร็จ: '+e.message); }
+}
 
 // ── INIT ──
 async function init() {
