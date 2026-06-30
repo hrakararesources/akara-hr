@@ -1346,6 +1346,7 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="oc-subtab" id="oc-subtab-vacant" onclick="ocSwitchTab('vacant')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">📊 <span data-en="Vacancies" data-th="ตำแหน่งว่าง">ตำแหน่งว่าง</span></div>
         <div class="oc-subtab" id="oc-subtab-add" onclick="ocSwitchTab('add')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">➕ <span data-en="Add Position" data-th="เพิ่มตำแหน่ง">เพิ่มตำแหน่ง</span></div>
         <div class="oc-subtab" id="oc-subtab-assign" onclick="ocSwitchTab('assign')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🔄 <span data-en="Assign / Move" data-th="ย้าย / มอบหมาย">ย้าย / มอบหมาย</span></div>
+        <div class="oc-subtab" id="oc-subtab-reports" onclick="ocSwitchTab('reports')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🔗 <span data-en="Reporting line" data-th="สายบังคับบัญชา">สายบังคับบัญชา</span></div>
         <div class="oc-subtab" id="oc-subtab-deactivate" onclick="ocSwitchTab('deactivate')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🚫 <span data-en="Deactivate" data-th="ปิดใช้งาน">ปิดใช้งาน</span></div>
       </div>
 
@@ -1432,6 +1433,25 @@ tbody tr:hover{background:var(--blue-lt)}
             <div id="oc-asgActChip"></div>
           </div>
           <button class="btn btn-gold oc-savebtn" onclick="ocmSubmitAssign()">บันทึกการเปลี่ยนแปลง</button>
+        </div>
+      </div>
+
+      <!-- Edit reporting line (reports_to) -->
+      <div id="oc-view-reports" class="oc-form" style="display:none;max-width:760px">
+        <p class="oc-muted" style="margin-bottom:12px">แก้ไขว่าตำแหน่งนี้ "รายงานต่อ" ใคร — ใช้แก้สายบังคับบัญชาที่ผิด (ระบบจะกันการวนเป็นวงกลมอัตโนมัติ)</p>
+        <label>ตำแหน่งที่จะแก้สายงาน</label>
+        <div class="oc-acwrap"><input type="text" id="oc-repPosSearch" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่ง..."><div class="oc-ac" id="oc-repPosResults" style="display:none"></div></div>
+        <div id="oc-repPosChip"></div>
+        <div id="oc-repForm" style="display:none">
+          <div class="oc-muted" id="oc-repCurrent" style="margin-top:12px"></div>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:14px"><input type="checkbox" id="oc-repTop" onchange="ocmRepTopToggle()" style="width:auto"> ตั้งเป็นระดับบนสุด (ไม่รายงานต่อใคร)</label>
+          <div id="oc-repParentWrap">
+            <label>รายงานต่อ (ผู้บังคับบัญชาใหม่)</label>
+            <div class="oc-acwrap"><input type="text" id="oc-repParentSearch" placeholder="ค้นหาตำแหน่งผู้บังคับบัญชาใหม่..."><div class="oc-ac" id="oc-repParentResults" style="display:none"></div></div>
+            <div id="oc-repParentChip"></div>
+          </div>
+          <div class="oc-chain" id="oc-repChain" style="display:none"></div>
+          <button class="btn btn-gold oc-savebtn" onclick="ocmSubmitReports()">บันทึกสายบังคับบัญชา</button>
         </div>
       </div>
 
@@ -5577,7 +5597,7 @@ async function ocInit() {
   hideLoading();
 }
 
-const OC_TABS = ['chart','vacant','add','assign','deactivate'];
+const OC_TABS = ['chart','vacant','add','assign','reports','deactivate'];
 function ocSwitchTab(t) {
   OC_TABS.forEach(x => {
     const tab = document.getElementById('oc-subtab-'+x);
@@ -5696,7 +5716,7 @@ function ocRenderVacTable(){
 
 // ===================== ORG CHART MANAGEMENT (add / assign / deactivate) =====================
 let ocmDivisions=[], ocmDepartments=[], ocmSetupDone=false;
-let ocmSel={ addReportsTo:null, addEmp:null, asgPos:null, asgEmp:null, asgAct:null, deacPos:null };
+let ocmSel={ addReportsTo:null, addEmp:null, asgPos:null, asgEmp:null, asgAct:null, deacPos:null, repPos:null, repParent:null };
 
 function ocUuid(){ return (crypto.randomUUID? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16);})); }
 async function ocmPost(table,obj){ return sbFetch(table,{method:'POST',prefer:'return=minimal',headers:{'Content-Profile':'orgchart'},body:JSON.stringify(obj)}); }
@@ -5766,6 +5786,30 @@ function ocmSetup(){
   ocmAutoEmp('oc-asgEmpSearch','oc-asgEmpResults','oc-asgEmpChip',(e)=>{ ocmSel.asgEmp=e; }, ()=>{ ocmSel.asgEmp=null; });
   ocmAutoEmp('oc-asgActSearch','oc-asgActResults','oc-asgActChip',(e)=>{ ocmSel.asgAct=e; }, ()=>{ ocmSel.asgAct=null; });
   ocmAutoPos('oc-deacPosSearch','oc-deacPosResults','oc-deacPosChip',(p)=>{ ocmSel.deacPos=p; document.getElementById('oc-deacBtn').style.display='inline-block'; }, ()=>{ ocmSel.deacPos=null; document.getElementById('oc-deacBtn').style.display='none'; });
+  ocmAutoPos('oc-repPosSearch','oc-repPosResults','oc-repPosChip',(p)=>{ ocmSel.repPos=p; document.getElementById('oc-repForm').style.display='block';
+      document.getElementById('oc-repCurrent').textContent = 'ปัจจุบันรายงานต่อ: ' + (p.reportsToObj ? p.reportsToObj.title : '— (ระดับบนสุด)');
+      ocmSel.repParent=null; document.getElementById('oc-repParentChip').innerHTML=''; document.getElementById('oc-repTop').checked=false; ocmRepTopToggle(); document.getElementById('oc-repChain').style.display='none';
+    }, ()=>{ ocmSel.repPos=null; document.getElementById('oc-repForm').style.display='none'; });
+  ocmAutoPos('oc-repParentSearch','oc-repParentResults','oc-repParentChip',(p)=>{ ocmSel.repParent=p; if(ocmSel.repPos) ocmRenderChain('oc-repChain', p, ocmSel.repPos.title); }, ()=>{ ocmSel.repParent=null; document.getElementById('oc-repChain').style.display='none'; });
+}
+function ocmRepTopToggle(){
+  const top=document.getElementById('oc-repTop').checked;
+  document.getElementById('oc-repParentWrap').style.display = top?'none':'block';
+  if(top) document.getElementById('oc-repChain').style.display='none';
+}
+async function ocmSubmitReports(){
+  if(!ocmSel.repPos){ toast('กรุณาเลือกตำแหน่งก่อน'); return; }
+  const top=document.getElementById('oc-repTop').checked;
+  const newParent = top ? null : (ocmSel.repParent? ocmSel.repParent.id : undefined);
+  if(newParent===undefined){ toast('กรุณาเลือกผู้บังคับบัญชาใหม่ หรือติ๊ก "ระดับบนสุด"'); return; }
+  if(newParent===ocmSel.repPos.id){ toast('ตำแหน่งรายงานต่อตัวเองไม่ได้'); return; }
+  try{
+    await ocmPatch('positions','id=eq.'+ocmSel.repPos.id,{ reports_to_position_id: newParent });
+    toast('แก้สายบังคับบัญชาเรียบร้อย');
+    document.getElementById('oc-repPosChip').innerHTML=''; document.getElementById('oc-repForm').style.display='none'; document.getElementById('oc-repParentChip').innerHTML=''; document.getElementById('oc-repChain').style.display='none';
+    ocmSel.repPos=null; ocmSel.repParent=null;
+    await ocmReload();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+(/cycle|Circular/i.test(e.message)?'จะทำให้สายบังคับบัญชาวนเป็นวงกลม':e.message)); }
 }
 
 function ocmAddDivisionChange(){
