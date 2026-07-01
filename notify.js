@@ -1,53 +1,39 @@
 // notify.js — Task Due Date Email Notification
 // รันโดย GitHub Actions ทุกเช้า 08:00 น.
 
-const https = require('https');
-const { createTransport } = require('nodemailer');
-
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const TENANT = process.env.GRAPH_TENANT_ID;
+const CLIENT = process.env.GRAPH_CLIENT_ID;
+const SECRET = process.env.GRAPH_CLIENT_SECRET;
+const SENDER = process.env.GRAPH_SENDER;
 
 // ── FETCH จาก Supabase ──
-function sbGet(path) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(SUPABASE_URL + '/rest/v1/' + path);
-    const options = {
-      hostname: url.hostname,
-      path: url.pathname + url.search,
-      method: 'GET',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Content-Type': 'application/json',
-      }
-    };
-    const req = https.request(options, res => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch(e) { reject(e); }
-      });
-    });
-    req.on('error', reject);
-    req.end();
+async function sbGet(path) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' }
   });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  const t = await res.text();
+  return t ? JSON.parse(t) : null;
 }
 
-// ── EMAIL TRANSPORTER ──
-const SMTP_PORT = parseInt(process.env.SMTP_PORT) || 587;
-const transporter = createTransport({
-  host: process.env.SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465,
-  requireTLS: SMTP_PORT !== 465,   // MS365 = 587 STARTTLS
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  connectionTimeout: 20000, greetingTimeout: 20000, socketTimeout: 20000,
-  tls: { rejectUnauthorized: false }
-});
+// ── Microsoft Graph (ส่งอีเมลผ่าน MS365 · client credentials) ──
+async function graphToken() {
+  const res = await fetch(`https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/token`, {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: CLIENT, client_secret: SECRET, scope: 'https://graph.microsoft.com/.default', grant_type: 'client_credentials' }),
+  });
+  if (!res.ok) throw new Error('token error: ' + await res.text());
+  return (await res.json()).access_token;
+}
+async function sendMail(token, to, subject, html) {
+  const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(SENDER)}/sendMail`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: { subject, body: { contentType: 'HTML', content: html }, toRecipients: [{ emailAddress: { address: to } }] }, saveToSentItems: false }),
+  });
+  if (res.status !== 202) throw new Error(`sendMail ${res.status}: ${await res.text()}`);
+}
 
 function formatDate(d) {
   if (!d) return '';
@@ -119,6 +105,7 @@ async function main() {
 
   let sent = 0;
   let failed = 0;
+  const token = await graphToken();
 
   for (const [memberId, memberTasks] of Object.entries(tasksByMember)) {
     const member = memberMap[memberId];
@@ -196,12 +183,7 @@ async function main() {
 </html>`;
 
     try {
-      await transporter.sendMail({
-        from: `"Akara HR System" <${process.env.SMTP_FROM}>`,
-        to: member.email,
-        subject: `⏰ แจ้งเตือน Task HR — ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}`,
-        html,
-      });
+      await sendMail(token, member.email, `⏰ แจ้งเตือน Task HR — ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}`, html);
       console.log(`✅ Sent to ${member.name} <${member.email}> (${memberTasks.length} task(s))`);
       sent++;
     } catch (e) {
