@@ -1079,17 +1079,22 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-leave .cal-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
 #page-leave .cal-legend .lg{display:inline-flex;align-items:center;gap:4px}
 #page-leave .cal-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
-#page-leave .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-#page-leave .cal-dow{text-align:center;font-size:11px;color:var(--muted);font-weight:700;padding:4px 0}
-#page-leave .cal-cell{min-height:96px;border:1px solid var(--border);border-radius:8px;padding:5px 6px;background:#fff;overflow:hidden;cursor:pointer;transition:border-color .1s}
-#page-leave .cal-cell:hover{border-color:var(--blue)}
+#page-leave .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+#page-leave .cal-dow{text-align:center;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:6px 0}
+#page-leave .cal-cell{position:relative;min-height:104px;border:1px solid var(--border);border-radius:12px;padding:6px 7px;background:#fff;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:transform .12s,box-shadow .12s,border-color .12s}
+#page-leave .cal-cell:hover{border-color:var(--blue);box-shadow:0 6px 16px rgba(27,75,168,.13);transform:translateY(-2px);z-index:2}
+#page-leave .cal-cell.weekend{background:#f7f9fc}
 #page-leave .cal-cell.other{background:#fafbfc}
-#page-leave .cal-cell.other .cal-daynum{color:var(--border)}
-#page-leave .cal-cell.today{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
-#page-leave .cal-daynum{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
-#page-leave .cal-ev{font-size:10.5px;line-height:1.5;padding:1px 5px;border-radius:4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-#page-leave .cal-more{font-size:10px;color:var(--muted);margin-top:2px}
-#page-leave .cal-up-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:#fff}
+#page-leave .cal-cell.other .cal-daynum{color:#cdd4e0}
+#page-leave .cal-cell.today{border-color:var(--blue);background:linear-gradient(180deg,#eef4ff,#fff)}
+#page-leave .cal-daynum{font-size:12.5px;font-weight:600;color:var(--text);width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:1px}
+#page-leave .cal-cell.today .cal-daynum{background:var(--blue);color:#fff;font-weight:700;box-shadow:0 2px 6px rgba(27,75,168,.4)}
+#page-leave .cal-ev{position:relative;font-size:10.5px;line-height:1.6;padding:2px 6px 2px 9px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-weight:600;transition:filter .1s}
+#page-leave .cal-ev::before{content:'';position:absolute;left:2px;top:3px;bottom:3px;width:3px;border-radius:2px;background:currentColor;opacity:.65}
+#page-leave .cal-ev:hover{filter:brightness(.94)}
+#page-leave .cal-more{font-size:10px;color:var(--muted);margin-top:1px;font-weight:600;padding-left:3px}
+#page-leave .cal-up-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;background:#fff;transition:border-color .12s,box-shadow .12s}
+#page-leave .cal-up-item:hover{border-color:var(--blue);box-shadow:0 3px 12px rgba(27,75,168,.1)}
 #page-leave .cal-up-date{flex:0 0 54px;text-align:center;font-size:11px;color:var(--muted);line-height:1.2}
 #page-leave .cal-up-date b{display:block;font-size:18px;color:var(--text)}
 #page-leave .cal-up-dot{width:8px;height:8px;border-radius:50%}
@@ -1717,6 +1722,17 @@ tbody tr:hover{background:var(--blue-lt)}
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
             <button class="btn btn-ghost" onclick="calCloseView()" data-en="Close" data-th="ปิด">ปิด</button>
             <button class="btn btn-gold" id="cv-edit" onclick="calEditFromView()" style="display:none" data-en="Edit" data-th="แก้ไข">แก้ไข</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="cal-day" class="rc-modal" style="display:none">
+        <div class="rc-modal-card">
+          <h3 id="cd-title" style="margin:0 0 12px"></h3>
+          <div id="cd-list" style="max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+            <button class="btn btn-ghost" onclick="calCloseDay()" data-en="Close" data-th="ปิด">ปิด</button>
+            <button class="btn btn-gold" id="cd-add" onclick="calAddFromDay()">+ <span data-en="Add event" data-th="เพิ่มกิจกรรม">เพิ่มกิจกรรม</span></button>
           </div>
         </div>
       </div>
@@ -6299,7 +6315,7 @@ function calPad(n){ return String(n).padStart(2,'0'); }
 async function calInit(){
   const d=new Date();
   if(calY===undefined){ calY=d.getFullYear(); calM=d.getMonth(); }
-  const addBtn=document.getElementById('cal-add-btn'); if(addBtn) addBtn.style.display=isManagerOrAdmin()?'':'none';
+  const addBtn=document.getElementById('cal-add-btn'); if(addBtn) addBtn.style.display='';  // ทุกคนเพิ่มกิจกรรมได้
   await calLoad();
 }
 async function calLoad(){
@@ -6310,7 +6326,7 @@ async function calLoad(){
 function calCollect(){
   const evs=[];
   const push=(date,title,type,extra)=>{ if(date) evs.push({date,title,type,...(extra||{})}); };
-  (calEvents||[]).forEach(e=> push(e.event_date, e.title, e.type||'general', {id:e.id, event_date:e.event_date, end_date:e.end_date, location:e.location, description:e.description}));
+  (calEvents||[]).forEach(e=> push(e.event_date, e.title, e.type||'general', {id:e.id, event_date:e.event_date, end_date:e.end_date, location:e.location, description:e.description, created_by:e.created_by}));
   (typeof newEmployees!=='undefined'?newEmployees:[]).forEach(ne=>{
     if(ne.status!=='probation'||!ne.start_date) return;
     try{ const r=calcProbationDays(ne.start_date, ne.probation_days||119); push(r.endDate.toISOString().slice(0,10), '🌟 '+ocT('ครบ Probation','Probation end')+': '+(ne.full_name_th||ne.nickname||''), 'probation', {src:'probation'}); }catch(e){}
@@ -6335,8 +6351,9 @@ function calRender(){
     const dObj=new Date(cy,cm,dayNum); const ds=`${dObj.getFullYear()}-${calPad(dObj.getMonth()+1)}-${calPad(dObj.getDate())}`;
     const list=byDate[ds]||[];
     const evHtml=list.slice(0,3).map(e=>`<div class="cal-ev ev-${e.type}" onclick="event.stopPropagation();calShowDetail(${e._i})" title="${ocEsc(e.title)}">${ocEsc(e.title)}</div>`).join('');
-    const more=list.length>3?`<div class="cal-more">+${list.length-3} ${ocT('อื่นๆ','more')}</div>`:'';
-    cells+=`<div class="cal-cell ${other?'other':''} ${ds===todayStr?'today':''}" data-count="${list.length?list.length+' •':''}" onclick="calDayClick('${ds}')"><div class="cal-daynum">${dayNum}</div>${evHtml}${more}</div>`;
+    const more=list.length>3?`<div class="cal-more" onclick="event.stopPropagation();calShowDay('${ds}')">+${list.length-3} ${ocT('อื่นๆ','more')}</div>`:'';
+    const wknd=(dObj.getDay()===0||dObj.getDay()===6)&&!other;
+    cells+=`<div class="cal-cell ${other?'other':''} ${wknd?'weekend':''} ${ds===todayStr?'today':''}" data-count="${list.length?list.length+' •':''}" onclick="calDayClick('${ds}')"><div class="cal-daynum">${dayNum}</div>${evHtml}${more}</div>`;
   }
   document.getElementById('cal-grid').innerHTML=cells;
   const loc=lang==='th'?'th-TH':'en-US';
@@ -6353,10 +6370,29 @@ function calRender(){
 }
 function calMove(delta){ calM+=delta; if(calM<0){calM=11;calY--;} else if(calM>11){calM=0;calY++;} calRender(); }
 function calToday(){ const d=new Date(); calY=d.getFullYear(); calM=d.getMonth(); calRender(); }
-function calDayClick(ds){ if(isManagerOrAdmin()) calOpenModal(null, ds); }
-function calEvClick(id){ if(!id||!isManagerOrAdmin()) return; const e=calEvents.find(x=>x.id===id); if(e) calOpenModal(e); }
+function calDayClick(ds){ const has=(calShown||[]).some(e=>e.date===ds); if(has) calShowDay(ds); else calOpenModal(null, ds); }
+let calDayDs=null;
+function calShowDay(ds){
+  calDayDs=ds;
+  const list=(calShown||[]).filter(e=>e.date===ds);
+  const d=new Date(ds+'T00:00:00');
+  document.getElementById('cd-title').textContent=d.toLocaleDateString(lang==='th'?'th-TH':'en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('cd-list').innerHTML=list.length?list.map(e=>{
+    const note=e.id?'':(e.src==='meeting'?ocT('ประชุม','Meeting'):e.src==='probation'?ocT('ครบ Probation','Probation'):'');
+    return `<div class="cal-up-item" style="cursor:pointer" onclick="calCloseDay();calShowDetail(${e._i})">
+      <span class="cal-up-dot bg-${e.type}"></span>
+      <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ocEsc(e.title)}</div><div style="font-size:11.5px;color:var(--muted)">${CAL_LABEL(e.type)}${e.location?' · 📍 '+ocEsc(e.location):''}${note?' · '+note:''}</div></div>
+      <span style="flex-shrink:0;color:var(--muted);font-size:16px">›</span>
+    </div>`;
+  }).join(''):`<div style="color:var(--muted);font-size:13px;padding:12px;text-align:center">${ocT('ไม่มีกิจกรรมในวันนี้','No events on this day')}</div>`;
+  document.getElementById('cal-day').style.display='flex';
+}
+function calCloseDay(){ document.getElementById('cal-day').style.display='none'; }
+function calAddFromDay(){ const ds=calDayDs; calCloseDay(); calOpenModal(null, ds); }
+function calEvClick(id){ if(!id) return; const e=calEvents.find(x=>x.id===id); if(e) calOpenModal(e); }
+function calCanEditEvent(ev){ return isManagerOrAdmin() || (ev && ev.created_by && ev.created_by===currentMember?.id); }
 function calOpenModal(ev, ds){
-  if(!isManagerOrAdmin()) return;
+  if(ev && !calCanEditEvent(ev)){ toast('🔒 '+ocT('แก้ไขได้เฉพาะผู้สร้างหรือผู้ดูแล','Only creator or admin can edit')); return; }
   calEditId=ev?ev.id:null;
   document.getElementById('cal-modal-title').textContent=ev?ocT('แก้ไขกิจกรรม','Edit event'):ocT('เพิ่มกิจกรรม','Add event');
   document.getElementById('cal-f-title').value=ev?(ev.title||''):'';
@@ -6401,7 +6437,7 @@ function calShowDetail(i){
   if(e.description) body+=`<div style="margin-top:8px">${ocEsc(e.description)}</div>`;
   document.getElementById('cv-body').innerHTML=body;
   const editBtn=document.getElementById('cv-edit');
-  if(isHr && isManagerOrAdmin()){ editBtn.style.display=''; calViewId=e.id; } else { editBtn.style.display='none'; calViewId=null; }
+  if(isHr && calCanEditEvent(e)){ editBtn.style.display=''; calViewId=e.id; } else { editBtn.style.display='none'; calViewId=null; }
   document.getElementById('cal-view').style.display='flex';
 }
 function calRelDays(ds){
