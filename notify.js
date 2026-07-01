@@ -56,26 +56,27 @@ async function main() {
   const tomorrowStr = tomorrow.toISOString().slice(0, 10);
   console.log(`📅 Checking tasks due on: ${tomorrowStr}`);
 
-  // ดึง tasks ที่ครบกำหนดพรุ่งนี้ และยังไม่เสร็จ
-  // Tasks due tomorrow
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  // งานครบกำหนดวันนี้ / พรุ่งนี้ / เกินกำหนด (ยังไม่เสร็จ)
+  const tasksDueToday = await sbGet(
+    `tasks?due=eq.${todayStr}&status=neq.เสร็จสิ้น&select=*`
+  );
   const tasksDueTomorrow = await sbGet(
     `tasks?due=eq.${tomorrowStr}&status=neq.เสร็จสิ้น&select=*`
   );
-
-  // Tasks overdue (due before today, not done)
-  const todayStr = new Date().toISOString().slice(0,10);
   const tasksOverdue = await sbGet(
     `tasks?due=lt.${todayStr}&status=neq.เสร็จสิ้น&select=*`
   );
 
-  const tasks = [...(tasksDueTomorrow||[]), ...(tasksOverdue||[])];
+  const tasks = [...(tasksDueToday||[]), ...(tasksDueTomorrow||[]), ...(tasksOverdue||[])];
 
   if (!tasks.length) {
-    console.log('✅ No tasks due tomorrow or overdue. Nothing to send.');
+    console.log('✅ No tasks due today/tomorrow or overdue. Nothing to send.');
     return;
   }
 
-  console.log(`📋 Found ${tasksDueTomorrow?.length||0} due tomorrow, ${tasksOverdue?.length||0} overdue`);
+  console.log(`📋 Found ${tasksDueToday?.length||0} due today, ${tasksDueTomorrow?.length||0} due tomorrow, ${tasksOverdue?.length||0} overdue`);
 
   // ดึง members ทั้งหมด
   const members = await sbGet('members?select=*');
@@ -141,12 +142,11 @@ async function main() {
     <!-- Body -->
     <div style="background:#fff;padding:28px 32px">
       <div style="font-size:18px;font-weight:600;color:#1a1e2e;margin-bottom:6px">
-        ⏰ แจ้งเตือน Task ครบกำหนดพรุ่งนี้
+        ⏰ แจ้งเตือนงานใกล้ครบกำหนด / เกินกำหนด
       </div>
       <div style="font-size:14px;color:#6b7899;margin-bottom:20px">
-        สวัสดีคุณ <strong style="color:#1a1e2e">${member.name}</strong> 
-        มี ${memberTasks.length} งานที่จะครบกำหนดในวันพรุ่งนี้ 
-        <strong style="color:#e07b10">${formatDate(tomorrowStr)}</strong>
+        สวัสดีคุณ <strong style="color:#1a1e2e">${member.name}</strong>
+        มี ${memberTasks.length} งานที่ต้องดูแล (ครบกำหนดวันนี้/พรุ่งนี้ หรือเกินกำหนด)
       </div>
 
       <table style="width:100%;border-collapse:collapse;font-size:13px">
