@@ -1045,6 +1045,34 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-orgchart .oc-chain .nn { font-weight:600; color:var(--blue); }
 #page-orgchart .oc-chain .arr { color:var(--muted); }
 #page-orgchart .oc-savebtn { margin-top:18px; }
+/* ===================== Recruitment module ===================== */
+#page-recruitment .rc-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
+#page-recruitment .rc-stat{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fff;}
+#page-recruitment .rc-stat .v{font-size:26px;font-weight:700;}
+#page-recruitment .rc-stat .l{font-size:12.5px;color:var(--muted);margin-top:2px;}
+#page-recruitment .rc-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+#page-recruitment .rc-controls select,#page-recruitment .rc-controls input{padding:9px 11px;font-size:14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;}
+#page-recruitment .rc-tabs{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+#page-recruitment .rc-tabs button{background:#fff;border:none;padding:9px 14px;font-size:13px;cursor:pointer;color:var(--muted);border-left:1px solid var(--border);font-family:inherit;}
+#page-recruitment .rc-tabs button:first-child{border-left:none;}
+#page-recruitment .rc-tabs button.active{background:var(--blue);color:#fff;}
+#page-recruitment .rc-tablewrap{max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:8px;}
+#page-recruitment table.rc-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+#page-recruitment .rc-table th{text-align:left;padding:9px 10px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;}
+#page-recruitment .rc-table td{padding:9px 10px;border-bottom:1px solid var(--border);}
+#page-recruitment .rc-badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:500;}
+#page-recruitment .rc-b-none{background:var(--gray);color:var(--muted);}
+#page-recruitment .rc-b-open{background:var(--blue-lt);color:var(--blue);}
+#page-recruitment .rc-b-interviewing{background:var(--orange-lt);color:var(--orange);}
+#page-recruitment .rc-b-offer{background:#ede9fe;color:#7c3aed;}
+#page-recruitment .rc-b-closed{background:var(--green-lt);color:var(--green);}
+#page-recruitment .rc-open-btn{background:var(--gold);color:var(--blue-dk);border:none;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;}
+#page-recruitment .rc-sel{padding:4px 6px;font-size:12px;border:1px solid var(--border);border-radius:6px;font-family:inherit;}
+.rc-modal{position:fixed;inset:0;background:rgba(20,30,60,.4);display:flex;align-items:center;justify-content:center;z-index:100;}
+.rc-modal-card{background:#fff;border-radius:12px;padding:22px;width:100%;max-width:420px;box-shadow:0 10px 40px rgba(0,0,0,.2);}
+.rc-modal-card h3{margin:0 0 6px;font-size:16px;}
+.rc-modal-card label{display:block;font-size:13px;font-weight:500;margin:12px 0 5px;}
+.rc-modal-card select,.rc-modal-card input{width:100%;padding:9px 11px;font-size:14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;box-sizing:border-box;}
 </style>
 </head>
 <body>
@@ -1339,11 +1367,46 @@ tbody tr:hover{background:var(--blue-lt)}
     </div>
     <!-- HR MODULE PAGES -->
     <div class="page hr-module" id="page-recruitment">
-      <div class="module-placeholder">
-        <div class="module-icon">🔍</div>
-        <h2 data-en="Recruitment" data-th="สรรหา">Recruitment</h2>
-        <p data-en="Track job openings, applicants, and hiring pipeline" data-th="ติดตามตำแหน่งงาน ผู้สมัคร และกระบวนการสรรหา">Track job openings, applicants, and hiring pipeline</p>
-        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      <div class="section-header" style="margin-bottom:8px">
+        <div>
+          <h2>🔍 <span data-en="Recruitment" data-th="สรรหา">สรรหา</span></h2>
+          <p style="font-size:13px;color:var(--muted);margin-top:2px" data-en="Track vacancies and open requisitions (linked to Org Chart)" data-th="ติดตามตำแหน่งว่างและใบขอสรรหา (เชื่อมกับผังองค์กร)">ติดตามตำแหน่งว่างและใบขอสรรหา (เชื่อมกับผังองค์กร)</p>
+        </div>
+      </div>
+      <div class="rc-kpi" id="rc-kpi"></div>
+      <div class="rc-controls">
+        <select id="rc-div" onchange="rcRender()"><option value="">ทุก Division</option></select>
+        <input type="text" id="rc-search" placeholder="ค้นหาชื่อตำแหน่ง..." oninput="rcRender()">
+        <div class="rc-tabs">
+          <button id="rc-tab-need" class="active" onclick="rcTab('need')" data-en="Not opened" data-th="ยังไม่เปิดสรรหา">ยังไม่เปิดสรรหา</button>
+          <button id="rc-tab-open" onclick="rcTab('open')" data-en="Recruiting" data-th="กำลังสรรหา">กำลังสรรหา</button>
+          <button id="rc-tab-all" onclick="rcTab('all')" data-en="All" data-th="ทั้งหมด">ทั้งหมด</button>
+        </div>
+      </div>
+      <div class="rc-tablewrap">
+        <table class="rc-table">
+          <thead><tr><th>Division</th><th>Department</th><th data-en="Position" data-th="ตำแหน่ง">ตำแหน่ง</th><th>Grade</th><th data-en="Requisition" data-th="ใบสรรหา">ใบสรรหา</th><th data-en="Priority" data-th="ความสำคัญ">ความสำคัญ</th><th data-en="Action" data-th="จัดการ">จัดการ</th></tr></thead>
+          <tbody id="rc-rows"></tbody>
+        </table>
+      </div>
+      <p class="oc-muted" id="rc-count" style="margin-top:10px;color:var(--muted);font-size:12.5px"></p>
+
+      <div id="rc-modal" class="rc-modal" style="display:none">
+        <div class="rc-modal-card">
+          <h3 id="rc-modal-title"></h3>
+          <label data-en="Priority" data-th="ความสำคัญ">ความสำคัญ</label>
+          <select id="rc-prio"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="low">Low</option></select>
+          <label data-en="Headcount" data-th="จำนวนอัตรา">จำนวนอัตรา</label>
+          <input id="rc-headcount" type="number" min="1" value="1">
+          <label data-en="Target start date" data-th="วันที่ต้องการเริ่มงาน">วันที่ต้องการเริ่มงาน</label>
+          <input id="rc-target" type="date">
+          <label data-en="Notes" data-th="หมายเหตุ">หมายเหตุ</label>
+          <input id="rc-notes" type="text">
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+            <button class="btn btn-ghost" onclick="rcCloseModal()" data-en="Cancel" data-th="ยกเลิก">ยกเลิก</button>
+            <button class="btn btn-gold" onclick="rcSubmitReq()" data-en="Open requisition" data-th="เปิดใบสรรหา">เปิดใบสรรหา</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2206,6 +2269,7 @@ function applyLang() {
   const activeMod = document.querySelector('.page.active.hr-module');
   if (activeMod) applyModuleLang(activeMod);
   if (document.getElementById('page-orgchart')?.classList.contains('active') && typeof ocApplyLang==='function') ocApplyLang();
+  if (document.getElementById('page-recruitment')?.classList.contains('active') && typeof rcRender==='function' && rcVac.length) rcRender();
   // Re-render help if active
   if (document.getElementById('page-notifications')?.classList.contains('active')) renderNotifPage();
   if (document.getElementById('page-onboarding')?.classList.contains('active')) {
@@ -2542,6 +2606,7 @@ function switchSidebar(page) {
       pageEl.classList.add('active');
       applyModuleLang(pageEl);
       if (page==='notifications') renderNotifPage();
+      if (page==='recruitment') rcInit();
       if (page==='orgchart') {
         if (!ocAllowed) { toast('🔒 เฉพาะผู้มีสิทธิ์'); switchSidebar('my-tasks'); return; }
         ocInit();
@@ -5957,6 +6022,55 @@ async function ocmSubmitDeactivate(){
     document.getElementById('oc-deacPosChip').innerHTML=''; document.getElementById('oc-deacBtn').style.display='none'; ocmSel.deacPos=null;
     await ocmReload();
   }catch(e){ toast('ปิดใช้งานไม่สำเร็จ: '+e.message); }
+}
+
+// ===================== RECRUITMENT MODULE (vacancy -> requisition) =====================
+let rcVac=[], rcTabSel='need', rcTargetPos=null;
+async function rcInit(){
+  showLoading('Loading...');
+  try{ rcVac = await sbFetch('v_recruitment_vacancies?select=*&order=division,department'); }
+  catch(e){ rcVac=[]; toast(ocT('โหลดข้อมูลสรรหาไม่สำเร็จ','Failed to load recruitment')+': '+e.message); }
+  hideLoading();
+  const sel=document.getElementById('rc-div');
+  const divs=[...new Set(rcVac.map(r=>r.division))].sort();
+  sel.innerHTML=`<option value="">${ocT('ทุก Division','All Divisions')}</option>`+divs.map(d=>`<option>${ocEsc(d)}</option>`).join('');
+  rcRender();
+}
+function rcTab(t){ rcTabSel=t; ['need','open','all'].forEach(x=>document.getElementById('rc-tab-'+x).classList.toggle('active',x===t)); rcRender(); }
+function rcStatusText(s){ return {open:ocT('เปิดรับ','Open'),interviewing:ocT('สัมภาษณ์','Interviewing'),offer:ocT('ยื่นข้อเสนอ','Offer'),closed:ocT('ปิดแล้ว','Closed')}[s]||s; }
+function rcBadge(s){ return s?`<span class="rc-badge rc-b-${s}">${rcStatusText(s)}</span>`:`<span class="rc-badge rc-b-none">${ocT('ยังไม่เปิด','Not opened')}</span>`; }
+function rcRender(){
+  const div=document.getElementById('rc-div').value;
+  const q=document.getElementById('rc-search').value.trim().toLowerCase();
+  let rows=rcVac.filter(r=>(!div||r.division===div)&&(!q||(r.title||'').toLowerCase().includes(q)));
+  if(rcTabSel==='need') rows=rows.filter(r=>!r.requisition_id);
+  else if(rcTabSel==='open') rows=rows.filter(r=>r.requisition_id);
+  const total=rcVac.length, opened=rcVac.filter(r=>r.requisition_id).length;
+  document.getElementById('rc-kpi').innerHTML=`
+    <div class="rc-stat"><div class="v">${total}</div><div class="l">${ocT('ตำแหน่งว่าง','Vacancies')}</div></div>
+    <div class="rc-stat"><div class="v" style="color:var(--blue)">${opened}</div><div class="l">${ocT('กำลังสรรหา','Recruiting')}</div></div>
+    <div class="rc-stat"><div class="v" style="color:var(--orange)">${total-opened}</div><div class="l">${ocT('ยังไม่เปิดสรรหา','Not opened')}</div></div>`;
+  const canEdit=(typeof ocAllowed!=='undefined' && ocAllowed);
+  document.getElementById('rc-rows').innerHTML=rows.map(r=>{
+    let action;
+    if(!r.requisition_id){ action=canEdit?`<button class="rc-open-btn" onclick="rcOpenModal('${r.position_id}','${ocEsc((r.title||'').replace(/'/g,'’'))}')">${ocT('เปิดสรรหา','Open')}</button>`:'—'; }
+    else { action=canEdit?`<select class="rc-sel" onchange="rcUpdateStatus('${r.requisition_id}',this.value)">${['open','interviewing','offer','closed'].map(s=>`<option value="${s}" ${r.requisition_status===s?'selected':''}>${rcStatusText(s)}</option>`).join('')}</select>`:rcBadge(r.requisition_status); }
+    return `<tr><td>${ocEsc(r.division)}</td><td>${ocEsc(r.department)}</td><td>${ocEsc(r.title)}</td><td>${ocEsc(r.grade||'—')}</td><td>${rcBadge(r.requisition_id?r.requisition_status:null)}</td><td>${r.priority?ocEsc(r.priority):'—'}</td><td>${action}</td></tr>`;
+  }).join('')||`<tr><td colspan="7"><div style="text-align:center;color:var(--muted);padding:30px">${ocT('ไม่พบรายการ','No items')}</div></td></tr>`;
+  document.getElementById('rc-count').textContent=`${rows.length} ${ocT('รายการ','items')}`;
+}
+function rcOpenModal(pid,title){ rcTargetPos=pid; document.getElementById('rc-modal-title').textContent=ocT('เปิดใบสรรหา','Open requisition')+': '+title; document.getElementById('rc-modal').style.display='flex'; }
+function rcCloseModal(){ document.getElementById('rc-modal').style.display='none'; rcTargetPos=null; }
+async function rcSubmitReq(){
+  if(!rcTargetPos) return;
+  const body={ id:ocUuid(), position_id:rcTargetPos, status:'open', priority:document.getElementById('rc-prio').value, headcount:parseInt(document.getElementById('rc-headcount').value)||1, target_start_date:document.getElementById('rc-target').value||null, notes:document.getElementById('rc-notes').value||null, opened_by:currentUser?.user?.id||null };
+  try{ await sbFetch('recruitment_requisitions',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)}); toast(ocT('เปิดใบสรรหาเรียบร้อย','Requisition opened')); rcCloseModal(); await rcInit(); }
+  catch(e){ toast(ocT('บันทึกไม่สำเร็จ','Failed')+': '+e.message); }
+}
+async function rcUpdateStatus(id,status){
+  const body={status}; if(status==='closed') body.closed_at=new Date().toISOString();
+  try{ await sbFetch('recruitment_requisitions?id=eq.'+id,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)}); toast(ocT('อัปเดตแล้ว','Updated')); await rcInit(); }
+  catch(e){ toast(ocT('อัปเดตไม่สำเร็จ','Update failed')+': '+e.message); }
 }
 
 // ── INIT ──
