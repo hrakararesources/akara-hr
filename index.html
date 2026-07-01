@@ -1708,6 +1708,18 @@ tbody tr:hover{background:var(--blue-lt)}
           </div>
         </div>
       </div>
+
+      <div id="cal-view" class="rc-modal" style="display:none">
+        <div class="rc-modal-card">
+          <h3 id="cv-title" style="margin:0 0 8px"></h3>
+          <div id="cv-badge" style="margin-bottom:12px"></div>
+          <div id="cv-body" style="font-size:13.5px;color:var(--text);line-height:1.8"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+            <button class="btn btn-ghost" onclick="calCloseView()" data-en="Close" data-th="ปิด">ปิด</button>
+            <button class="btn btn-gold" id="cv-edit" onclick="calEditFromView()" style="display:none" data-en="Edit" data-th="แก้ไข">แก้ไข</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="page hr-module" id="page-announcements">
       <div class="section-header">
@@ -6239,7 +6251,7 @@ async function rcUpdateStatus(id,status){
 }
 
 // ===================== HR CALENDAR =====================
-let calY, calM, calEvents = [], calEditId = null;
+let calY, calM, calEvents = [], calEditId = null, calShown = [], calViewId = null;
 function CAL_LABEL(t){ return ({general:ocT('ทั่วไป','General'),training:ocT('อบรม','Training'),meeting:ocT('ประชุม','Meeting'),holiday:ocT('วันหยุด','Holiday'),company:ocT('กิจกรรมบริษัท','Company'),deadline:ocT('กำหนดส่ง','Deadline'),birthday:ocT('วันเกิด','Birthday'),probation:ocT('ครบ Probation','Probation')})[t]||t; }
 function calPad(n){ return String(n).padStart(2,'0'); }
 
@@ -6260,17 +6272,17 @@ function calCollect(){
   (calEvents||[]).forEach(e=> push(e.event_date, e.title, e.type||'general', {id:e.id, event_date:e.event_date, end_date:e.end_date, location:e.location, description:e.description}));
   (typeof newEmployees!=='undefined'?newEmployees:[]).forEach(ne=>{
     if(ne.status!=='probation'||!ne.start_date) return;
-    try{ const r=calcProbationDays(ne.start_date, ne.probation_days||119); push(r.endDate.toISOString().slice(0,10), '🌟 '+ocT('ครบ Probation','Probation end')+': '+(ne.full_name_th||ne.nickname||''), 'probation'); }catch(e){}
+    try{ const r=calcProbationDays(ne.start_date, ne.probation_days||119); push(r.endDate.toISOString().slice(0,10), '🌟 '+ocT('ครบ Probation','Probation end')+': '+(ne.full_name_th||ne.nickname||''), 'probation', {src:'probation'}); }catch(e){}
   });
-  (typeof meetings!=='undefined'?meetings:[]).forEach(m=>{ if(m.meeting_date) push(m.meeting_date, '📝 '+(m.title||m.topic||ocT('ประชุม','Meeting')), 'meeting'); });
-  (typeof tasks!=='undefined'?tasks:[]).forEach(t=>{ if(t.due && t.status!=='เสร็จสิ้น') push(t.due, '📋 '+t.title, 'deadline'); });
+  (typeof meetings!=='undefined'?meetings:[]).forEach(m=>{ if(m.meeting_date) push(m.meeting_date, '📝 '+(m.title||m.topic||ocT('ประชุม','Meeting')), 'meeting', {src:'meeting'}); });
+  (typeof tasks!=='undefined'?tasks:[]).forEach(t=>{ if(t.due && t.status!=='เสร็จสิ้น') push(t.due, '📋 '+t.title, 'deadline', {src:'task'}); });
   return evs;
 }
 function calRender(){
   if(document.getElementById('cal-title')===null) return;
   document.getElementById('cal-title').textContent=new Date(calY,calM,1).toLocaleDateString(lang==='th'?'th-TH':'en-US',{month:'long',year:'numeric'});
   document.getElementById('cal-legend').innerHTML=['general','training','meeting','holiday','company','deadline','probation'].map(t=>`<span class="lg"><span class="dot bg-${t}"></span>${CAL_LABEL(t)}</span>`).join('');
-  const all=calCollect(); const byDate={}; all.forEach(e=>{ (byDate[e.date]=byDate[e.date]||[]).push(e); });
+  const all=calCollect(); calShown=all; all.forEach((e,i)=>{ e._i=i; }); const byDate={}; all.forEach(e=>{ (byDate[e.date]=byDate[e.date]||[]).push(e); });
   const dow=lang==='th'?['อา','จ','อ','พ','พฤ','ศ','ส']:['Su','Mo','Tu','We','Th','Fr','Sa'];
   const startDow=new Date(calY,calM,1).getDay(); const daysInMonth=new Date(calY,calM+1,0).getDate(); const prevDays=new Date(calY,calM,0).getDate();
   const todayStr=new Date().toISOString().slice(0,10);
@@ -6282,7 +6294,7 @@ function calRender(){
     else { dayNum=idx+1; cm=calM; cy=calY; }
     const dObj=new Date(cy,cm,dayNum); const ds=`${dObj.getFullYear()}-${calPad(dObj.getMonth()+1)}-${calPad(dObj.getDate())}`;
     const list=byDate[ds]||[];
-    const evHtml=list.slice(0,3).map(e=>`<div class="cal-ev ev-${e.type}" onclick="event.stopPropagation();calEvClick('${e.id||''}')" title="${ocEsc(e.title)}">${ocEsc(e.title)}</div>`).join('');
+    const evHtml=list.slice(0,3).map(e=>`<div class="cal-ev ev-${e.type}" onclick="event.stopPropagation();calShowDetail(${e._i})" title="${ocEsc(e.title)}">${ocEsc(e.title)}</div>`).join('');
     const more=list.length>3?`<div class="cal-more">+${list.length-3} ${ocT('อื่นๆ','more')}</div>`:'';
     cells+=`<div class="cal-cell ${other?'other':''} ${ds===todayStr?'today':''}" data-count="${list.length?list.length+' •':''}" onclick="calDayClick('${ds}')"><div class="cal-daynum">${dayNum}</div>${evHtml}${more}</div>`;
   }
@@ -6290,7 +6302,7 @@ function calRender(){
   const upcoming=all.filter(e=>e.date>=todayStr).sort((a,b)=>a.date<b.date?-1:1).slice(0,15);
   document.getElementById('cal-upcoming').innerHTML=upcoming.length?upcoming.map(e=>{
     const d=new Date(e.date);
-    return `<div class="cal-up-item" ${e.id?`onclick="calEvClick('${e.id}')" style="cursor:pointer"`:''}><div class="cal-up-date"><b>${d.getDate()}</b>${d.toLocaleDateString(lang==='th'?'th-TH':'en-US',{month:'short'})}</div><span class="cal-up-dot bg-${e.type}"></span><div style="flex:1"><div style="font-size:13.5px;font-weight:500">${ocEsc(e.title)}</div><div style="font-size:11.5px;color:var(--muted)">${CAL_LABEL(e.type)}${e.location?' · '+ocEsc(e.location):''}</div></div></div>`;
+    return `<div class="cal-up-item" onclick="calShowDetail(${e._i})" style="cursor:pointer"><div class="cal-up-date"><b>${d.getDate()}</b>${d.toLocaleDateString(lang==='th'?'th-TH':'en-US',{month:'short'})}</div><span class="cal-up-dot bg-${e.type}"></span><div style="flex:1"><div style="font-size:13.5px;font-weight:500">${ocEsc(e.title)}</div><div style="font-size:11.5px;color:var(--muted)">${CAL_LABEL(e.type)}${e.location?' · '+ocEsc(e.location):''}</div></div></div>`;
   }).join(''):`<div style="color:var(--muted);font-size:13px">${ocT('ไม่มีกิจกรรมข้างหน้า','No upcoming events')}</div>`;
 }
 function calMove(delta){ calM+=delta; if(calM<0){calM=11;calY--;} else if(calM>11){calM=0;calY++;} calRender(); }
@@ -6329,6 +6341,25 @@ async function calDeleteEvent(){
   try{ await sbFetch('hr_events?id=eq.'+calEditId,{method:'DELETE'}); toast(ocT('ลบแล้ว','Deleted')); calCloseModal(); await calLoad(); }
   catch(e){ toast(ocT('ลบไม่สำเร็จ','Delete failed')); }
 }
+function calShowDetail(i){
+  const e=calShown[i]; if(!e) return;
+  const isHr=!!e.id;
+  document.getElementById('cv-title').textContent=e.title;
+  const srcNote = e.src==='meeting'?ocT('จากบันทึกประชุม','From Meeting Notes')
+    : e.src==='probation'?ocT('พนักงานใหม่ครบทดลองงาน','New employee probation')
+    : e.src==='task'?ocT('กำหนดส่งงาน (จากงาน)','Task deadline') : '';
+  document.getElementById('cv-badge').innerHTML=`<span class="cal-ev ev-${e.type}" style="display:inline-block;font-size:12px;padding:2px 10px">${CAL_LABEL(e.type)}</span>`+(isHr?'':`<span style="font-size:11.5px;color:var(--muted);margin-left:8px">• ${srcNote} · ${ocT('อ่านอย่างเดียว','read-only')}</span>`);
+  const dateTxt=fmtDate(e.date)+(e.end_date && e.end_date!==e.event_date?' – '+fmtDate(e.end_date):'');
+  let body=`<div>📅 ${dateTxt}</div>`;
+  if(e.location) body+=`<div>📍 ${ocEsc(e.location)}</div>`;
+  if(e.description) body+=`<div style="margin-top:8px">${ocEsc(e.description)}</div>`;
+  document.getElementById('cv-body').innerHTML=body;
+  const editBtn=document.getElementById('cv-edit');
+  if(isHr && isManagerOrAdmin()){ editBtn.style.display=''; calViewId=e.id; } else { editBtn.style.display='none'; calViewId=null; }
+  document.getElementById('cal-view').style.display='flex';
+}
+function calCloseView(){ document.getElementById('cal-view').style.display='none'; }
+function calEditFromView(){ const ev=calEvents.find(x=>x.id===calViewId); calCloseView(); if(ev) calOpenModal(ev); }
 
 // ── INIT ──
 async function init() {
