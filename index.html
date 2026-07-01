@@ -3075,7 +3075,7 @@ async function saveTask() {
     for (const mid of newlyAssigned) {
       try {
         await sbFetch('notifications', {method:'POST', prefer:'return=minimal', body: JSON.stringify({
-          id: uid(), member_id: mid, type:'task_assigned', task_id: taskId,
+          member_id: mid, type:'task_assigned', task_id: taskId,
           title: (lang==='th'?'ได้รับมอบหมายงานใหม่':'New task assigned'),
           body: data.title + (currentMember?.name ? (lang==='th'?' · โดย ':' · by ')+currentMember.name : ''),
           created_by: currentMember.id
