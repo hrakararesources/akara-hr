@@ -4984,19 +4984,19 @@ async function loadAndShowChecklist(empId) {
   const th = lang === 'th';
   const container = document.getElementById('checklist-'+empId);
   if (!container) return;
+  const emp = newEmployees.find(e=>e.id===empId);
+  // ใครติ๊ก checklist ได้: manager/admin, คนที่สร้าง, หรือ buddy ที่ถูกเลือกให้พนักงานคนนี้
+  const canCheck = isManagerOrAdmin() || (emp && (emp.created_by===currentMember?.id || emp.buddy_id===currentMember?.id));
   container.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">${th?'กำลังโหลด...':'Loading...'}</div>`;
 
   let items = await loadOnboardingItems(empId);
 
   // If no items, create from template
-  if (!items.length && isManagerOrAdmin()) {
-    const emp = newEmployees.find(e=>e.id===empId);
-    if (emp) {
-      for (const t of CHECKLIST_TEMPLATE) {
-        const row = { id:uid(), new_employee_id:empId, category:t.category, title:t.title, title_en:t.title_en, due_day:t.due_day, completed:false };
-        await sbFetch('onboarding_items', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
-        items.push(row);
-      }
+  if (!items.length && canCheck && emp) {
+    for (const t of CHECKLIST_TEMPLATE) {
+      const row = { id:uid(), new_employee_id:empId, category:t.category, title:t.title, title_en:t.title_en, due_day:t.due_day, completed:false };
+      await sbFetch('onboarding_items', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
+      items.push(row);
     }
   }
 
@@ -5031,7 +5031,7 @@ async function loadAndShowChecklist(empId) {
           return `<div class="checklist-item">
             <input type="checkbox" class="checklist-check" ${it.completed?'checked':''}
               data-itemid="${it.id}" data-empid="${empId}"
-              ${!isManagerOrAdmin()?'disabled':''}>
+              ${!canCheck?'disabled':''}>
             <span class="checklist-label ${it.completed?'done':''}">${label}</span>
             ${it.due_day!==undefined?`<span class="checklist-by">${th?'วันที่':'Day'} ${it.due_day}</span>`:''}
             ${changer?`<span class="checklist-by">✓ ${changer.name}</span>`:''}
