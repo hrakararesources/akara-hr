@@ -1073,6 +1073,44 @@ tbody tr:hover{background:var(--blue-lt)}
 .rc-modal-card h3{margin:0 0 6px;font-size:16px;}
 .rc-modal-card label{display:block;font-size:13px;font-weight:500;margin:12px 0 5px;}
 .rc-modal-card select,.rc-modal-card input{width:100%;padding:9px 11px;font-size:14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;box-sizing:border-box;}
+/* ===================== HR Calendar ===================== */
+#page-leave .cal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+#page-leave .cal-nav{display:flex;align-items:center;gap:6px}
+#page-leave .cal-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+#page-leave .cal-legend .lg{display:inline-flex;align-items:center;gap:4px}
+#page-leave .cal-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+#page-leave .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+#page-leave .cal-dow{text-align:center;font-size:11px;color:var(--muted);font-weight:700;padding:4px 0}
+#page-leave .cal-cell{min-height:96px;border:1px solid var(--border);border-radius:8px;padding:5px 6px;background:#fff;overflow:hidden;cursor:pointer;transition:border-color .1s}
+#page-leave .cal-cell:hover{border-color:var(--blue)}
+#page-leave .cal-cell.other{background:#fafbfc}
+#page-leave .cal-cell.other .cal-daynum{color:var(--border)}
+#page-leave .cal-cell.today{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+#page-leave .cal-daynum{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+#page-leave .cal-ev{font-size:10.5px;line-height:1.5;padding:1px 5px;border-radius:4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+#page-leave .cal-more{font-size:10px;color:var(--muted);margin-top:2px}
+#page-leave .cal-up-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:#fff}
+#page-leave .cal-up-date{flex:0 0 54px;text-align:center;font-size:11px;color:var(--muted);line-height:1.2}
+#page-leave .cal-up-date b{display:block;font-size:18px;color:var(--text)}
+#page-leave .cal-up-dot{width:8px;height:8px;border-radius:50%}
+/* event type colors */
+#page-leave .ev-general{background:var(--blue-lt);color:var(--blue)}
+#page-leave .ev-training{background:var(--green-lt);color:var(--green)}
+#page-leave .ev-meeting{background:#ede9fe;color:#7c3aed}
+#page-leave .ev-holiday{background:var(--red-lt);color:var(--red)}
+#page-leave .ev-company{background:var(--gold-lt);color:#a07800}
+#page-leave .ev-deadline{background:var(--orange-lt);color:var(--orange)}
+#page-leave .ev-birthday{background:#fde7f3;color:#c0367a}
+#page-leave .ev-probation{background:#e0f7f4;color:#0f8a7e}
+#page-leave .bg-general{background:var(--blue)}
+#page-leave .bg-training{background:var(--green)}
+#page-leave .bg-meeting{background:#7c3aed}
+#page-leave .bg-holiday{background:var(--red)}
+#page-leave .bg-company{background:var(--gold)}
+#page-leave .bg-deadline{background:var(--orange)}
+#page-leave .bg-birthday{background:#c0367a}
+#page-leave .bg-probation{background:#0f8a7e}
+@media(max-width:640px){#page-leave .cal-cell{min-height:64px}#page-leave .cal-ev{display:none}#page-leave .cal-cell::after{content:attr(data-count);font-size:10px;color:var(--blue)}}
 </style>
 </head>
 <body>
@@ -1204,7 +1242,7 @@ tbody tr:hover{background:var(--blue-lt)}
           <span class="sb-icon">🎯</span><span class="sb-label" data-en="Performance" data-th="ประเมินผล">Performance</span>
         </div>
         <div class="sidebar-item" onclick="switchSidebar('leave')" id="sb-leave">
-          <span class="sb-icon">🗓️</span><span class="sb-label" data-en="Leave Management" data-th="การลา">Leave Management</span>
+          <span class="sb-icon">🗓️</span><span class="sb-label" data-en="HR Calendar" data-th="ปฏิทินกิจกรรม">HR Calendar</span>
         </div>
         <div class="sidebar-item" onclick="switchSidebar('orgchart')" id="sb-orgchart" style="display:none">
           <span class="sb-icon">🗂️</span><span class="sb-label" data-en="Org Chart" data-th="ผังองค์กร">Org Chart</span>
@@ -1614,11 +1652,61 @@ tbody tr:hover{background:var(--blue-lt)}
       </div>
     </div>
     <div class="page hr-module" id="page-leave">
-      <div class="module-placeholder">
-        <div class="module-icon">🗓️</div>
-        <h2 data-en="Leave Management" data-th="การลา">Leave Management</h2>
-        <p data-en="Manage leave requests, approvals, and leave balances" data-th="จัดการคำขอลา การอนุมัติ และวันลาคงเหลือ">Manage leave requests, approvals, and leave balances</p>
-        <div class="coming-soon" data-en="Coming Soon" data-th="เร็วๆ นี้">Coming Soon</div>
+      <div class="section-header" style="margin-bottom:8px">
+        <div>
+          <h2>🗓️ <span data-en="HR Calendar" data-th="ปฏิทินกิจกรรม HR">ปฏิทินกิจกรรม HR</span></h2>
+          <p style="font-size:13px;color:var(--muted);margin-top:2px" data-en="HR events + birthdays, probation, meetings, task deadlines" data-th="กิจกรรม HR + วันเกิด, ครบ probation, ประชุม, กำหนดส่งงาน">กิจกรรม HR + วันเกิด, ครบ probation, ประชุม, กำหนดส่งงาน</p>
+        </div>
+        <button class="btn btn-gold" id="cal-add-btn" onclick="calOpenModal()" style="display:none">+ <span data-en="Add event" data-th="เพิ่มกิจกรรม">เพิ่มกิจกรรม</span></button>
+      </div>
+
+      <div class="cal-head">
+        <div class="cal-nav">
+          <button class="btn btn-ghost btn-sm" onclick="calMove(-1)">‹</button>
+          <span id="cal-title" style="font-weight:700;font-size:15px;min-width:150px;text-align:center;display:inline-block"></span>
+          <button class="btn btn-ghost btn-sm" onclick="calMove(1)">›</button>
+          <button class="btn btn-ghost btn-sm" onclick="calToday()" data-en="Today" data-th="วันนี้">วันนี้</button>
+        </div>
+        <div class="cal-legend" id="cal-legend"></div>
+      </div>
+
+      <div class="cal-grid" id="cal-grid"></div>
+
+      <div style="margin-top:22px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px" data-en="Upcoming" data-th="กิจกรรมข้างหน้า">กิจกรรมข้างหน้า</div>
+        <div id="cal-upcoming"></div>
+      </div>
+
+      <div id="cal-modal" class="rc-modal" style="display:none">
+        <div class="rc-modal-card">
+          <h3 id="cal-modal-title"></h3>
+          <label data-en="Title" data-th="ชื่อกิจกรรม">ชื่อกิจกรรม</label>
+          <input id="cal-f-title" type="text">
+          <label data-en="Type" data-th="ประเภท">ประเภท</label>
+          <select id="cal-f-type">
+            <option value="general" data-en="General" data-th="ทั่วไป">ทั่วไป</option>
+            <option value="training" data-en="Training" data-th="อบรม">อบรม</option>
+            <option value="meeting" data-en="Meeting" data-th="ประชุม">ประชุม</option>
+            <option value="holiday" data-en="Holiday" data-th="วันหยุด">วันหยุด</option>
+            <option value="company" data-en="Company event" data-th="กิจกรรมบริษัท">กิจกรรมบริษัท</option>
+            <option value="deadline" data-en="Deadline" data-th="กำหนดส่ง">กำหนดส่ง</option>
+          </select>
+          <div style="display:flex;gap:12px">
+            <div style="flex:1"><label data-en="Date" data-th="วันที่">วันที่</label><input id="cal-f-date" type="date"></div>
+            <div style="flex:1"><label data-en="End (optional)" data-th="ถึงวันที่ (ถ้ามี)">ถึงวันที่ (ถ้ามี)</label><input id="cal-f-end" type="date"></div>
+          </div>
+          <label data-en="Location (optional)" data-th="สถานที่ (ถ้ามี)">สถานที่ (ถ้ามี)</label>
+          <input id="cal-f-loc" type="text">
+          <label data-en="Description (optional)" data-th="รายละเอียด (ถ้ามี)">รายละเอียด (ถ้ามี)</label>
+          <input id="cal-f-desc" type="text">
+          <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px">
+            <button class="btn btn-danger btn-sm" id="cal-del-btn" onclick="calDeleteEvent()" style="display:none" data-en="Delete" data-th="ลบ">ลบ</button>
+            <div style="display:flex;gap:8px;margin-left:auto">
+              <button class="btn btn-ghost" onclick="calCloseModal()" data-en="Cancel" data-th="ยกเลิก">ยกเลิก</button>
+              <button class="btn btn-gold" onclick="calSaveEvent()" data-en="Save" data-th="บันทึก">บันทึก</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="page hr-module" id="page-announcements">
@@ -2269,6 +2357,7 @@ function applyLang() {
   if (activeMod) applyModuleLang(activeMod);
   if (document.getElementById('page-orgchart')?.classList.contains('active') && typeof ocApplyLang==='function') ocApplyLang();
   if (document.getElementById('page-recruitment')?.classList.contains('active') && typeof rcRender==='function' && rcVac.length) rcRender();
+  if (document.getElementById('page-leave')?.classList.contains('active') && typeof calRender==='function' && calY!==undefined) calRender();
   // Re-render help if active
   if (document.getElementById('page-notifications')?.classList.contains('active')) renderNotifPage();
   if (document.getElementById('page-onboarding')?.classList.contains('active')) {
@@ -2617,6 +2706,7 @@ function switchSidebar(page) {
       pageEl.classList.add('active');
       applyModuleLang(pageEl);
       if (page==='notifications') loadNotifs().then(()=>{ renderNotifPage(); updateNotifBadge(); });
+      if (page==='leave') calInit();
       if (page==='recruitment') rcInit();
       if (page==='orgchart') {
         if (!ocAllowed) { toast('🔒 เฉพาะผู้มีสิทธิ์'); switchSidebar('my-tasks'); return; }
@@ -6146,6 +6236,106 @@ async function rcUpdateStatus(id,status){
   const body={status}; if(status==='closed') body.closed_at=new Date().toISOString();
   try{ await sbFetch('recruitment_requisitions?id=eq.'+id,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)}); toast(ocT('อัปเดตแล้ว','Updated')); await rcInit(); }
   catch(e){ toast(ocT('อัปเดตไม่สำเร็จ','Update failed')+': '+e.message); }
+}
+
+// ===================== HR CALENDAR =====================
+let calY, calM, calEvents = [], calEditId = null;
+function CAL_LABEL(t){ return ({general:ocT('ทั่วไป','General'),training:ocT('อบรม','Training'),meeting:ocT('ประชุม','Meeting'),holiday:ocT('วันหยุด','Holiday'),company:ocT('กิจกรรมบริษัท','Company'),deadline:ocT('กำหนดส่ง','Deadline'),birthday:ocT('วันเกิด','Birthday'),probation:ocT('ครบ Probation','Probation')})[t]||t; }
+function calPad(n){ return String(n).padStart(2,'0'); }
+
+async function calInit(){
+  const d=new Date();
+  if(calY===undefined){ calY=d.getFullYear(); calM=d.getMonth(); }
+  const addBtn=document.getElementById('cal-add-btn'); if(addBtn) addBtn.style.display=isManagerOrAdmin()?'':'none';
+  await calLoad();
+}
+async function calLoad(){
+  try{ calEvents = await sbFetch('hr_events?select=*&order=event_date') || []; }catch(e){ calEvents=[]; }
+  try{ if(typeof newEmployees!=='undefined' && !newEmployees.length) await loadNewEmployees(); }catch(e){}
+  try{ if(typeof employees_bday!=='undefined' && !employees_bday.length) await loadBirthdayData(); }catch(e){}
+  calRender();
+}
+function calCollect(){
+  const evs=[];
+  const push=(date,title,type,extra)=>{ if(date) evs.push({date,title,type,...(extra||{})}); };
+  (calEvents||[]).forEach(e=> push(e.event_date, e.title, e.type||'general', {id:e.id, event_date:e.event_date, end_date:e.end_date, location:e.location, description:e.description}));
+  (typeof employees_bday!=='undefined'?employees_bday:[]).forEach(m=>{
+    if(!m.birthdate) return;
+    const p=m.birthdate.split('-'); const mm=p[1], dd=p[2];
+    const nm=(lang==='th'?m.display_name_th:m.display_name_en)||'';
+    push(`${calY}-${mm}-${dd}`, '🎂 '+nm, 'birthday');
+    push(`${calY+1}-${mm}-${dd}`, '🎂 '+nm, 'birthday');
+  });
+  (typeof newEmployees!=='undefined'?newEmployees:[]).forEach(ne=>{
+    if(ne.status!=='probation'||!ne.start_date) return;
+    try{ const r=calcProbationDays(ne.start_date, ne.probation_days||119); push(r.endDate.toISOString().slice(0,10), '🌟 '+ocT('ครบ Probation','Probation end')+': '+(ne.full_name_th||ne.nickname||''), 'probation'); }catch(e){}
+  });
+  (typeof meetings!=='undefined'?meetings:[]).forEach(m=>{ if(m.meeting_date) push(m.meeting_date, '📝 '+(m.title||m.topic||ocT('ประชุม','Meeting')), 'meeting'); });
+  (typeof tasks!=='undefined'?tasks:[]).forEach(t=>{ if(t.due && t.status!=='เสร็จสิ้น') push(t.due, '📋 '+t.title, 'deadline'); });
+  return evs;
+}
+function calRender(){
+  if(document.getElementById('cal-title')===null) return;
+  document.getElementById('cal-title').textContent=new Date(calY,calM,1).toLocaleDateString(lang==='th'?'th-TH':'en-US',{month:'long',year:'numeric'});
+  document.getElementById('cal-legend').innerHTML=['general','training','meeting','holiday','company','deadline','birthday','probation'].map(t=>`<span class="lg"><span class="dot bg-${t}"></span>${CAL_LABEL(t)}</span>`).join('');
+  const all=calCollect(); const byDate={}; all.forEach(e=>{ (byDate[e.date]=byDate[e.date]||[]).push(e); });
+  const dow=lang==='th'?['อา','จ','อ','พ','พฤ','ศ','ส']:['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const startDow=new Date(calY,calM,1).getDay(); const daysInMonth=new Date(calY,calM+1,0).getDate(); const prevDays=new Date(calY,calM,0).getDate();
+  const todayStr=new Date().toISOString().slice(0,10);
+  let cells=dow.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<42;i++){
+    const idx=i-startDow; let dayNum,cy,cm,other=false;
+    if(idx<0){ dayNum=prevDays+idx+1; cm=calM-1; cy=calY; other=true; }
+    else if(idx>=daysInMonth){ dayNum=idx-daysInMonth+1; cm=calM+1; cy=calY; other=true; }
+    else { dayNum=idx+1; cm=calM; cy=calY; }
+    const dObj=new Date(cy,cm,dayNum); const ds=`${dObj.getFullYear()}-${calPad(dObj.getMonth()+1)}-${calPad(dObj.getDate())}`;
+    const list=byDate[ds]||[];
+    const evHtml=list.slice(0,3).map(e=>`<div class="cal-ev ev-${e.type}" onclick="event.stopPropagation();calEvClick('${e.id||''}')" title="${ocEsc(e.title)}">${ocEsc(e.title)}</div>`).join('');
+    const more=list.length>3?`<div class="cal-more">+${list.length-3} ${ocT('อื่นๆ','more')}</div>`:'';
+    cells+=`<div class="cal-cell ${other?'other':''} ${ds===todayStr?'today':''}" data-count="${list.length?list.length+' •':''}" onclick="calDayClick('${ds}')"><div class="cal-daynum">${dayNum}</div>${evHtml}${more}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=cells;
+  const upcoming=all.filter(e=>e.date>=todayStr).sort((a,b)=>a.date<b.date?-1:1).slice(0,15);
+  document.getElementById('cal-upcoming').innerHTML=upcoming.length?upcoming.map(e=>{
+    const d=new Date(e.date);
+    return `<div class="cal-up-item" ${e.id?`onclick="calEvClick('${e.id}')" style="cursor:pointer"`:''}><div class="cal-up-date"><b>${d.getDate()}</b>${d.toLocaleDateString(lang==='th'?'th-TH':'en-US',{month:'short'})}</div><span class="cal-up-dot bg-${e.type}"></span><div style="flex:1"><div style="font-size:13.5px;font-weight:500">${ocEsc(e.title)}</div><div style="font-size:11.5px;color:var(--muted)">${CAL_LABEL(e.type)}${e.location?' · '+ocEsc(e.location):''}</div></div></div>`;
+  }).join(''):`<div style="color:var(--muted);font-size:13px">${ocT('ไม่มีกิจกรรมข้างหน้า','No upcoming events')}</div>`;
+}
+function calMove(delta){ calM+=delta; if(calM<0){calM=11;calY--;} else if(calM>11){calM=0;calY++;} calRender(); }
+function calToday(){ const d=new Date(); calY=d.getFullYear(); calM=d.getMonth(); calRender(); }
+function calDayClick(ds){ if(isManagerOrAdmin()) calOpenModal(null, ds); }
+function calEvClick(id){ if(!id||!isManagerOrAdmin()) return; const e=calEvents.find(x=>x.id===id); if(e) calOpenModal(e); }
+function calOpenModal(ev, ds){
+  if(!isManagerOrAdmin()) return;
+  calEditId=ev?ev.id:null;
+  document.getElementById('cal-modal-title').textContent=ev?ocT('แก้ไขกิจกรรม','Edit event'):ocT('เพิ่มกิจกรรม','Add event');
+  document.getElementById('cal-f-title').value=ev?(ev.title||''):'';
+  document.getElementById('cal-f-type').value=ev?(ev.type||'general'):'general';
+  document.getElementById('cal-f-date').value=ev?ev.event_date:(ds||new Date().toISOString().slice(0,10));
+  document.getElementById('cal-f-end').value=ev?(ev.end_date||''):'';
+  document.getElementById('cal-f-loc').value=ev?(ev.location||''):'';
+  document.getElementById('cal-f-desc').value=ev?(ev.description||''):'';
+  document.getElementById('cal-del-btn').style.display=ev?'':'none';
+  document.getElementById('cal-modal').style.display='flex';
+}
+function calCloseModal(){ document.getElementById('cal-modal').style.display='none'; calEditId=null; }
+async function calSaveEvent(){
+  const title=document.getElementById('cal-f-title').value.trim();
+  const date=document.getElementById('cal-f-date').value;
+  if(!title){ toast(ocT('กรุณาใส่ชื่อกิจกรรม','Title required')); return; }
+  if(!date){ toast(ocT('กรุณาเลือกวันที่','Date required')); return; }
+  const row={ title, type:document.getElementById('cal-f-type').value, event_date:date, end_date:document.getElementById('cal-f-end').value||null, location:document.getElementById('cal-f-loc').value.trim()||null, description:document.getElementById('cal-f-desc').value.trim()||null };
+  try{
+    if(calEditId){ await sbFetch('hr_events?id=eq.'+calEditId,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(row)}); }
+    else { row.created_by=currentMember.id; await sbFetch('hr_events',{method:'POST',prefer:'return=minimal',body:JSON.stringify(row)}); }
+    toast(ocT('บันทึกกิจกรรมแล้ว','Event saved')); calCloseModal(); await calLoad();
+  }catch(e){ toast(ocT('บันทึกไม่สำเร็จ','Failed')+': '+e.message); }
+}
+async function calDeleteEvent(){
+  if(!calEditId) return;
+  if(!confirm(ocT('ยืนยันลบกิจกรรมนี้?','Delete this event?'))) return;
+  try{ await sbFetch('hr_events?id=eq.'+calEditId,{method:'DELETE'}); toast(ocT('ลบแล้ว','Deleted')); calCloseModal(); await calLoad(); }
+  catch(e){ toast(ocT('ลบไม่สำเร็จ','Delete failed')); }
 }
 
 // ── INIT ──
