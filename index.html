@@ -1372,6 +1372,7 @@ tbody tr:hover{background:var(--blue-lt)}
             <button id="oc-modeChart" onclick="ocSetMode('chart')" data-en="Tree chart" data-th="แผนภูมิเส้น">แผนภูมิเส้น</button>
           </div>
           <button class="oc-btn" onclick="ocSetFocus(null)" data-en="▲ Top" data-th="▲ บนสุด">▲ บนสุด</button>
+          <select id="oc-dept" onchange="ocDeptChange()" style="padding:9px 11px;font-size:14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;min-width:200px"><option value="">— ทุกแผนก —</option></select>
         </div>
         <div class="oc-sr" id="oc-searchResults" style="display:none"></div>
         <div id="oc-drillView">
@@ -5567,7 +5568,7 @@ async function submitResetPw(token) {
 // ===================== ORG CHART MODULE (schema: orgchart) =====================
 let ocAllowed = false, ocLoaded = false;
 let ocAllRows = [], ocById = new Map(), ocRoots = [], ocHeadcount = [];
-let ocFocusId = null, ocViewMode = 'cards', ocChartZoom = 1, ocChartDepth = 2;
+let ocFocusId = null, ocViewMode = 'cards', ocChartZoom = 1, ocChartDepth = 2, ocDeptFilter = '';
 const OC_CHART_MAX_DEPTH = 2;
 
 async function checkOrgChartAccess() {
@@ -5603,6 +5604,7 @@ async function ocInit() {
     ocmSetup();
     ocSetPlaceholders();
     ocBuildIndex();
+    ocPopulateDept();
     ocFocusId = ocRoots.length===1 ? ocRoots[0].position_id : null;
     ocRenderDrill();
     ocRenderVacant();
@@ -5641,7 +5643,7 @@ function ocSetPlaceholders(){
   Object.entries(ph).forEach(([id,t])=>{ const e=document.getElementById(id); if(e) e.placeholder=t; });
   const vd=document.getElementById('oc-vacDivision'); if(vd&&vd.options[0]) vd.options[0].textContent=ocT('ทุก Division','All Divisions');
 }
-function ocApplyLang(){ ocSetPlaceholders(); if(ocLoaded){ ocRenderDrill(); ocRenderVacant(); } }
+function ocApplyLang(){ ocSetPlaceholders(); if(ocLoaded){ ocPopulateDept(); ocRenderDrill(); ocRenderVacant(); } }
 
 function ocBuildIndex(){
   ocById = new Map(ocAllRows.map(r=>[r.position_id,{...r,children:[]}]));
@@ -5657,12 +5659,21 @@ function ocDescCount(n){ let c=0; for(const ch of n.children) c+=1+ocDescCount(c
 function ocAncestors(n){ const ch=[]; let cur=n.reports_to_position_id?ocById.get(n.reports_to_position_id):null; while(cur){ch.unshift(cur);cur=cur.reports_to_position_id?ocById.get(cur.reports_to_position_id):null;} return ch; }
 
 function ocSetFocus(id){
-  ocFocusId=id;
+  ocFocusId=id; ocDeptFilter=''; const ds=document.getElementById('oc-dept'); if(ds) ds.value='';
   document.getElementById('oc-search').value='';
   document.getElementById('oc-searchResults').style.display='none';
   document.getElementById('oc-drillView').style.display='block';
   ocRenderDrill();
 }
+function ocPopulateDept(){
+  const sel=document.getElementById('oc-dept'); if(!sel) return;
+  const byDiv={};
+  ocAllRows.forEach(r=>{ (byDiv[r.division]=byDiv[r.division]||new Set()).add(r.department); });
+  let html=`<option value="">${ocT('— ทุกแผนก (ไล่ตามสายงาน) —','— All (by hierarchy) —')}</option>`;
+  Object.keys(byDiv).sort().forEach(d=>{ html+=`<optgroup label="${ocEsc(d)}">`+[...byDiv[d]].sort().map(dep=>`<option value="${ocEsc(dep)}">${ocEsc(dep)}</option>`).join('')+`</optgroup>`; });
+  sel.innerHTML=html; sel.value=ocDeptFilter;
+}
+function ocDeptChange(){ ocDeptFilter=document.getElementById('oc-dept').value; if(ocDeptFilter){ ocSetMode('cards'); } else { ocRenderDrill(); } }
 function ocPerson(n,cls){ return n.incumbent?`<span class="${cls}">${ocEsc(n.incumbent)}</span>`:`<span class="${cls} oc-vac-person">— ${n.acting_coverage?ocT('รักษาการ','Acting')+': '+ocEsc(n.acting_coverage):ocT('ว่าง','Vacant')}</span>`; }
 
 function ocSetMode(m){
@@ -5675,6 +5686,10 @@ function ocSetMode(m){
 }
 
 function ocRenderDrill(){
+  if(ocDeptFilter){
+    document.getElementById('oc-breadcrumb').innerHTML=`<span class="oc-crumb" onclick="ocSetFocus(null)">${ocT('องค์กร','Organization')}</span><span class="oc-sep">›</span><span class="oc-crumb current">${ocEsc(ocDeptFilter)}</span>`;
+    ocRenderCards(null); return;
+  }
   const focus = ocFocusId?ocById.get(ocFocusId):null;
   const cr=[`<span class="oc-crumb ${focus?'':'current'}" onclick="ocSetFocus(null)">${ocT('องค์กร','Organization')}</span>`];
   if(focus){ ocAncestors(focus).forEach(a=>{cr.push('<span class="oc-sep">›</span>');cr.push(`<span class="oc-crumb" onclick="ocSetFocus('${a.position_id}')">${ocEsc(a.title)}</span>`);}); cr.push('<span class="oc-sep">›</span>'); cr.push(`<span class="oc-crumb current">${ocEsc(focus.title)}</span>`); }
@@ -5695,6 +5710,13 @@ function ocCardInner(n,isFocus){
 }
 function ocRenderCards(focus){
   const fb=document.getElementById('oc-focusBox'), rh=document.getElementById('oc-rhead'), rg=document.getElementById('oc-grid');
+  if(ocDeptFilter){
+    fb.style.display='none'; fb.innerHTML='';
+    const list=[...ocById.values()].filter(n=>n.department===ocDeptFilter).sort((a,b)=>ocGRank(a.grade||'')-ocGRank(b.grade||'')||(a.title||'').localeCompare(b.title||''));
+    rh.textContent=`${ocEsc(ocDeptFilter)} (${list.length})`;
+    rg.innerHTML=list.map(n=>{const k=n.children.length;return `<div class="oc-card kids" onclick="ocSetFocus('${n.position_id}')">${ocCardInner(n,false)}${k?`<span class="oc-countbadge">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`;}).join('')||`<div class="oc-empty">${ocT('ไม่มีตำแหน่งในแผนกนี้','No positions in this department')}</div>`;
+    return;
+  }
   let reports;
   if(focus){
     fb.style.display='block';
