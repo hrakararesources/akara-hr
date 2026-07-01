@@ -1725,6 +1725,17 @@ tbody tr:hover{background:var(--blue-lt)}
           </div>
         </div>
       </div>
+
+      <div id="cal-day" class="rc-modal" style="display:none">
+        <div class="rc-modal-card">
+          <h3 id="cd-title" style="margin:0 0 12px"></h3>
+          <div id="cd-list" style="max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+            <button class="btn btn-ghost" onclick="calCloseDay()" data-en="Close" data-th="ปิด">ปิด</button>
+            <button class="btn btn-gold" id="cd-add" onclick="calAddFromDay()">+ <span data-en="Add event" data-th="เพิ่มกิจกรรม">เพิ่มกิจกรรม</span></button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="page hr-module" id="page-announcements">
       <div class="section-header">
@@ -6340,7 +6351,7 @@ function calRender(){
     const dObj=new Date(cy,cm,dayNum); const ds=`${dObj.getFullYear()}-${calPad(dObj.getMonth()+1)}-${calPad(dObj.getDate())}`;
     const list=byDate[ds]||[];
     const evHtml=list.slice(0,3).map(e=>`<div class="cal-ev ev-${e.type}" onclick="event.stopPropagation();calShowDetail(${e._i})" title="${ocEsc(e.title)}">${ocEsc(e.title)}</div>`).join('');
-    const more=list.length>3?`<div class="cal-more">+${list.length-3} ${ocT('อื่นๆ','more')}</div>`:'';
+    const more=list.length>3?`<div class="cal-more" onclick="event.stopPropagation();calShowDay('${ds}')">+${list.length-3} ${ocT('อื่นๆ','more')}</div>`:'';
     const wknd=(dObj.getDay()===0||dObj.getDay()===6)&&!other;
     cells+=`<div class="cal-cell ${other?'other':''} ${wknd?'weekend':''} ${ds===todayStr?'today':''}" data-count="${list.length?list.length+' •':''}" onclick="calDayClick('${ds}')"><div class="cal-daynum">${dayNum}</div>${evHtml}${more}</div>`;
   }
@@ -6359,7 +6370,25 @@ function calRender(){
 }
 function calMove(delta){ calM+=delta; if(calM<0){calM=11;calY--;} else if(calM>11){calM=0;calY++;} calRender(); }
 function calToday(){ const d=new Date(); calY=d.getFullYear(); calM=d.getMonth(); calRender(); }
-function calDayClick(ds){ calOpenModal(null, ds); }  // ทุกคนเพิ่มได้
+function calDayClick(ds){ const has=(calShown||[]).some(e=>e.date===ds); if(has) calShowDay(ds); else calOpenModal(null, ds); }
+let calDayDs=null;
+function calShowDay(ds){
+  calDayDs=ds;
+  const list=(calShown||[]).filter(e=>e.date===ds);
+  const d=new Date(ds+'T00:00:00');
+  document.getElementById('cd-title').textContent=d.toLocaleDateString(lang==='th'?'th-TH':'en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('cd-list').innerHTML=list.length?list.map(e=>{
+    const note=e.id?'':(e.src==='meeting'?ocT('ประชุม','Meeting'):e.src==='probation'?ocT('ครบ Probation','Probation'):'');
+    return `<div class="cal-up-item" style="cursor:pointer" onclick="calCloseDay();calShowDetail(${e._i})">
+      <span class="cal-up-dot bg-${e.type}"></span>
+      <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ocEsc(e.title)}</div><div style="font-size:11.5px;color:var(--muted)">${CAL_LABEL(e.type)}${e.location?' · 📍 '+ocEsc(e.location):''}${note?' · '+note:''}</div></div>
+      <span style="flex-shrink:0;color:var(--muted);font-size:16px">›</span>
+    </div>`;
+  }).join(''):`<div style="color:var(--muted);font-size:13px;padding:12px;text-align:center">${ocT('ไม่มีกิจกรรมในวันนี้','No events on this day')}</div>`;
+  document.getElementById('cal-day').style.display='flex';
+}
+function calCloseDay(){ document.getElementById('cal-day').style.display='none'; }
+function calAddFromDay(){ const ds=calDayDs; calCloseDay(); calOpenModal(null, ds); }
 function calEvClick(id){ if(!id) return; const e=calEvents.find(x=>x.id===id); if(e) calOpenModal(e); }
 function calCanEditEvent(ev){ return isManagerOrAdmin() || (ev && ev.created_by && ev.created_by===currentMember?.id); }
 function calOpenModal(ev, ds){
