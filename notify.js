@@ -35,14 +35,17 @@ function sbGet(path) {
 }
 
 // ── EMAIL TRANSPORTER ──
+const SMTP_PORT = parseInt(process.env.SMTP_PORT) || 587;
 const transporter = createTransport({
   host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: parseInt(process.env.SMTP_PORT) === 465,
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465,
+  requireTLS: SMTP_PORT !== 465,   // MS365 = 587 STARTTLS
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 20000, greetingTimeout: 20000, socketTimeout: 20000,
   tls: { rejectUnauthorized: false }
 });
 
