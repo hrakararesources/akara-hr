@@ -5720,12 +5720,12 @@ function ocRenderChart(focus){
   // tidy x: leaves get sequential slots, parents centered over children
   const X=new Map(); let nx=0;
   (function po(n,d){ const kids=d<MAXD?n.children:[]; if(!kids.length){ X.set(n.position_id,nx++); } else { kids.forEach(c=>po(c,d+1)); const xs=kids.map(c=>X.get(c.position_id)); X.set(n.position_id,(Math.min(...xs)+Math.max(...xs))/2); } })(root,0);
-  const SLOT=196, ROWH=150, LABELW=50, BW=180, BH=116, PADT=10;
+  const SLOT=196, ROWH=150, LABELW=8, BW=180, BH=116, PADT=10;
   const maxX=Math.max(0,...X.values());
   const W=LABELW+(maxX+1)*SLOT, H=PADT+present.length*ROWH;
   const xpx=pid=>LABELW + X.get(pid)*SLOT;
   const ytop=g=>PADT + rowOf[g]*ROWH;
-  let labels=present.map((g,i)=>`<div class="oc-rowlabel" style="top:${PADT+i*ROWH}px">${ocEsc(g)}</div>`).join('');
+  let labels='';
   let boxes=nodes.map(n=>`<div class="oc-tnode" style="left:${xpx(n.position_id)}px;top:${ytop(gk(n))}px">${ocChartBox(n)}</div>`).join('');
   let paths='';
   nodes.forEach(n=>{
@@ -5733,8 +5733,8 @@ function ocRenderChart(focus){
     const p=ocById.get(n.reports_to_position_id);
     if(!p||!X.has(p.position_id)) return;
     const cx=xpx(n.position_id)+BW/2, ct=ytop(gk(n));
-    const px=xpx(p.position_id)+BW/2, pb=ytop(gk(p))+BH, my=pb+(ct-pb)/2;
-    paths+=`<path d="M${px} ${pb} V${my} H${cx} V${ct}" fill="none" stroke="#b9c2d6" stroke-width="2"/>`;
+    const px=xpx(p.position_id)+BW/2, pb=ytop(gk(p))+BH, bus=pb+18;
+    paths+=`<path d="M${px} ${pb} V${bus} H${cx} V${ct}" fill="none" stroke="#b9c2d6" stroke-width="1.5"/>`;
   });
   cv.innerHTML=`<div class="oc-zoombar"><button class="oc-btn" onclick="ocDepthBy(-1)">− ${ocT('ชั้น','level')}</button><span class="oc-muted" id="oc-depth" style="min-width:54px;text-align:center">${ocT('ชั้น','Levels')} ${ocChartDepth}</span><button class="oc-btn" onclick="ocDepthBy(1)">+ ${ocT('ชั้น','level')}</button><span style="display:inline-block;width:10px"></span><button class="oc-btn" onclick="ocZoomBy(-0.1)">−</button><span class="oc-muted" id="oc-zoomPct" style="min-width:44px;text-align:center">100%</span><button class="oc-btn" onclick="ocZoomBy(0.1)">+</button><button class="oc-btn" onclick="ocZoomFit()">${ocT('พอดีหน้าจอ','Fit')}</button><span class="oc-muted">· ${ocT('แถว = ระดับ · คลิกกล่องเพื่อเจาะลง','Rows = grade · click a box to drill in')}</span></div><div class="oc-scroll" id="oc-ocScroll"><div class="oc-zoom" id="oc-ocZoom" style="position:relative;width:${W}px;height:${H}px"><svg class="oc-svg" width="${W}" height="${H}">${paths}</svg>${labels}${boxes}</div></div>`;
   requestAnimationFrame(ocZoomFit);
