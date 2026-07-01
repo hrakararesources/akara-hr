@@ -1375,7 +1375,8 @@ tbody tr:hover{background:var(--blue-lt)}
       </div>
       <div class="rc-kpi" id="rc-kpi"></div>
       <div class="rc-controls">
-        <select id="rc-div" onchange="rcRender()"><option value="">ทุก Division</option></select>
+        <select id="rc-div" onchange="rcDivChange()"><option value="">ทุก Division</option></select>
+        <select id="rc-dept" onchange="rcRender()"><option value="">ทุกแผนก</option></select>
         <input type="text" id="rc-search" placeholder="ค้นหาชื่อตำแหน่ง..." oninput="rcRender()">
         <div class="rc-tabs">
           <button id="rc-tab-need" class="active" onclick="rcTab('need')" data-en="Not opened" data-th="ยังไม่เปิดสรรหา">ยังไม่เปิดสรรหา</button>
@@ -6034,15 +6035,24 @@ async function rcInit(){
   const sel=document.getElementById('rc-div');
   const divs=[...new Set(rcVac.map(r=>r.division))].sort();
   sel.innerHTML=`<option value="">${ocT('ทุก Division','All Divisions')}</option>`+divs.map(d=>`<option>${ocEsc(d)}</option>`).join('');
+  rcPopulateDept();
   rcRender();
 }
+function rcPopulateDept(){
+  const div=document.getElementById('rc-div').value;
+  const sel=document.getElementById('rc-dept');
+  const deps=[...new Set(rcVac.filter(r=>!div||r.division===div).map(r=>r.department))].sort();
+  sel.innerHTML=`<option value="">${ocT('ทุกแผนก','All Departments')}</option>`+deps.map(d=>`<option>${ocEsc(d)}</option>`).join('');
+}
+function rcDivChange(){ rcPopulateDept(); rcRender(); }
 function rcTab(t){ rcTabSel=t; ['need','open','all'].forEach(x=>document.getElementById('rc-tab-'+x).classList.toggle('active',x===t)); rcRender(); }
 function rcStatusText(s){ return {open:ocT('เปิดรับ','Open'),interviewing:ocT('สัมภาษณ์','Interviewing'),offer:ocT('ยื่นข้อเสนอ','Offer'),closed:ocT('ปิดแล้ว','Closed')}[s]||s; }
 function rcBadge(s){ return s?`<span class="rc-badge rc-b-${s}">${rcStatusText(s)}</span>`:`<span class="rc-badge rc-b-none">${ocT('ยังไม่เปิด','Not opened')}</span>`; }
 function rcRender(){
   const div=document.getElementById('rc-div').value;
+  const dept=document.getElementById('rc-dept').value;
   const q=document.getElementById('rc-search').value.trim().toLowerCase();
-  let rows=rcVac.filter(r=>(!div||r.division===div)&&(!q||(r.title||'').toLowerCase().includes(q)));
+  let rows=rcVac.filter(r=>(!div||r.division===div)&&(!dept||r.department===dept)&&(!q||(r.title||'').toLowerCase().includes(q)));
   if(rcTabSel==='need') rows=rows.filter(r=>!r.requisition_id);
   else if(rcTabSel==='open') rows=rows.filter(r=>r.requisition_id);
   const total=rcVac.length, opened=rcVac.filter(r=>r.requisition_id).length;
