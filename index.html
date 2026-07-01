@@ -1028,6 +1028,7 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-orgchart table.oc-table td { padding:9px 10px; border-bottom:1px solid var(--border); }
 #page-orgchart .oc-empty { text-align:center; color:var(--muted); padding:40px 20px; font-size:14px; }
 #page-orgchart .oc-muted { color:var(--muted); font-size:12.5px; }
+#page-orgchart .oc-gradehdr { font-size:12.5px; font-weight:700; color:var(--blue); margin:4px 0 8px; padding-bottom:4px; border-bottom:1px solid var(--border); }
 #page-orgchart .oc-form label { display:block; font-size:13px; font-weight:500; margin:14px 0 6px; }
 #page-orgchart .oc-form input[type=text], #page-orgchart .oc-form select { width:100%; padding:9px 11px; font-size:14px; border:1px solid var(--border); border-radius:8px; font-family:inherit; background:#fff; color:var(--text); }
 #page-orgchart .oc-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
@@ -5710,11 +5711,18 @@ function ocCardInner(n,isFocus){
 }
 function ocRenderCards(focus){
   const fb=document.getElementById('oc-focusBox'), rh=document.getElementById('oc-rhead'), rg=document.getElementById('oc-grid');
+  rg.style.display='';
   if(ocDeptFilter){
     fb.style.display='none'; fb.innerHTML='';
-    const list=[...ocById.values()].filter(n=>n.department===ocDeptFilter).sort((a,b)=>ocGRank(a.grade||'')-ocGRank(b.grade||'')||(a.title||'').localeCompare(b.title||''));
-    rh.textContent=`${ocEsc(ocDeptFilter)} (${list.length})`;
-    rg.innerHTML=list.map(n=>{const k=n.children.length;return `<div class="oc-card kids" onclick="ocSetFocus('${n.position_id}')">${ocCardInner(n,false)}${k?`<span class="oc-countbadge">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`;}).join('')||`<div class="oc-empty">${ocT('ไม่มีตำแหน่งในแผนกนี้','No positions in this department')}</div>`;
+    const list=[...ocById.values()].filter(n=>n.department===ocDeptFilter);
+    rh.textContent=`${ocDeptFilter} (${list.length})`;
+    const groups={}; list.forEach(n=>{ const g=n.grade||ocT('(ไม่ระบุ)','(N/A)'); (groups[g]=groups[g]||[]).push(n); });
+    const grades=Object.keys(groups).sort((a,b)=>ocGRank(a)-ocGRank(b));
+    rg.style.display='block';
+    rg.innerHTML=grades.map(g=>{
+      const cards=groups[g].sort((a,b)=>(a.title||'').localeCompare(b.title||'')).map(n=>{const k=n.children.length;return `<div class="oc-card kids" onclick="ocSetFocus('${n.position_id}')">${ocCardInner(n,false)}${k?`<span class="oc-countbadge">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`;}).join('');
+      return `<div class="oc-gradehdr">${ocT('ระดับ','Level')} ${ocEsc(g)} <span class="oc-muted">(${groups[g].length})</span></div><div class="oc-grid" style="margin-bottom:16px">${cards}</div>`;
+    }).join('')||`<div class="oc-empty">${ocT('ไม่มีตำแหน่งในแผนกนี้','No positions in this department')}</div>`;
     return;
   }
   let reports;
