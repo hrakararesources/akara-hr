@@ -2771,7 +2771,7 @@ function switchTab(tab) {
   document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
   const sbEl = document.getElementById('sb-'+tab);
   if (sbEl) sbEl.classList.add('active');
-  if (tab==='dept-overview') renderDeptOverview();
+  if (tab==='dept-overview') { renderDeptOverview(); renderDueDateReport(); }
   if (tab==='all-tasks') renderAllTasks();
 }
 
