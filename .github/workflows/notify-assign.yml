@@ -1,0 +1,33 @@
+name: Task Assigned Email
+
+on:
+  schedule:
+    # ทุก 15 นาที (GitHub cron อาจดีเลย์ได้บ้าง)
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # รันมือได้สำหรับทดสอบ
+
+jobs:
+  notify-assign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Send assignment emails
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+        run: node notify-assign.js
