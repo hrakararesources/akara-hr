@@ -93,11 +93,25 @@ async function main() {
   const memberMap = {};
   members.forEach(m => { memberMap[m.id] = m; });
 
-  // จัดกลุ่ม tasks ตาม member
+  // ดึงผู้รับผิดชอบหลายคนต่องาน (junction) — ถ้าไม่มี/ยังไม่ได้สร้าง ใช้ member_id เดิม
+  let assigneesByTask = {};
+  try {
+    const tas = await sbGet('task_assignees?select=task_id,member_id');
+    (tas || []).forEach(r => {
+      if (!assigneesByTask[r.task_id]) assigneesByTask[r.task_id] = [];
+      assigneesByTask[r.task_id].push(r.member_id);
+    });
+  } catch (e) { assigneesByTask = {}; }
+
+  // จัดกลุ่ม tasks ตาม member (ส่งถึงผู้รับผิดชอบทุกคนของงาน)
   const tasksByMember = {};
   tasks.forEach(t => {
-    if (!tasksByMember[t.member_id]) tasksByMember[t.member_id] = [];
-    tasksByMember[t.member_id].push(t);
+    const ids = (assigneesByTask[t.id] && assigneesByTask[t.id].length) ? assigneesByTask[t.id] : [t.member_id];
+    ids.forEach(mid => {
+      if (!mid) return;
+      if (!tasksByMember[mid]) tasksByMember[mid] = [];
+      tasksByMember[mid].push(t);
+    });
   });
 
   let sent = 0;

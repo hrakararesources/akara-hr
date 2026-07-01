@@ -1772,9 +1772,7 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="fg full"><label id="lbl-task-title">Title *</label><input id="tf-title" placeholder="Task title"></div>
         <div class="fg full" id="tf-assignee-wrap" style="display:none">
           <label id="lbl-task-assignee">Assign To</label>
-          <select id="tf-assignee">
-            <option value="">— Select member —</option>
-          </select>
+          <div id="tf-assignees" style="display:flex;flex-wrap:wrap;gap:8px 14px;max-height:150px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:10px"></div>
         </div>
         <div class="fg full"><label id="lbl-task-desc">Description</label><textarea id="tf-desc" placeholder="Details..."></textarea></div>
         <div class="fg"><label id="lbl-task-prio">Priority</label>
@@ -2472,6 +2470,12 @@ async function loadData() {
     desc:t.description||'', prio:t.prio||'ปานกลาง',
     status:t.status||'รอดำเนินการ', due:t.due||'', prog:t.prog||0, note:t.note||''
   }));
+  // ผู้รับผิดชอบหลายคนต่องาน (degrade ปลอดภัยถ้ายังไม่รัน 010)
+  try {
+    const tas = await sbFetch('task_assignees?select=task_id,member_id');
+    taskAssignees = {};
+    (tas||[]).forEach(r => { (taskAssignees[r.task_id]=taskAssignees[r.task_id]||[]).push(r.member_id); });
+  } catch(e) { taskAssignees = {}; }
 }
 
 async function loadDataAndEnter() {
@@ -2548,7 +2552,10 @@ function uid() { return 'x'+Math.random().toString(36).slice(2,9); }
 function isManager() { return currentMember?.role === 'manager'; }
 function isAdmin() { return currentMember?.role === 'admin'; }
 function isManagerOrAdmin() { return isManager() || isAdmin(); }
-function canEdit(task) { return isManagerOrAdmin() || task.memberId === currentMember?.id; }
+let taskAssignees = {}; // task_id -> [member_id] (ผู้รับผิดชอบทั้งหมดของงาน)
+function assigneesOf(t){ const a = t && taskAssignees[t.id]; return (a && a.length) ? a : (t && t.memberId ? [t.memberId] : []); }
+function isAssignee(t, mid){ return !!mid && assigneesOf(t).includes(mid); }
+function canEdit(task) { return isManagerOrAdmin() || isAssignee(task, currentMember?.id); }
 function isLate(t) { return t.status !== 'เสร็จสิ้น' && t.due && new Date(t.due) < new Date(); }
 function effectiveStatus(t) { return isLate(t) ? 'เกินกำหนด' : t.status; }
 function fmtDate(d) {
@@ -2666,7 +2673,7 @@ function switchTab(tab) {
 
 // ── MY TASKS ──
 function renderMyKpi() {
-  const mine = tasks.filter(t=>t.memberId===currentMember.id);
+  const mine = tasks.filter(t=>isAssignee(t,currentMember.id));
   const total=mine.length, done=mine.filter(t=>t.status==='เสร็จสิ้น').length;
   const doing=mine.filter(t=>t.status==='กำลังดำเนินการ').length;
   const late=mine.filter(t=>isLate(t)).length;
@@ -2692,7 +2699,7 @@ function renderMyTasks() {
   const q=(document.getElementById('my-search')||{}).value?.toLowerCase()||'';
   const prio=(document.getElementById('my-prio-filter')||{}).value||'';
   const view=(document.getElementById('my-view')||{}).value||'kanban';
-  const mine=tasks.filter(t=>t.memberId===currentMember.id&&(!q||t.title.toLowerCase().includes(q)||(t.desc||'').toLowerCase().includes(q))&&(!prio||t.prio===prio));
+  const mine=tasks.filter(t=>isAssignee(t,currentMember.id)&&(!q||t.title.toLowerCase().includes(q)||(t.desc||'').toLowerCase().includes(q))&&(!prio||t.prio===prio));
   const kanbanEl=document.getElementById('my-kanban');
   const listWrap=document.getElementById('my-list-wrap');
   if (view==='kanban') {
@@ -2748,7 +2755,7 @@ function taskCard(t) {
     <div class="tc-meta">
       ${prioTag(t.prio)}
       ${t.due?`<div class="tc-meta-item ${late?'tc-due-late':''}">📅 ${fmtDate(t.due)}</div>`:''}
-      ${t.memberId!==currentMember?.id?`<div class="tc-meta-item" style="color:var(--blue)">👤 ${empName(t.memberId)}</div>`:''}
+      ${(()=>{ const who=assigneesOf(t).filter(id=>id!==currentMember?.id).map(empName).filter(Boolean); return who.length?`<div class="tc-meta-item" style="color:var(--blue)">👤 ${who.join(', ')}</div>`:''; })()}
     </div>
   </div>`;
 }
@@ -2859,7 +2866,7 @@ function renderDeptOverview() {
   });
   // Chart 3: Tasks per member
   const memNames=members.map(m=>m.name);
-  const memCounts=members.map(m=>tasks.filter(t=>t.memberId===m.id).length);
+  const memCounts=members.map(m=>tasks.filter(t=>isAssignee(t,m.id)).length);
   charts.member = new Chart(document.getElementById('chart-member'), {
     type:'bar',
     data:{
@@ -2869,7 +2876,7 @@ function renderDeptOverview() {
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
   });
   // Chart 4: Avg progress per member
-  const memProg=members.map(m=>{const mt=tasks.filter(t=>t.memberId===m.id);return mt.length?Math.round(mt.reduce((s,t)=>s+(t.prog||0),0)/mt.length):0;});
+  const memProg=members.map(m=>{const mt=tasks.filter(t=>isAssignee(t,m.id));return mt.length?Math.round(mt.reduce((s,t)=>s+(t.prog||0),0)/mt.length):0;});
   charts.prog = new Chart(document.getElementById('chart-prog'), {
     type:'bar',
     data:{
@@ -2880,7 +2887,7 @@ function renderDeptOverview() {
   });
   // Member cards
   document.getElementById('dept-members').innerHTML=members.map(m=>{
-    const mt=tasks.filter(t=>t.memberId===m.id);
+    const mt=tasks.filter(t=>isAssignee(t,m.id));
     const mdone=mt.filter(t=>t.status==='เสร็จสิ้น').length;
     const mlate=mt.filter(t=>isLate(t)).length;
     const mdoing=mt.filter(t=>t.status==='กำลังดำเนินการ').length;
@@ -2932,15 +2939,14 @@ function renderAllTasks() {
   const prio=(document.getElementById('all-prio-filter')||{}).value||'';
   let list=tasks.filter(t=>{
     const es=effectiveStatus(t);
-    return (!q||t.title.toLowerCase().includes(q)||(t.desc||'').toLowerCase().includes(q))&&(!empId||t.memberId===empId)&&(!status||es===status)&&(!prio||t.prio===prio);
+    return (!q||t.title.toLowerCase().includes(q)||(t.desc||'').toLowerCase().includes(q))&&(!empId||isAssignee(t,empId))&&(!status||es===status)&&(!prio||t.prio===prio);
   }).sort((a,b)=>(a.due||'zzz')>(b.due||'zzz')?1:-1);
   document.getElementById('all-tbody').innerHTML=list.map(t=>{
-    const mem=members.find(x=>x.id===t.memberId);
     const late=isLate(t);
     const editable=canEdit(t);
     return `<tr>
       <td><div style="font-weight:600;font-size:13px">${t.title}</div>${t.desc?`<div style="font-size:11.5px;color:var(--muted);margin-top:2px">${t.desc}</div>`:''}</td>
-      <td>${mem?`<div class="avatar-row"><div class="avatar" style="background:${avatarColor(mem.name)};font-size:10px">${mem.name.slice(0,2)}</div><span style="font-size:13px">${mem.name}</span></div>`:'—'}</td>
+      <td>${(()=>{ const ids=assigneesOf(t); if(!ids.length) return '—'; return `<div class="avatar-row" style="flex-wrap:wrap;gap:6px">`+ids.map(id=>{const mm=members.find(x=>x.id===id); return mm?`<span style="display:inline-flex;align-items:center;gap:4px"><div class="avatar" style="background:${avatarColor(mm.name)};font-size:10px">${mm.name.slice(0,2)}</div><span style="font-size:12.5px">${mm.name}</span></span>`:'';}).filter(Boolean).join('')+`</div>`; })()}</td>
       <td>${prioTag(t.prio)}</td>
       <td>${statusPill(effectiveStatus(t))}</td>
       <td style="font-size:12px;${late?'color:var(--red);font-weight:600':''};white-space:nowrap">${fmtDate(t.due)}${late?' ⚠':''}</td>
@@ -2968,14 +2974,16 @@ function openAddTask() {
   const wrap = document.getElementById('tf-assignee-wrap');
   if (isManagerOrAdmin()) {
     wrap.style.display='';
-    const sel = document.getElementById('tf-assignee');
-    sel.innerHTML = `<option value="">${lang==='th'?'— เลือกสมาชิก —':'— Select member —'}</option>`
-      + members.map(m=>`<option value="${m.id}" ${m.id===currentMember.id?'selected':''}>${m.name} · ${m.pos}</option>`).join('');
+    renderAssigneeChecks([currentMember.id]);
   } else {
     wrap.style.display='none';
-    document.getElementById('tf-assignee').value = currentMember.id;
   }
   openModal('modal-task');
+}
+function renderAssigneeChecks(selectedIds){
+  const box = document.getElementById('tf-assignees'); if (!box) return;
+  const sel = new Set(selectedIds||[]);
+  box.innerHTML = members.map(m=>`<label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer"><input type="checkbox" class="tf-asg" value="${m.id}" ${sel.has(m.id)?'checked':''} style="width:auto"> ${ocEsc(m.name)} <span style="color:var(--muted);font-size:11px">${ocEsc(m.pos||'')}</span></label>`).join('');
 }
 
 function openEditTask(id) {
@@ -2995,9 +3003,7 @@ function openEditTask(id) {
   const wrap = document.getElementById('tf-assignee-wrap');
   if (isManagerOrAdmin()) {
     wrap.style.display='';
-    const sel = document.getElementById('tf-assignee');
-    sel.innerHTML = `<option value="">${lang==='th'?'— เลือกสมาชิก —':'— Select member —'}</option>`
-      + members.map(m=>`<option value="${m.id}" ${m.id===t.memberId?'selected':''}>${m.name} · ${m.pos}</option>`).join('');
+    renderAssigneeChecks(assigneesOf(t));
   } else {
     wrap.style.display='none';
   }
@@ -3012,12 +3018,19 @@ async function saveTask() {
   if (!title) { alert(T('lblTaskTitle').replace(' *','')+' is required'); return; }
   const taskId=editTaskId||uid();
   // Manager/admin can assign to anyone, others assign to self
-  const assigneeId = isManagerOrAdmin() && document.getElementById('tf-assignee').value
-    ? document.getElementById('tf-assignee').value
-    : currentMember.id;
-  const data={title, desc:document.getElementById('tf-desc').value.trim(), prio:document.getElementById('tf-prio').value, status:document.getElementById('tf-status').value, due:document.getElementById('tf-due').value||null, prog:Math.min(100,Math.max(0,parseInt(document.getElementById('tf-prog').value)||0)), note:document.getElementById('tf-note').value.trim(), memberId:assigneeId};
-  const row={id:taskId, member_id:data.memberId, title:data.title, description:data.desc, prio:data.prio, status:data.status, due:data.due, prog:data.prog, note:data.note};
   const prevTask = editTaskId ? tasks.find(t=>t.id===editTaskId) : null;
+  const prevAssignees = editTaskId ? assigneesOf(prevTask||{id:taskId}) : [];
+  // ผู้รับผิดชอบหลายคน — manager เลือกได้; คนอื่น = ตัวเอง (หรือคงเดิมเมื่อแก้)
+  let assigneeIds;
+  if (isManagerOrAdmin()) {
+    assigneeIds = Array.from(document.querySelectorAll('#tf-assignees .tf-asg:checked')).map(c=>c.value);
+    if (!assigneeIds.length) assigneeIds = [currentMember.id];
+  } else {
+    assigneeIds = (editTaskId && prevAssignees.length) ? prevAssignees : [currentMember.id];
+  }
+  const leadId = assigneeIds[0];
+  const data={title, desc:document.getElementById('tf-desc').value.trim(), prio:document.getElementById('tf-prio').value, status:document.getElementById('tf-status').value, due:document.getElementById('tf-due').value||null, prog:Math.min(100,Math.max(0,parseInt(document.getElementById('tf-prog').value)||0)), note:document.getElementById('tf-note').value.trim(), memberId:leadId};
+  const row={id:taskId, member_id:data.memberId, title:data.title, description:data.desc, prio:data.prio, status:data.status, due:data.due, prog:data.prog, note:data.note};
   try {
     // Track changes if editing
     if (editTaskId) {
@@ -3051,11 +3064,18 @@ async function saveTask() {
     await sbFetch('tasks?on_conflict=id', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
     if (editTaskId) { const i=tasks.findIndex(t=>t.id===editTaskId); tasks[i]={...tasks[i],...data,id:taskId}; }
     else { tasks.push({...data,id:taskId}); }
-    // แจ้งเตือนผู้รับมอบงาน เมื่อมอบให้คนอื่น (งานใหม่ หรือเปลี่ยนผู้รับผิดชอบ)
-    if (assigneeId !== currentMember.id && (!editTaskId || (prevTask && prevTask.memberId !== assigneeId))) {
+    // ซิงก์ผู้รับผิดชอบหลายคน (junction) — degrade ปลอดภัยถ้ายังไม่รัน 010
+    try {
+      await sbFetch('task_assignees?task_id=eq.'+taskId, {method:'DELETE'});
+      await sbFetch('task_assignees', {method:'POST', prefer:'return=minimal', body: JSON.stringify(assigneeIds.map(mid=>({task_id:taskId, member_id:mid})))});
+    } catch(te) { console.warn('assignees sync error:', te.message); }
+    taskAssignees[taskId] = assigneeIds.slice();
+    // แจ้งเตือนเฉพาะคนที่เพิ่งถูกเพิ่มเข้ามา (ไม่รวมตัวเอง)
+    const newlyAssigned = assigneeIds.filter(mid => mid !== currentMember.id && !prevAssignees.includes(mid));
+    for (const mid of newlyAssigned) {
       try {
         await sbFetch('notifications', {method:'POST', prefer:'return=minimal', body: JSON.stringify({
-          id: uid(), member_id: assigneeId, type:'task_assigned', task_id: taskId,
+          id: uid(), member_id: mid, type:'task_assigned', task_id: taskId,
           title: (lang==='th'?'ได้รับมอบหมายงานใหม่':'New task assigned'),
           body: data.title + (currentMember?.name ? (lang==='th'?' · โดย ':' · by ')+currentMember.name : ''),
           created_by: currentMember.id
@@ -3075,6 +3095,8 @@ async function delTask(id) {
   if (!confirm(T('toastDeleted')+'?')) return;
   try {
     await sbFetch('tasks?id=eq.'+id, {method:'DELETE'});
+    try { await sbFetch('task_assignees?task_id=eq.'+id, {method:'DELETE'}); } catch(te) {}
+    delete taskAssignees[id];
     tasks=tasks.filter(t=>t.id!==id);
     renderMyTasks(); renderMyKpi();
     toast(T('toastDeleted'));
@@ -3562,7 +3584,7 @@ async function markNotifRead(id) {
   updateNotifBadge(); renderNotifPage();
 }
 function updateNotifBadge() {
-  const mine = getAlertTasks().filter(t => t.memberId === currentMember?.id);
+  const mine = getAlertTasks().filter(t => isAssignee(t, currentMember?.id));
   const all  = isManagerOrAdmin() ? getAlertTasks() : mine;
   const count = all.length + (myNotifs ? myNotifs.length : 0);
 
@@ -5507,7 +5529,7 @@ function renderNotifPage() {
 
   const myTasks = isManagerOrAdmin()
     ? tasks
-    : tasks.filter(t => t.memberId === currentMember?.id);
+    : tasks.filter(t => isAssignee(t, currentMember?.id));
 
   const overdue   = myTasks.filter(t => t.status!=='เสร็จสิ้น' && t.due && new Date(t.due)<today);
   const dueToday  = myTasks.filter(t => t.status!=='เสร็จสิ้น' && t.due && new Date(t.due)>=today && new Date(t.due)<tomorrow);
