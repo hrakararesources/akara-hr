@@ -1655,7 +1655,7 @@ tbody tr:hover{background:var(--blue-lt)}
       <div class="section-header" style="margin-bottom:8px">
         <div>
           <h2>🗓️ <span data-en="HR Calendar" data-th="ปฏิทินกิจกรรม HR">ปฏิทินกิจกรรม HR</span></h2>
-          <p style="font-size:13px;color:var(--muted);margin-top:2px" data-en="HR events + probation, meetings, task deadlines" data-th="กิจกรรม HR + ครบ probation, ประชุม, กำหนดส่งงาน">กิจกรรม HR + ครบ probation, ประชุม, กำหนดส่งงาน</p>
+          <p style="font-size:13px;color:var(--muted);margin-top:2px" data-en="HR events + probation, meetings" data-th="กิจกรรม HR + ครบ probation, ประชุม">กิจกรรม HR + ครบ probation, ประชุม</p>
         </div>
         <button class="btn btn-gold" id="cal-add-btn" onclick="calOpenModal()" style="display:none">+ <span data-en="Add event" data-th="เพิ่มกิจกรรม">เพิ่มกิจกรรม</span></button>
       </div>
@@ -2876,61 +2876,102 @@ async function renderDueDateReport() {
   const th = lang === 'th';
 
   try {
-    // Get all due date changes grouped by member
-    const history = await sbFetch(
-      `task_history?field_name=eq.due&select=*&order=changed_at.desc`
-    );
+    // ── 1) ประวัติการเลื่อน due (นับเฉพาะที่ "เลื่อนออกไป" = วันใหม่ > วันเก่า) ──
+    const dueHist = await sbFetch(
+      `task_history?field_name=eq.due&select=task_id,member_id,old_value,new_value,changed_at&order=changed_at.desc`
+    ) || [];
+    const postpone = dueHist.filter(h => h.old_value && h.new_value && h.new_value > h.old_value);
 
-    if (!history || !history.length) { el.style.display='none'; return; }
+    // ── 2) เวลาที่งานถูกทำเสร็จ (status → เสร็จสิ้น, ครั้งล่าสุดต่องาน) ──
+    let statusHist = [];
+    try {
+      statusHist = await sbFetch(
+        `task_history?field_name=eq.status&new_value=eq.${encodeURIComponent('เสร็จสิ้น')}&select=task_id,changed_at&order=changed_at.desc`
+      ) || [];
+    } catch(e) {}
+    const completedAt = {};
+    statusHist.forEach(h => { if (!completedAt[h.task_id]) completedAt[h.task_id] = h.changed_at; }); // desc → อันแรก = ล่าสุด
 
-    // Count per member
-    const memberCounts = {};
-    history.forEach(h => {
-      if (!memberCounts[h.member_id]) memberCounts[h.member_id] = [];
-      memberCounts[h.member_id].push(h);
+    // ── 3) รวมสถิติต่อพนักงาน ──
+    const stat = {};
+    const get = mid => stat[mid] || (stat[mid] = { ptasks:new Set(), pcount:0, latest:null, onTime:0, evaluated:0 });
+
+    postpone.forEach(h => {
+      const s = get(h.member_id);
+      s.ptasks.add(h.task_id); s.pcount++;
+      if (!s.latest || h.changed_at > s.latest) s.latest = h.changed_at;
     });
 
-    const sorted = Object.entries(memberCounts)
-      .map(([mid, logs]) => ({ member: members.find(m=>m.id===mid), count: logs.length, latest: logs[0] }))
-      .filter(x=>x.member)
-      .sort((a,b)=>b.count-a.count);
+    // ตรงต่อเวลา: ประเมินงานที่ "เสร็จแล้ว" หรือ "เปิดอยู่แต่เลยกำหนด"
+    (tasks || []).forEach(t => {
+      if (!t.due) return;
+      const done = t.status === 'เสร็จสิ้น';
+      if (!done && !isLate(t)) return; // เปิดอยู่และยังไม่เลยกำหนด → ยังไม่ประเมิน
+      let onTime;
+      if (done) { const c = completedAt[t.id]; onTime = c ? (c.slice(0,10) <= t.due) : true; }
+      else onTime = false; // เปิดอยู่และเลยกำหนด = สาย
+      const ids = (typeof assigneesOf==='function' && assigneesOf(t).length) ? assigneesOf(t) : [t.memberId].filter(Boolean);
+      ids.forEach(mid => { const s = get(mid); s.evaluated++; if (onTime) s.onTime++; });
+    });
+
+    const rows = Object.entries(stat)
+      .map(([mid, s]) => ({ member: members.find(m=>m.id===mid), s }))
+      .filter(x => x.member && (x.s.evaluated > 0 || x.s.pcount > 0))
+      .map(x => ({ ...x, pct: x.s.evaluated ? Math.round(x.s.onTime / x.s.evaluated * 100) : null }))
+      .sort((a,b) => {
+        if (a.pct === null) return 1; if (b.pct === null) return -1;
+        if (a.pct !== b.pct) return a.pct - b.pct;      // % น้อย (แย่) ขึ้นก่อน
+        return b.s.ptasks.size - a.s.ptasks.size;        // เลื่อนเยอะขึ้นก่อน
+      });
+
+    if (!rows.length) { el.style.display='none'; return; }
 
     el.style.display = '';
     el.innerHTML = `
       <div class="card">
         <div class="card-header">
-          <h3>📊 ${th?'รายงานการเลื่อนกำหนดส่ง':'Due Date Change Report'}</h3>
+          <h3>📊 ${th?'ตรงต่อเวลา & การเลื่อนงาน':'On-time & Postponement'}</h3>
           <span style="font-size:12px;color:var(--muted)">${th?'นับตั้งแต่เริ่มใช้งาน':'Since system start'}</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead><tr>
               <th>${th?'พนักงาน':'Member'}</th>
-              <th>${th?'จำนวนครั้งที่เลื่อน':'Times Extended'}</th>
+              <th>${th?'% ตรงต่อเวลา':'On-time %'}</th>
+              <th>${th?'งานที่เลื่อน':'Tasks postponed'}</th>
+              <th>${th?'ครั้งที่เลื่อน':'Times'}</th>
               <th>${th?'ล่าสุด':'Latest'}</th>
-              <th>${th?'ระดับ':'Level'}</th>
             </tr></thead>
             <tbody>
-              ${sorted.map(({member, count, latest}) => {
-                const level = count >= 5 ? {label:th?'บ่อยมาก':'Very Frequent', color:'var(--red)', bg:'var(--red-lt)'}
-                  : count >= 3 ? {label:th?'บ่อย':'Frequent', color:'var(--orange)', bg:'var(--orange-lt)'}
-                  : {label:th?'ปกติ':'Normal', color:'var(--green)', bg:'var(--green-lt)'};
-                const latestDate = new Date(latest.changed_at).toLocaleDateString(th?'th-TH':'en-GB',{day:'numeric',month:'short'});
+              ${rows.map(({member, s, pct}) => {
+                const pc = pct===null ? 'var(--muted)' : pct>=90 ? 'var(--green)' : pct>=70 ? 'var(--orange)' : 'var(--red)';
+                const pctCell = pct===null
+                  ? `<span style="color:var(--muted);font-size:12px">${th?'ยังไม่มีข้อมูล':'No data'}</span>`
+                  : `<div style="display:flex;align-items:center;gap:8px">
+                       <span style="font-size:18px;font-weight:700;font-family:var(--mono);color:${pc};min-width:44px">${pct}%</span>
+                       <div class="prog-bar" style="flex:1;max-width:90px"><div class="prog-fill" style="width:${pct}%;background:${pc}"></div></div>
+                       <span style="font-size:11px;color:var(--muted)">${s.onTime}/${s.evaluated}</span>
+                     </div>`;
+                const latestDate = s.latest ? new Date(s.latest).toLocaleDateString(th?'th-TH':'en-GB',{day:'numeric',month:'short'}) : '–';
                 return `<tr>
                   <td><div class="avatar-row">
                     <div class="avatar" style="background:${avatarColor(member.name)};font-size:11px">${member.name.slice(0,2)}</div>
                     <div><div style="font-weight:600">${member.name}</div><div style="font-size:11.5px;color:var(--muted)">${member.pos}</div></div>
                   </div></td>
-                  <td><span style="font-size:18px;font-weight:700;font-family:var(--mono);color:${count>=3?'var(--red)':'var(--text)'}">${count}</span> ${th?'ครั้ง':'times'}</td>
+                  <td>${pctCell}</td>
+                  <td><span style="font-size:18px;font-weight:700;font-family:var(--mono);color:${s.ptasks.size>=3?'var(--red)':'var(--text)'}">${s.ptasks.size}</span> ${th?'งาน':'tasks'}</td>
+                  <td style="color:var(--muted)">${s.pcount} ${th?'ครั้ง':'x'}</td>
                   <td style="font-size:12px;color:var(--muted)">${latestDate}</td>
-                  <td><span style="background:${level.bg};color:${level.color};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">${level.label}</span></td>
                 </tr>`;
               }).join('')}
             </tbody>
           </table>
+          <div style="padding:10px 14px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border)">
+            ${th?'% ตรงต่อเวลา = งานที่ทำเสร็จภายในกำหนด ÷ งานที่ประเมินได้ (เสร็จแล้ว หรือ เปิดอยู่แต่เลยกำหนด)':'On-time % = tasks completed by due ÷ evaluated tasks (done, or open & overdue)'}
+          </div>
         </div>
       </div>`;
-  } catch(e) { el.style.display='none'; }
+  } catch(e) { console.warn('due report:', e.message); el.style.display='none'; }
 }
 
 function renderDeptOverview() {
@@ -6275,13 +6316,12 @@ function calCollect(){
     try{ const r=calcProbationDays(ne.start_date, ne.probation_days||119); push(r.endDate.toISOString().slice(0,10), '🌟 '+ocT('ครบ Probation','Probation end')+': '+(ne.full_name_th||ne.nickname||''), 'probation', {src:'probation'}); }catch(e){}
   });
   (typeof meetings!=='undefined'?meetings:[]).forEach(m=>{ if(m.meeting_date) push(m.meeting_date, '📝 '+(m.title||m.topic||ocT('ประชุม','Meeting')), 'meeting', {src:'meeting'}); });
-  (typeof tasks!=='undefined'?tasks:[]).forEach(t=>{ if(t.due && t.status!=='เสร็จสิ้น') push(t.due, '📋 '+t.title, 'deadline', {src:'task'}); });
   return evs;
 }
 function calRender(){
   if(document.getElementById('cal-title')===null) return;
   document.getElementById('cal-title').textContent=new Date(calY,calM,1).toLocaleDateString(lang==='th'?'th-TH':'en-US',{month:'long',year:'numeric'});
-  document.getElementById('cal-legend').innerHTML=['general','training','meeting','holiday','company','deadline','probation'].map(t=>`<span class="lg"><span class="dot bg-${t}"></span>${CAL_LABEL(t)}</span>`).join('');
+  document.getElementById('cal-legend').innerHTML=['general','training','meeting','holiday','company','probation'].map(t=>`<span class="lg"><span class="dot bg-${t}"></span>${CAL_LABEL(t)}</span>`).join('');
   const all=calCollect(); calShown=all; all.forEach((e,i)=>{ e._i=i; }); const byDate={}; all.forEach(e=>{ (byDate[e.date]=byDate[e.date]||[]).push(e); });
   const dow=lang==='th'?['อา','จ','อ','พ','พฤ','ศ','ส']:['Su','Mo','Tu','We','Th','Fr','Sa'];
   const startDow=new Date(calY,calM,1).getDay(); const daysInMonth=new Date(calY,calM+1,0).getDate(); const prevDays=new Date(calY,calM,0).getDate();
