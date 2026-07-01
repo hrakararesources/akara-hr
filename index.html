@@ -6299,11 +6299,17 @@ function calRender(){
     cells+=`<div class="cal-cell ${other?'other':''} ${ds===todayStr?'today':''}" data-count="${list.length?list.length+' •':''}" onclick="calDayClick('${ds}')"><div class="cal-daynum">${dayNum}</div>${evHtml}${more}</div>`;
   }
   document.getElementById('cal-grid').innerHTML=cells;
-  const upcoming=all.filter(e=>e.date>=todayStr).sort((a,b)=>a.date<b.date?-1:1).slice(0,15);
+  const loc=lang==='th'?'th-TH':'en-US';
+  const upcoming=all.filter(e=>e.date>=todayStr && e.src!=='task').sort((a,b)=>a.date<b.date?-1:1).slice(0,12);
   document.getElementById('cal-upcoming').innerHTML=upcoming.length?upcoming.map(e=>{
     const d=new Date(e.date);
-    return `<div class="cal-up-item" onclick="calShowDetail(${e._i})" style="cursor:pointer"><div class="cal-up-date"><b>${d.getDate()}</b>${d.toLocaleDateString(lang==='th'?'th-TH':'en-US',{month:'short'})}</div><span class="cal-up-dot bg-${e.type}"></span><div style="flex:1"><div style="font-size:13.5px;font-weight:500">${ocEsc(e.title)}</div><div style="font-size:11.5px;color:var(--muted)">${CAL_LABEL(e.type)}${e.location?' · '+ocEsc(e.location):''}</div></div></div>`;
-  }).join(''):`<div style="color:var(--muted);font-size:13px">${ocT('ไม่มีกิจกรรมข้างหน้า','No upcoming events')}</div>`;
+    return `<div class="cal-up-item" onclick="calShowDetail(${e._i})" style="cursor:pointer;border-left:3px solid transparent" title="${ocEsc(e.title)}">
+      <div class="cal-up-date"><b>${d.getDate()}</b>${d.toLocaleDateString(loc,{month:'short'})}<span style="display:block;font-size:10px;color:var(--muted)">${d.toLocaleDateString(loc,{weekday:'short'})}</span></div>
+      <span class="cal-up-dot bg-${e.type}"></span>
+      <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ocEsc(e.title)}</div><div style="font-size:11.5px;color:var(--muted)">${CAL_LABEL(e.type)}${e.location?' · 📍 '+ocEsc(e.location):''}</div></div>
+      <span style="flex-shrink:0;font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-lt);border-radius:6px;padding:2px 8px;white-space:nowrap">${calRelDays(e.date)}</span>
+    </div>`;
+  }).join(''):`<div style="color:var(--muted);font-size:13px;padding:16px;text-align:center;border:1px dashed var(--border);border-radius:8px">${ocT('ยังไม่มีกิจกรรม HR ที่กำลังจะถึง — กด "เพิ่มกิจกรรม" เพื่อสร้าง','No upcoming HR events — click "Add event" to create one')}</div>`;
 }
 function calMove(delta){ calM+=delta; if(calM<0){calM=11;calY--;} else if(calM>11){calM=0;calY++;} calRender(); }
 function calToday(){ const d=new Date(); calY=d.getFullYear(); calM=d.getMonth(); calRender(); }
@@ -6357,6 +6363,16 @@ function calShowDetail(i){
   const editBtn=document.getElementById('cv-edit');
   if(isHr && isManagerOrAdmin()){ editBtn.style.display=''; calViewId=e.id; } else { editBtn.style.display='none'; calViewId=null; }
   document.getElementById('cal-view').style.display='flex';
+}
+function calRelDays(ds){
+  const t=new Date(); t.setHours(0,0,0,0);
+  const d=new Date(ds); d.setHours(0,0,0,0);
+  const diff=Math.round((d-t)/86400000);
+  if(diff<=0) return ocT('วันนี้','Today');
+  if(diff===1) return ocT('พรุ่งนี้','Tomorrow');
+  if(diff<7) return ocT('อีก '+diff+' วัน','in '+diff+'d');
+  if(diff<30) return ocT('อีก '+Math.round(diff/7)+' สัปดาห์','in '+Math.round(diff/7)+'w');
+  return ocT('อีก '+Math.round(diff/30)+' เดือน','in '+Math.round(diff/30)+'mo');
 }
 function calCloseView(){ document.getElementById('cal-view').style.display='none'; }
 function calEditFromView(){ const ev=calEvents.find(x=>x.id===calViewId); calCloseView(); if(ev) calOpenModal(ev); }
