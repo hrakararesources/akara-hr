@@ -6206,12 +6206,17 @@ async function ocmSubmitAdd(){
   const status=document.getElementById('oc-addStatus').value;
   if(!deptId){ toast('กรุณาเลือก Department'); return; }
   if(!title){ toast('กรุณาใส่ชื่อตำแหน่ง'); return; }
-  if(status==='filled'&&!ocmSel.addEmp){ toast('กรุณาเลือกผู้ดำรงตำแหน่ง'); return; }
+  let emp=ocmSel.addEmp;
+  if(status==='filled' && !emp){
+    try{ emp=await ocmResolveEmp('oc-addEmpSearch'); }catch(e){ toast('เพิ่มพนักงานใหม่ไม่สำเร็จ: '+e.message); return; }
+    if(!emp){ toast('กรุณาระบุผู้ดำรงตำแหน่ง (พิมพ์ชื่อในช่อง)'); return; }
+    ocmSel.addEmp=emp;
+  }
   btn.disabled=true;
   try{
     const posId=ocUuid();
     await ocmPost('positions',{ id:posId, department_id:deptId, title, grade, reports_to_position_id: ocmSel.addReportsTo?ocmSel.addReportsTo.id:null });
-    await ocmPost('position_assignments',{ position_id:posId, employee_id: status==='filled'?ocmSel.addEmp.id:null, status, is_current:true });
+    await ocmPost('position_assignments',{ position_id:posId, employee_id: status==='filled'?emp.id:null, status, is_current:true });
     toast('เพิ่มตำแหน่ง "'+title+'" เรียบร้อย');
     document.getElementById('oc-addTitle').value=''; document.getElementById('oc-addReportsToChip').innerHTML=''; document.getElementById('oc-addChain').style.display='none'; document.getElementById('oc-addEmpChip').innerHTML='';
     ocmSel.addReportsTo=null; ocmSel.addEmp=null;
@@ -6225,12 +6230,27 @@ function ocmAssignStatusChange(){
   document.getElementById('oc-asgEmpBlock').style.display = s==='filled'?'block':'none';
   document.getElementById('oc-asgActBlock').style.display = (s==='vacant'||s==='filled_pending_name')?'block':'none';
 }
+// ถ้าผู้ใช้พิมพ์ชื่อในช่องค้นหาแต่ยังไม่ได้คลิกเลือก/สร้างจาก dropdown → สร้างพนักงานใหม่จากชื่อที่พิมพ์ให้เลย
+async function ocmResolveEmp(searchId){
+  const inp=document.getElementById(searchId);
+  const name=(inp && inp.value || '').trim();
+  if(!name) return null;
+  const id=ocUuid();
+  await ocmPost('employees',{id,full_name:name});
+  if(inp) inp.value='';
+  return {id,full_name:name};
+}
 async function ocmSubmitAssign(){
   if(!ocmSel.asgPos){ toast('กรุณาเลือกตำแหน่งก่อน'); return; }
   const status=document.getElementById('oc-asgStatus').value;
-  if(status==='filled'&&!ocmSel.asgEmp){ toast('กรุณาเลือกผู้ดำรงตำแหน่งคนใหม่'); return; }
+  let emp=ocmSel.asgEmp;
+  if(status==='filled' && !emp){
+    try{ emp=await ocmResolveEmp('oc-asgEmpSearch'); }catch(e){ toast('เพิ่มพนักงานใหม่ไม่สำเร็จ: '+e.message); return; }
+    if(!emp){ toast('กรุณาระบุผู้ดำรงตำแหน่งคนใหม่ (พิมพ์ชื่อในช่อง)'); return; }
+    ocmSel.asgEmp=emp;
+  }
   try{
-    await ocmPost('position_assignments',{ position_id:ocmSel.asgPos.id, employee_id: status==='filled'?ocmSel.asgEmp.id:null, acting_employee_id: (status!=='filled'&&ocmSel.asgAct)?ocmSel.asgAct.id:null, status, is_current:true });
+    await ocmPost('position_assignments',{ position_id:ocmSel.asgPos.id, employee_id: status==='filled'?emp.id:null, acting_employee_id: (status!=='filled'&&ocmSel.asgAct)?ocmSel.asgAct.id:null, status, is_current:true });
     toast('บันทึกการเปลี่ยนแปลงเรียบร้อย — ประวัติเดิมถูกเก็บอัตโนมัติ');
     document.getElementById('oc-asgPosChip').innerHTML=''; document.getElementById('oc-asgForm').style.display='none'; document.getElementById('oc-asgChain').style.display='none'; document.getElementById('oc-asgEmpChip').innerHTML=''; document.getElementById('oc-asgActChip').innerHTML='';
     ocmSel.asgPos=null; ocmSel.asgEmp=null; ocmSel.asgAct=null;
