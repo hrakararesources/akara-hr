@@ -1498,7 +1498,8 @@ tbody tr:hover{background:var(--blue-lt)}
       <div id="oc-view-vacant" style="display:none">
         <div class="oc-stats" id="oc-stats"></div>
         <div class="oc-controls">
-          <select id="oc-vacDivision" onchange="ocRenderVacant()" style="padding:9px 11px;font-size:14px;border:1px solid var(--border);border-radius:8px;font-family:inherit"><option value="">ทุก Division</option></select>
+          <select id="oc-vacDivision" onchange="ocVacDivChange()" style="padding:9px 11px;font-size:14px;border:1px solid var(--border);border-radius:8px;font-family:inherit"><option value="">ทุก Division</option></select>
+          <select id="oc-vacDept" onchange="ocRenderVacant()" style="padding:9px 11px;font-size:14px;border:1px solid var(--border);border-radius:8px;font-family:inherit"><option value="">ทุกแผนก</option></select>
           <input type="text" id="oc-vacSearch" placeholder="ค้นหาชื่อตำแหน่ง..." oninput="ocRenderVacTable()">
         </div>
         <div id="oc-bars" style="margin-bottom:18px"></div>
@@ -5884,6 +5885,7 @@ async function ocInit() {
     const divs = [...new Set(ocAllRows.map(r=>r.division))].sort();
     const vsel = document.getElementById('oc-vacDivision');
     divs.forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; vsel.appendChild(o); });
+    ocVacPopulateDept();
     // reference data + form wiring for management tabs
     const [mdivs,mdeps] = await Promise.all([
       sbFetch('divisions?select=id,name&order=name', { headers:{'Accept-Profile':'orgchart'} }),
@@ -5933,6 +5935,7 @@ function ocSetPlaceholders(){
     'oc-deacPosSearch':ocT('ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่ง...','Search position / holder...') };
   Object.entries(ph).forEach(([id,t])=>{ const e=document.getElementById(id); if(e) e.placeholder=t; });
   const vd=document.getElementById('oc-vacDivision'); if(vd&&vd.options[0]) vd.options[0].textContent=ocT('ทุก Division','All Divisions');
+  const vdd=document.getElementById('oc-vacDept'); if(vdd&&vdd.options[0]) vdd.options[0].textContent=ocT('ทุกแผนก','All Departments');
 }
 function ocApplyLang(){ ocSetPlaceholders(); if(ocLoaded){ ocPopulateDept(); ocRenderDrill(); ocRenderVacant(); } }
 
@@ -6073,9 +6076,19 @@ function ocRenderSearch(){
   sr.innerHTML=m.length?m.map(r=>`<div class="it" onclick="ocSetFocus('${r.position_id}')"><div class="t">${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):`<span class="oc-badge vacant">${ocT('ว่าง','Vacant')}</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}${r.grade?' · '+ocEsc(r.grade):''}</div></div>`).join(''):`<div class="oc-empty">${ocT('ไม่พบตำแหน่งที่ตรงกับคำค้นหา','No matching positions')}</div>`;
 }
 
+function ocVacPopulateDept(){
+  const sel=document.getElementById('oc-vacDept'); if(!sel) return;
+  const div=document.getElementById('oc-vacDivision').value;
+  const cur=sel.value;
+  const depts=[...new Set(ocHeadcount.filter(h=>!div||h.division===div).map(h=>h.department))].sort();
+  sel.innerHTML=`<option value="">${ocT('ทุกแผนก','All Departments')}</option>`+depts.map(d=>`<option value="${ocEsc(d)}">${ocEsc(d)}</option>`).join('');
+  sel.value=depts.includes(cur)?cur:'';
+}
+function ocVacDivChange(){ ocVacPopulateDept(); ocRenderVacant(); }
 function ocRenderVacant(){
   const df=document.getElementById('oc-vacDivision').value;
-  const rows=ocHeadcount.filter(h=>!df||h.division===df);
+  const dp=document.getElementById('oc-vacDept')?document.getElementById('oc-vacDept').value:'';
+  const rows=ocHeadcount.filter(h=>(!df||h.division===df)&&(!dp||h.department===dp));
   const f=rows.reduce((s,r)=>s+Number(r.filled),0), v=rows.reduce((s,r)=>s+Number(r.vacant),0), p=rows.reduce((s,r)=>s+Number(r.pending),0), tot=rows.reduce((s,r)=>s+Number(r.total),0);
   const pc=tot?Math.round(100*v/tot):0;
   document.getElementById('oc-stats').innerHTML=`<div class="oc-stat fill"><div class="v">${f}</div><div class="l">${ocT('มีคน (Filled)','Filled')}</div></div><div class="oc-stat vac"><div class="v">${v}</div><div class="l">${ocT('ว่าง (Vacant)','Vacant')}</div></div><div class="oc-stat"><div class="v">${p}</div><div class="l">${ocT('รอชื่อ (Pending)','Pending')}</div></div><div class="oc-stat"><div class="v">${tot}</div><div class="l">${ocT('ทั้งหมด','Total')}</div></div><div class="oc-stat vac"><div class="v">${pc}%</div><div class="l">${ocT('ว่างเฉลี่ย','Avg vacant')}</div></div>`;
@@ -6085,8 +6098,9 @@ function ocRenderVacant(){
 }
 function ocRenderVacTable(){
   const df=document.getElementById('oc-vacDivision').value;
+  const dp=document.getElementById('oc-vacDept')?document.getElementById('oc-vacDept').value:'';
   const q=document.getElementById('oc-vacSearch').value.trim().toLowerCase();
-  const rows=ocAllRows.filter(r=>(r.status==='vacant'||r.status==='filled_pending_name')&&(!df||r.division===df)&&(!q||(r.title||'').toLowerCase().includes(q))).sort((a,b)=>(a.division||'').localeCompare(b.division||'')||(a.department||'').localeCompare(b.department||''));
+  const rows=ocAllRows.filter(r=>(r.status==='vacant'||r.status==='filled_pending_name')&&(!df||r.division===df)&&(!dp||r.department===dp)&&(!q||(r.title||'').toLowerCase().includes(q))).sort((a,b)=>(a.division||'').localeCompare(b.division||'')||(a.department||'').localeCompare(b.department||''));
   document.getElementById('oc-vacRows').innerHTML=rows.map(r=>`<tr><td>${ocEsc(r.division)}</td><td>${ocEsc(r.department)}</td><td>${ocEsc(r.grade||'—')}</td><td>${ocEsc(r.title)}</td><td><span class="oc-badge ${r.status}">${ocStatusLabel(r.status)}</span></td><td>${r.acting_coverage?ocEsc(r.acting_coverage):'—'}</td><td>${ocEsc(r.reports_to_title||ocT('สูงสุดในองค์กร','Top of org'))}</td></tr>`).join('')||`<tr><td colspan="7"><div class="oc-empty">${ocT('ไม่พบตำแหน่งว่าง','No vacancies')}</div></td></tr>`;
   document.getElementById('oc-vacCount').textContent=`${rows.length} ${ocT('ตำแหน่งว่าง','vacancies')}`;
 }
