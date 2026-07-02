@@ -6138,7 +6138,7 @@ async function ocmSearchPeople(q){
   ]);
   const seen=new Set(); const list=[];
   (orgEmps||[]).forEach(e=>{ list.push({src:'org',orgId:e.id,name:e.full_name,code:e.employee_code,nickname:null}); if(e.employee_code) seen.add('c:'+e.employee_code); seen.add('n:'+e.full_name); });
-  (newHires||[]).forEach(n=>{ const name=n.full_name_th||n.full_name_en; if(!name) return; if((n.employee_id&&seen.has('c:'+n.employee_id))||seen.has('n:'+name)) return; list.push({src:'new',newId:n.id,name,code:n.employee_id,nickname:n.nickname}); });
+  (newHires||[]).forEach(n=>{ const th=n.full_name_th, en=n.full_name_en, disp=th||en; if(!disp) return; if((n.employee_id&&seen.has('c:'+n.employee_id))||seen.has('n:'+disp)||(en&&seen.has('n:'+en))) return; list.push({src:'new',newId:n.id,name:disp,nameTh:th,nameEn:en,code:n.employee_id,nickname:n.nickname}); });
   return list;
 }
 
@@ -6254,14 +6254,21 @@ function ocmAssignStatusChange(){
 async function ocmResolvePerson(p){
   if(!p) throw new Error('no person');
   if(p.src==='org' && p.orgId) return { id:p.orgId, full_name:p.name };
-  const name=p.name, code=p.code||null;
+  // ชื่อที่เก็บในผัง = ภาษาอังกฤษก่อน (ให้ตรงกับพนักงานที่เหลือ) แล้วค่อย fallback เป็นไทย
+  const store = p.nameEn || p.nameTh || p.name;
+  const code = p.code||null;
+  const names=[...new Set([store, p.nameTh, p.nameEn, p.name].filter(Boolean))];
   let found=[];
-  if(code){ found=(await sbFetch('employees?select=id&employee_code=eq.'+encodeURIComponent(code)+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
-  if(!found.length && name){ found=(await sbFetch('employees?select=id&full_name=eq.'+encodeURIComponent(name)+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
-  if(found.length) return { id:found[0].id, full_name:name };
+  if(code){ found=(await sbFetch('employees?select=id,full_name&employee_code=eq.'+encodeURIComponent(code)+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
+  for(let i=0;i<names.length && !found.length;i++){ found=(await sbFetch('employees?select=id,full_name&full_name=eq.'+encodeURIComponent(names[i])+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
+  if(found.length){
+    // self-heal: ถ้าชื่อเดิมไม่ตรงกับที่ควรเก็บ (เช่นเคยเก็บเป็นไทย) → อัปเดตเป็น EN ให้สอดคล้อง
+    if(found[0].full_name!==store){ try{ await ocmPatch('employees','id=eq.'+found[0].id,{ full_name:store }); }catch(e){} }
+    return { id:found[0].id, full_name:store };
+  }
   const id=ocUuid();
-  await ocmPost('employees',{ id, full_name:name, employee_code:code });
-  return { id, full_name:name };
+  await ocmPost('employees',{ id, full_name:store, employee_code:code });
+  return { id, full_name:store };
 }
 async function ocmSubmitAssign(){
   if(!ocmSel.asgPos){ toast('กรุณาเลือกตำแหน่งก่อน'); return; }
