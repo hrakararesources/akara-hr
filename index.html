@@ -5877,7 +5877,7 @@ async function ocInit() {
   if (ocLoaded) return;
   showLoading('Loading org chart...');
   try {
-    const rows = await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active&is_active=eq.true', { headers:{'Accept-Profile':'orgchart'} });
+    const rows = await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active,incumbent_th,acting_coverage_th,reports_to_incumbent_th&is_active=eq.true', { headers:{'Accept-Profile':'orgchart'} });
     ocAllRows = rows || [];
     const hc = await sbFetch('headcount_summary?select=*', { headers:{'Accept-Profile':'orgchart'} });
     ocHeadcount = hc || [];
@@ -5968,7 +5968,10 @@ function ocPopulateDept(){
   sel.innerHTML=html; sel.value=ocDeptFilter;
 }
 function ocDeptChange(){ ocDeptFilter=document.getElementById('oc-dept').value; if(ocDeptFilter){ ocSetMode('cards'); } else { ocRenderDrill(); } }
-function ocPerson(n,cls){ return n.incumbent?`<span class="${cls}">${ocEsc(n.incumbent)}</span>`:`<span class="${cls} oc-vac-person">— ${n.acting_coverage?ocT('รักษาการ','Acting')+': '+ocEsc(n.acting_coverage):ocT('ว่าง','Vacant')}</span>`; }
+// เลือกชื่อแสดงตามภาษา (มี fallback ไปอีกภาษาถ้าไม่มี)
+function ocNm(n){ if(!n) return ''; return lang==='th' ? (n.incumbent_th||n.incumbent||'') : (n.incumbent||n.incumbent_th||''); }
+function ocActNm(n){ if(!n) return ''; return lang==='th' ? (n.acting_coverage_th||n.acting_coverage||'') : (n.acting_coverage||n.acting_coverage_th||''); }
+function ocPerson(n,cls){ const nm=ocNm(n), act=ocActNm(n); return nm?`<span class="${cls}">${ocEsc(nm)}</span>`:`<span class="${cls} oc-vac-person">— ${act?ocT('รักษาการ','Acting')+': '+ocEsc(act):ocT('ว่าง','Vacant')}</span>`; }
 
 function ocSetMode(m){
   ocViewMode=m;
@@ -5992,15 +5995,16 @@ function ocRenderDrill(){
 }
 
 function ocAvatar(n){
-  if(n.incumbent){ const c=(typeof avatarColor==='function')?avatarColor(n.incumbent):'#2B5BAE'; return `<div class="oc-av" style="background:${c}">${ocEsc(n.incumbent.trim().slice(0,2))}</div>`; }
+  const nm=ocNm(n);
+  if(nm){ const c=(typeof avatarColor==='function')?avatarColor(n.incumbent||nm):'#2B5BAE'; return `<div class="oc-av" style="background:${c}">${ocEsc(nm.trim().slice(0,2))}</div>`; }
   return `<div class="oc-av oc-av-vac">○</div>`;
 }
 function ocCardInner(n,isFocus){
-  const vac=!n.incumbent;
-  const third = n.acting_coverage
-    ? `<div class="oc-cstatus">${ocT('รักษาการ','Acting')}: ${ocEsc(n.acting_coverage)}</div>`
+  const nm=ocNm(n), act=ocActNm(n); const vac=!nm;
+  const third = act
+    ? `<div class="oc-cstatus">${ocT('รักษาการ','Acting')}: ${ocEsc(act)}</div>`
     : `<div class="oc-cdept">${ocEsc(isFocus?(n.division+' / '+n.department):n.department)}</div>`;
-  return `${ocAvatar(n)}<div class="oc-cinfo"><div class="oc-cn ${vac?'vac':''}">${ocEsc(n.incumbent||ocT('ตำแหน่งว่าง','Vacant'))}</div><div class="oc-ct">${ocEsc(n.title)}${n.grade?' · '+ocEsc(n.grade):''}</div>${third}</div>`;
+  return `${ocAvatar(n)}<div class="oc-cinfo"><div class="oc-cn ${vac?'vac':''}">${ocEsc(nm||ocT('ตำแหน่งว่าง','Vacant'))}</div><div class="oc-ct">${ocEsc(n.title)}${n.grade?' · '+ocEsc(n.grade):''}</div>${third}</div>`;
 }
 function ocRenderCards(focus){
   const fb=document.getElementById('oc-focusBox'), rh=document.getElementById('oc-rhead'), rg=document.getElementById('oc-grid');
@@ -6028,7 +6032,7 @@ function ocRenderCards(focus){
   rg.innerHTML = reports.map(n=>{ const k=n.children.length; return `<div class="oc-card ${k?'kids':''}" ${k?`onclick="ocSetFocus('${n.position_id}')"`:''}>${ocCardInner(n,false)}${k?`<span class="oc-countbadge" title="${k} ${ocT('ตรง','direct')} / ${ocDescCount(n)} ${ocT('ใต้สังกัด','total')}">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`; }).join('') || `<div class="oc-empty">${ocT('ตำแหน่งนี้ไม่มีผู้ใต้บังคับบัญชา','This position has no subordinates')}</div>`;
 }
 
-function ocChartBox(n){ const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-head">${ocAvatar(n)}<div class="ocb-info"><div class="ocb-name ${n.incumbent?'':'vac'}">${ocEsc(n.incumbent||ocT('ตำแหน่งว่าง','Vacant'))}</div></div></div><div class="ocb-title2">${ocEsc(n.title)}</div><div class="ocb-foot"><span class="ocb-level">${n.grade?ocT('ระดับ','Level')+' '+ocEsc(n.grade):'—'}</span><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${k?`<span class="ocb-cnt">▾ ${k}/${ocDescCount(n)}</span>`:''}</div></div>`; }
+function ocChartBox(n){ const nm=ocNm(n); const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-head">${ocAvatar(n)}<div class="ocb-info"><div class="ocb-name ${nm?'':'vac'}">${ocEsc(nm||ocT('ตำแหน่งว่าง','Vacant'))}</div></div></div><div class="ocb-title2">${ocEsc(n.title)}</div><div class="ocb-foot"><span class="ocb-level">${n.grade?ocT('ระดับ','Level')+' '+ocEsc(n.grade):'—'}</span><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${k?`<span class="ocb-cnt">▾ ${k}/${ocDescCount(n)}</span>`:''}</div></div>`; }
 const OC_GRADES=['CEO','M4','M3','M2','M1 Senior','M1','S3','S2','S1','O3','O2','O1'];
 function ocGRank(g){ const i=OC_GRADES.indexOf(g); return i<0?99:i; }
 function ocRenderChart(focus){
@@ -6071,9 +6075,9 @@ function ocRenderSearch(){
   const q=document.getElementById('oc-search').value.trim().toLowerCase();
   const sr=document.getElementById('oc-searchResults'), dv=document.getElementById('oc-drillView');
   if(q.length<1){ sr.style.display='none'; dv.style.display='block'; return; }
-  const m=ocAllRows.filter(r=>(r.title||'').toLowerCase().includes(q)||(r.incumbent||'').toLowerCase().includes(q)).slice(0,50);
+  const m=ocAllRows.filter(r=>(r.title||'').toLowerCase().includes(q)||(r.incumbent||'').toLowerCase().includes(q)||(r.incumbent_th||'').toLowerCase().includes(q)).slice(0,50);
   dv.style.display='none'; sr.style.display='block';
-  sr.innerHTML=m.length?m.map(r=>`<div class="it" onclick="ocSetFocus('${r.position_id}')"><div class="t">${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):`<span class="oc-badge vacant">${ocT('ว่าง','Vacant')}</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}${r.grade?' · '+ocEsc(r.grade):''}</div></div>`).join(''):`<div class="oc-empty">${ocT('ไม่พบตำแหน่งที่ตรงกับคำค้นหา','No matching positions')}</div>`;
+  sr.innerHTML=m.length?m.map(r=>{ const nm=ocNm(r); return `<div class="it" onclick="ocSetFocus('${r.position_id}')"><div class="t">${ocEsc(r.title)} ${nm?'— '+ocEsc(nm):`<span class="oc-badge vacant">${ocT('ว่าง','Vacant')}</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}${r.grade?' · '+ocEsc(r.grade):''}</div></div>`; }).join(''):`<div class="oc-empty">${ocT('ไม่พบตำแหน่งที่ตรงกับคำค้นหา','No matching positions')}</div>`;
 }
 
 function ocVacPopulateDept(){
@@ -6117,7 +6121,7 @@ function ocmSan(q){ return q.replace(/[,()*]/g,' '); }
 
 async function ocmReload(){
   try{
-    const rows=await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active&is_active=eq.true',{headers:{'Accept-Profile':'orgchart'}});
+    const rows=await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active,incumbent_th,acting_coverage_th,reports_to_incumbent_th&is_active=eq.true',{headers:{'Accept-Profile':'orgchart'}});
     ocAllRows=rows||[];
     const hc=await sbFetch('headcount_summary?select=*',{headers:{'Accept-Profile':'orgchart'}});
     ocHeadcount=hc||[];
@@ -6262,12 +6266,13 @@ async function ocmResolvePerson(p){
   if(code){ found=(await sbFetch('employees?select=id,full_name&employee_code=eq.'+encodeURIComponent(code)+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
   for(let i=0;i<names.length && !found.length;i++){ found=(await sbFetch('employees?select=id,full_name&full_name=eq.'+encodeURIComponent(names[i])+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
   if(found.length){
-    // self-heal: ถ้าชื่อเดิมไม่ตรงกับที่ควรเก็บ (เช่นเคยเก็บเป็นไทย) → อัปเดตเป็น EN ให้สอดคล้อง
-    if(found[0].full_name!==store){ try{ await ocmPatch('employees','id=eq.'+found[0].id,{ full_name:store }); }catch(e){} }
+    // self-heal: ให้ชื่ออังกฤษ (full_name) + ชื่อไทย (full_name_th) ตรงกับข้อมูล onboarding ล่าสุด
+    const patch={}; if(found[0].full_name!==store) patch.full_name=store; if(p.nameTh) patch.full_name_th=p.nameTh;
+    if(Object.keys(patch).length){ try{ await ocmPatch('employees','id=eq.'+found[0].id,patch); }catch(e){} }
     return { id:found[0].id, full_name:store };
   }
   const id=ocUuid();
-  await ocmPost('employees',{ id, full_name:store, employee_code:code });
+  await ocmPost('employees',{ id, full_name:store, full_name_th:p.nameTh||null, employee_code:code });
   return { id, full_name:store };
 }
 async function ocmSubmitAssign(){
