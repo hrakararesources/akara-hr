@@ -1529,7 +1529,7 @@ tbody tr:hover{background:var(--blue-lt)}
         <select id="oc-addStatus" onchange="ocmAddStatusChange()"><option value="vacant" data-en="Vacant" data-th="ว่าง (Vacant)">ว่าง (Vacant)</option><option value="filled" data-en="Assign someone now (Filled)" data-th="มอบหมายคนทันที (Filled)">มอบหมายคนทันที (Filled)</option></select>
         <div id="oc-addEmpBlock" style="display:none">
           <label data-en="Position holder" data-th="ผู้ดำรงตำแหน่ง">ผู้ดำรงตำแหน่ง</label>
-          <div class="oc-acwrap"><input type="text" id="oc-addEmpSearch" placeholder="ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่..."><div class="oc-ac" id="oc-addEmpResults" style="display:none"></div></div>
+          <div class="oc-acwrap"><input type="text" id="oc-addEmpSearch" placeholder="ค้นหาชื่อพนักงาน (มีอยู่/พนักงานใหม่)..."><div class="oc-ac" id="oc-addEmpResults" style="display:none"></div></div>
           <div id="oc-addEmpChip"></div>
         </div>
         <button class="btn btn-gold oc-savebtn" id="oc-addBtn" onclick="ocmSubmitAdd()" data-en="Save new position" data-th="บันทึกตำแหน่งใหม่">บันทึกตำแหน่งใหม่</button>
@@ -1546,7 +1546,7 @@ tbody tr:hover{background:var(--blue-lt)}
           <select id="oc-asgStatus" onchange="ocmAssignStatusChange()"><option value="filled" data-en="Assign person (Filled)" data-th="มอบหมายคน (Filled)">มอบหมายคน (Filled)</option><option value="vacant" data-en="Vacant" data-th="ว่าง (Vacant)">ว่าง (Vacant)</option><option value="filled_pending_name" data-en="Vacant — awaiting candidate (Pending)" data-th="ว่าง — รอชื่อผู้สมัคร (Pending)">ว่าง — รอชื่อผู้สมัคร (Pending)</option></select>
           <div id="oc-asgEmpBlock">
             <label data-en="New position holder" data-th="ผู้ดำรงตำแหน่งคนใหม่">ผู้ดำรงตำแหน่งคนใหม่</label>
-            <div class="oc-acwrap"><input type="text" id="oc-asgEmpSearch" placeholder="ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่..."><div class="oc-ac" id="oc-asgEmpResults" style="display:none"></div></div>
+            <div class="oc-acwrap"><input type="text" id="oc-asgEmpSearch" placeholder="ค้นหาชื่อพนักงาน (มีอยู่/พนักงานใหม่)..."><div class="oc-ac" id="oc-asgEmpResults" style="display:none"></div></div>
             <div id="oc-asgEmpChip"></div>
           </div>
           <div id="oc-asgActBlock">
@@ -5924,9 +5924,9 @@ function ocSetPlaceholders(){
     'oc-vacSearch':ocT('ค้นหาชื่อตำแหน่ง...','Search position...'),
     'oc-addTitle':ocT('เช่น Senior Accounting Officer','e.g. Senior Accounting Officer'),
     'oc-addReportsToSearch':ocT('ค้นหาตำแหน่ง/ชื่อผู้บังคับบัญชา...','Search supervisor position / name...'),
-    'oc-addEmpSearch':ocT('ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่...','Search employee or type new...'),
+    'oc-addEmpSearch':ocT('ค้นหาชื่อพนักงาน (มีอยู่/พนักงานใหม่)...','Search employee (existing / new hire)...'),
     'oc-asgPosSearch':ocT('ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่งปัจจุบัน...','Search position / current holder...'),
-    'oc-asgEmpSearch':ocT('ค้นหาชื่อพนักงาน หรือพิมพ์ชื่อใหม่...','Search employee or type new...'),
+    'oc-asgEmpSearch':ocT('ค้นหาชื่อพนักงาน (มีอยู่/พนักงานใหม่)...','Search employee (existing / new hire)...'),
     'oc-asgActSearch':ocT('ค้นหาชื่อพนักงาน...','Search employee...'),
     'oc-repPosSearch':ocT('ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่ง...','Search position / holder...'),
     'oc-repParentSearch':ocT('ค้นหาตำแหน่งผู้บังคับบัญชาใหม่...','Search new supervisor position...'),
@@ -6114,7 +6114,19 @@ async function ocmReload(){
 }
 
 async function ocmSearchPositions(q){ const s=encodeURIComponent(ocmSan(q)); return (await sbFetch(`v_org_chart_current?select=position_id,title,incumbent,department,division,status,reports_to_position_id,reports_to_title&is_active=eq.true&or=(title.ilike.*${s}*,incumbent.ilike.*${s}*)&limit=15`,{headers:{'Accept-Profile':'orgchart'}}))||[]; }
-async function ocmSearchEmployees(q){ const s=encodeURIComponent(q); return (await sbFetch(`employees?select=id,full_name&full_name=ilike.*${s}*&limit=10`,{headers:{'Accept-Profile':'orgchart'}}))||[]; }
+// ค้นหา "คน" สำหรับมอบหมายตำแหน่ง = พนักงานที่มีอยู่ในผัง (orgchart.employees) + พนักงานใหม่ที่ onboard แล้ว (new_employees)
+// ไม่รับพิมพ์ชื่อลอยๆ — คนใหม่ต้องเพิ่มที่เมนู "พนักงานใหม่" ก่อน
+async function ocmSearchPeople(q){
+  const s=encodeURIComponent(ocmSan(q));
+  const [orgEmps,newHires]=await Promise.all([
+    sbFetch(`employees?select=id,full_name,employee_code&full_name=ilike.*${s}*&is_active=eq.true&order=full_name&limit=8`,{headers:{'Accept-Profile':'orgchart'}}).catch(()=>[]),
+    sbFetch(`new_employees?select=id,employee_id,full_name_th,full_name_en,nickname&or=(full_name_th.ilike.*${s}*,full_name_en.ilike.*${s}*,nickname.ilike.*${s}*)&limit=8`).catch(()=>[])
+  ]);
+  const seen=new Set(); const list=[];
+  (orgEmps||[]).forEach(e=>{ list.push({src:'org',orgId:e.id,name:e.full_name,code:e.employee_code,nickname:null}); if(e.employee_code) seen.add('c:'+e.employee_code); seen.add('n:'+e.full_name); });
+  (newHires||[]).forEach(n=>{ const name=n.full_name_th||n.full_name_en; if(!name) return; if((n.employee_id&&seen.has('c:'+n.employee_id))||seen.has('n:'+name)) return; list.push({src:'new',newId:n.id,name,code:n.employee_id,nickname:n.nickname}); });
+  return list;
+}
 
 function ocmChip(chipId,label,onClear){ const el=document.getElementById(chipId); el.innerHTML=`<span class="oc-chip">${ocEsc(label)}<button type="button" aria-label="ลบ">×</button></span>`; el.querySelector('button').addEventListener('click',()=>{ el.innerHTML=''; if(onClear)onClear(); }); }
 
@@ -6131,16 +6143,12 @@ function ocmAutoPos(inId,resId,chipId,onPick,onClear){
 function ocmAutoEmp(inId,resId,chipId,onPick,onClear){
   const input=document.getElementById(inId), res=document.getElementById(resId); let timer;
   input.addEventListener('input',()=>{ clearTimeout(timer); const q=input.value.trim(); if(q.length<2){res.style.display='none';return;} timer=setTimeout(async()=>{
-    let data=[]; try{ data=await ocmSearchEmployees(q); }catch(e){ data=[]; }
-    let html=data.map(e=>`<div class="it">${ocEsc(e.full_name)}</div>`).join('');
-    html+=`<div class="it" data-new="1">+ ${ocT('เพิ่ม','Add')} "${ocEsc(q)}" ${ocT('เป็นพนักงานใหม่','as new employee')}</div>`;
-    res.innerHTML=html; res.style.display='block';
-    res.querySelectorAll('.it').forEach((el,i)=>{ el.addEventListener('click',async()=>{
-      let emp;
-      if(el.dataset.new){ const id=ocUuid(); try{ await ocmPost('employees',{id,full_name:q}); }catch(err){ toast('เพิ่มพนักงานไม่สำเร็จ'); return; } emp={id,full_name:q}; }
-      else { emp=data[i]; }
-      input.value=''; res.style.display='none'; ocmChip(chipId, emp.full_name, onClear); onPick(emp);
-    }); });
+    let data=[]; try{ data=await ocmSearchPeople(q); }catch(e){ data=[]; }
+    res.innerHTML = data.length
+      ? data.map(p=>`<div class="it"><div>${ocEsc(p.name)}${p.nickname?' ('+ocEsc(p.nickname)+')':''} ${p.src==='new'?`<span class="s" style="color:var(--green)">• ${ocT('พนักงานใหม่','New hire')}</span>`:(p.code?`<span class="s">${ocEsc(p.code)}</span>`:'')}</div></div>`).join('')
+      : `<div class="empty">${ocT('ไม่พบชื่อ — กรุณาเพิ่มที่เมนู "พนักงานใหม่" ก่อน','Not found — add via the New Employees menu first')}</div>`;
+    res.style.display='block';
+    res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const p=data[i]; input.value=''; res.style.display='none'; ocmChip(chipId, p.name+(p.nickname?' ('+p.nickname+')':''), onClear); onPick(p); }); });
   },250); });
   document.addEventListener('click',e=>{ if(!input.contains(e.target)&&!res.contains(e.target)) res.style.display='none'; });
 }
@@ -6206,12 +6214,13 @@ async function ocmSubmitAdd(){
   const status=document.getElementById('oc-addStatus').value;
   if(!deptId){ toast('กรุณาเลือก Department'); return; }
   if(!title){ toast('กรุณาใส่ชื่อตำแหน่ง'); return; }
-  if(status==='filled'&&!ocmSel.addEmp){ toast('กรุณาเลือกผู้ดำรงตำแหน่ง'); return; }
+  if(status==='filled' && !ocmSel.addEmp){ toast('กรุณาเลือกผู้ดำรงตำแหน่งจากรายการ — ถ้าไม่พบ เพิ่มที่เมนู "พนักงานใหม่" ก่อน'); return; }
   btn.disabled=true;
   try{
     const posId=ocUuid();
+    const empId = status==='filled' ? (await ocmResolvePerson(ocmSel.addEmp)).id : null;
     await ocmPost('positions',{ id:posId, department_id:deptId, title, grade, reports_to_position_id: ocmSel.addReportsTo?ocmSel.addReportsTo.id:null });
-    await ocmPost('position_assignments',{ position_id:posId, employee_id: status==='filled'?ocmSel.addEmp.id:null, status, is_current:true });
+    await ocmPost('position_assignments',{ position_id:posId, employee_id: empId, status, is_current:true });
     toast('เพิ่มตำแหน่ง "'+title+'" เรียบร้อย');
     document.getElementById('oc-addTitle').value=''; document.getElementById('oc-addReportsToChip').innerHTML=''; document.getElementById('oc-addChain').style.display='none'; document.getElementById('oc-addEmpChip').innerHTML='';
     ocmSel.addReportsTo=null; ocmSel.addEmp=null;
@@ -6225,12 +6234,29 @@ function ocmAssignStatusChange(){
   document.getElementById('oc-asgEmpBlock').style.display = s==='filled'?'block':'none';
   document.getElementById('oc-asgActBlock').style.display = (s==='vacant'||s==='filled_pending_name')?'block':'none';
 }
+// แปลง "คนที่เลือก" ให้เป็นแถวใน orgchart.employees (id uuid) ที่ position_assignments อ้างถึง
+//   src=org  → มีอยู่แล้ว ใช้ orgId ได้เลย
+//   src=new  → พนักงานใหม่จาก onboarding → หาแถวในผังด้วยรหัส/ชื่อ ถ้าไม่มีค่อยสร้างจากข้อมูลจริง
+async function ocmResolvePerson(p){
+  if(!p) throw new Error('no person');
+  if(p.src==='org' && p.orgId) return { id:p.orgId, full_name:p.name };
+  const name=p.name, code=p.code||null;
+  let found=[];
+  if(code){ found=(await sbFetch('employees?select=id&employee_code=eq.'+encodeURIComponent(code)+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
+  if(!found.length && name){ found=(await sbFetch('employees?select=id&full_name=eq.'+encodeURIComponent(name)+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
+  if(found.length) return { id:found[0].id, full_name:name };
+  const id=ocUuid();
+  await ocmPost('employees',{ id, full_name:name, employee_code:code });
+  return { id, full_name:name };
+}
 async function ocmSubmitAssign(){
   if(!ocmSel.asgPos){ toast('กรุณาเลือกตำแหน่งก่อน'); return; }
   const status=document.getElementById('oc-asgStatus').value;
-  if(status==='filled'&&!ocmSel.asgEmp){ toast('กรุณาเลือกผู้ดำรงตำแหน่งคนใหม่'); return; }
+  if(status==='filled' && !ocmSel.asgEmp){ toast('กรุณาเลือกผู้ดำรงตำแหน่งจากรายการ — ถ้าไม่พบ เพิ่มที่เมนู "พนักงานใหม่" ก่อน'); return; }
   try{
-    await ocmPost('position_assignments',{ position_id:ocmSel.asgPos.id, employee_id: status==='filled'?ocmSel.asgEmp.id:null, acting_employee_id: (status!=='filled'&&ocmSel.asgAct)?ocmSel.asgAct.id:null, status, is_current:true });
+    const empId = status==='filled' ? (await ocmResolvePerson(ocmSel.asgEmp)).id : null;
+    const actId = (status!=='filled' && ocmSel.asgAct) ? (await ocmResolvePerson(ocmSel.asgAct)).id : null;
+    await ocmPost('position_assignments',{ position_id:ocmSel.asgPos.id, employee_id: empId, acting_employee_id: actId, status, is_current:true });
     toast('บันทึกการเปลี่ยนแปลงเรียบร้อย — ประวัติเดิมถูกเก็บอัตโนมัติ');
     document.getElementById('oc-asgPosChip').innerHTML=''; document.getElementById('oc-asgForm').style.display='none'; document.getElementById('oc-asgChain').style.display='none'; document.getElementById('oc-asgEmpChip').innerHTML=''; document.getElementById('oc-asgActChip').innerHTML='';
     ocmSel.asgPos=null; ocmSel.asgEmp=null; ocmSel.asgAct=null;
