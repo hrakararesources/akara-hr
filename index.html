@@ -6140,9 +6140,13 @@ async function ocmSearchPeople(q){
     sbFetch(`employees?select=id,full_name,employee_code&full_name=ilike.*${s}*&is_active=eq.true&order=full_name&limit=8`,{headers:{'Accept-Profile':'orgchart'}}).catch(()=>[]),
     sbFetch(`new_employees?select=id,employee_id,full_name_th,full_name_en,nickname&or=(full_name_th.ilike.*${s}*,full_name_en.ilike.*${s}*,nickname.ilike.*${s}*)&limit=8`).catch(()=>[])
   ]);
-  const seen=new Set(); const list=[];
-  (orgEmps||[]).forEach(e=>{ list.push({src:'org',orgId:e.id,name:e.full_name,code:e.employee_code,nickname:null}); if(e.employee_code) seen.add('c:'+e.employee_code); seen.add('n:'+e.full_name); });
-  (newHires||[]).forEach(n=>{ const th=n.full_name_th, en=n.full_name_en, disp=th||en; if(!disp) return; if((n.employee_id&&seen.has('c:'+n.employee_id))||seen.has('n:'+disp)||(en&&seen.has('n:'+en))) return; list.push({src:'new',newId:n.id,name:disp,nameTh:th,nameEn:en,code:n.employee_id,nickname:n.nickname}); });
+  const list=[]; const byKey=new Map();
+  (orgEmps||[]).forEach(e=>{ const o={src:'org',orgId:e.id,name:e.full_name,code:e.employee_code,nickname:null,nameTh:null,nameEn:null}; list.push(o); if(e.employee_code) byKey.set('c:'+e.employee_code,o); byKey.set('n:'+e.full_name,o); });
+  (newHires||[]).forEach(n=>{ const th=n.full_name_th, en=n.full_name_en, disp=th||en; if(!disp) return;
+    // ถ้าคนนี้มีอยู่ในผังแล้ว (จับด้วยรหัส/ชื่อ) → เติมชื่อ 2 ภาษาให้ entry เดิม เพื่อให้ heal ได้ตอนบันทึก
+    const m=(n.employee_id&&byKey.get('c:'+n.employee_id))||(th&&byKey.get('n:'+th))||(en&&byKey.get('n:'+en));
+    if(m){ m.nameTh=th||m.nameTh; m.nameEn=en||m.nameEn; if(!m.nickname) m.nickname=n.nickname; return; }
+    list.push({src:'new',newId:n.id,name:disp,nameTh:th,nameEn:en,code:n.employee_id,nickname:n.nickname}); });
   return list;
 }
 
@@ -6257,7 +6261,16 @@ function ocmAssignStatusChange(){
 //   src=new  → พนักงานใหม่จาก onboarding → หาแถวในผังด้วยรหัส/ชื่อ ถ้าไม่มีค่อยสร้างจากข้อมูลจริง
 async function ocmResolvePerson(p){
   if(!p) throw new Error('no person');
-  if(p.src==='org' && p.orgId) return { id:p.orgId, full_name:p.name };
+  if(p.src==='org' && p.orgId){
+    // ถ้ามีชื่อ 2 ภาษาจาก onboarding แนบมา → heal ชื่อในผังให้ (EN เป็นหลัก + เก็บ TH)
+    if(p.nameEn || p.nameTh){
+      const st = p.nameEn || p.name;
+      const patch={}; if(st && st!==p.name) patch.full_name=st; if(p.nameTh) patch.full_name_th=p.nameTh;
+      if(Object.keys(patch).length){ try{ await ocmPatch('employees','id=eq.'+p.orgId,patch); }catch(e){} }
+      return { id:p.orgId, full_name:st||p.name };
+    }
+    return { id:p.orgId, full_name:p.name };
+  }
   // ชื่อที่เก็บในผัง = ภาษาอังกฤษก่อน (ให้ตรงกับพนักงานที่เหลือ) แล้วค่อย fallback เป็นไทย
   const store = p.nameEn || p.nameTh || p.name;
   const code = p.code||null;
