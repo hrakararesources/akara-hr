@@ -5387,6 +5387,7 @@ function openEditNewEmp(id) {
   const buddySel = document.getElementById('ne-buddy');
   buddySel.innerHTML = `<option value="">— ${lang==='th'?'เลือก HR':'Select HR'} —</option>` + members.map(m=>`<option value="${m.id}" ${m.id===e.buddy_id?'selected':''}>${m.name}</option>`).join('');
   document.getElementById('ne-buddy').value = e.buddy_id||'';
+  populateDeptDropdown(e.department_id||'', e.section_id||'', e.team_id||'');  // restore ฝ่าย/แผนก/ทีม + cascade
   openModal('modal-new-emp');
 }
 
