@@ -3336,18 +3336,19 @@ async function saveRecurring(){
   if(!title){ toast(ocT('กรุณาใส่ชื่องาน','Title required')); return; }
   const dueDay=Math.min(28,Math.max(1,parseInt(document.getElementById('rec-dueday').value)||5));
   const asg=Array.from(document.querySelectorAll('#rec-assignees .rec-asg:checked')).map(c=>c.value);
+  if(!asg.length){ toast(ocT('⚠️ ยังไม่ได้เลือกผู้รับผิดชอบ — เลือกก่อนบันทึก','Select at least one assignee first')); return; }
   const id=recEditId||uid();
   const row={ id, title, description:document.getElementById('rec-desc').value.trim()||null, prio:document.getElementById('rec-prio').value, due_day:dueDay };
   if(!recEditId){ row.created_by=currentMember.id; row.active=true; }
   try{
     await sbFetch('recurring_tasks?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates',body:JSON.stringify(row)});
     await sbFetch('recurring_task_assignees?recurring_id=eq.'+id,{method:'DELETE'});
-    if(asg.length) await sbFetch('recurring_task_assignees',{method:'POST',prefer:'return=minimal',body:JSON.stringify(asg.map(mid=>({recurring_id:id,member_id:mid})))});
+    await sbFetch('recurring_task_assignees',{method:'POST',prefer:'return=minimal',body:JSON.stringify(asg.map(mid=>({recurring_id:id,member_id:mid})))});
     const isNew=!recEditId;
     recClearForm(); await loadRecurring();
-    if(isNew){ await recGenerateNow(id, true); }  // สร้างงานเดือนนี้ให้ทันที (พนักงานเห็นเลย)
     renderRecurringList();
-    toast(ocT('บันทึกแม่แบบแล้ว + สร้างงานเดือนนี้','Saved + generated this month'));
+    if(isNew){ await recGenerateNow(id, false); }  // สร้างงานเดือนนี้ทันที + แสดงผล/error ชัดเจน
+    else toast(ocT('บันทึกแม่แบบแล้ว','Template saved'));
   }catch(e){ toast(ocT('บันทึกไม่สำเร็จ','Failed')+': '+e.message); }
 }
 // สร้าง Task จริงของ "เดือนนี้" จากแม่แบบทันที (ฝั่ง client) — เหมือน recurring.js แต่ให้เห็นเดี๋ยวนั้น
