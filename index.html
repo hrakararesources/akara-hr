@@ -1297,7 +1297,10 @@ tbody tr:hover{background:var(--blue-lt)}
           <h2 id="h-my-tasks">My Tasks</h2>
           <p id="my-task-subtitle"></p>
         </div>
-        <button class="btn btn-gold" onclick="openAddTask()" id="btn-add-task">+ Add Task</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost" onclick="openRecurring()" id="btn-recurring" style="display:none" data-en="🔁 Recurring" data-th="🔁 งานประจำ">🔁 งานประจำ</button>
+          <button class="btn btn-gold" onclick="openAddTask()" id="btn-add-task">+ Add Task</button>
+        </div>
       </div>
       <div class="kpi-row" id="my-kpi"></div>
       <div class="filter-row">
@@ -1918,6 +1921,42 @@ tbody tr:hover{background:var(--blue-lt)}
       <div style="display:flex;gap:8px">
         <button class="btn btn-ghost" onclick="closeModal('modal-task')" id="btn-cancel">Cancel</button>
         <button class="btn btn-primary" onclick="saveTask()" id="btn-save">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECURRING (monthly) task templates -->
+<div class="overlay" id="modal-recurring">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <h3 data-en="Recurring Monthly Tasks" data-th="งานประจำทุกเดือน">งานประจำทุกเดือน</h3>
+      <button class="modal-close" onclick="closeModal('modal-recurring')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--muted);margin:0 0 12px" data-en="Templates below auto-create a real task at the start of every month (with due date + notification)." data-th="แม่แบบด้านล่างจะสร้างงานจริงให้อัตโนมัติทุกต้นเดือน (พร้อมกำหนดส่ง + แจ้งเตือน)">แม่แบบด้านล่างจะสร้างงานจริงให้อัตโนมัติทุกต้นเดือน (พร้อมกำหนดส่ง + แจ้งเตือน)</p>
+      <div id="rec-list" style="margin-bottom:16px"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px" id="rec-form-title">เพิ่มแม่แบบใหม่</div>
+        <input type="hidden" id="rec-id">
+        <div class="form-grid">
+          <div class="fg full"><label data-en="Task title *" data-th="ชื่องาน *">ชื่องาน *</label><input id="rec-title" placeholder="เช่น ทำเงินเดือนประจำเดือน"></div>
+          <div class="fg full"><label data-en="Description" data-th="รายละเอียด">รายละเอียด</label><input id="rec-desc" placeholder="รายละเอียด (ถ้ามี)"></div>
+          <div class="fg"><label data-en="Priority" data-th="ความสำคัญ">ความสำคัญ</label>
+            <select id="rec-prio"><option value="ปานกลาง">ปานกลาง</option><option value="สูง">สูง</option><option value="เร่งด่วน">เร่งด่วน</option><option value="ต่ำ">ต่ำ</option></select>
+          </div>
+          <div class="fg"><label data-en="Due day of month (1–28)" data-th="กำหนดส่ง วันที่ (1–28)">กำหนดส่ง วันที่ (1–28)</label><input id="rec-dueday" type="number" min="1" max="28" value="5"></div>
+          <div class="fg full"><label data-en="Assign to" data-th="ผู้รับผิดชอบ">ผู้รับผิดชอบ</label>
+            <div id="rec-assignees" style="display:flex;flex-wrap:wrap;gap:8px 14px;max-height:130px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:10px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn btn-ghost btn-sm" id="rec-del-btn" onclick="deleteRecurring()" style="display:none" data-en="Delete" data-th="ลบ">ลบ</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="recClearForm()" data-en="Clear" data-th="ล้างฟอร์ม">ล้างฟอร์ม</button>
+        <button class="btn btn-primary" onclick="saveRecurring()" data-en="Save template" data-th="บันทึกแม่แบบ">บันทึกแม่แบบ</button>
       </div>
     </div>
   </div>
@@ -2629,6 +2668,9 @@ function enterApp() {
   // Show settings menu for admin only
   const settingsMenu = document.getElementById('sb-settings');
   if (settingsMenu) settingsMenu.style.display = isAdmin() ? '' : 'none';
+  // Show recurring-tasks button for manager/admin only
+  const recBtn = document.getElementById('btn-recurring');
+  if (recBtn) recBtn.style.display = isManagerOrAdmin() ? '' : 'none';
   // Show Org Chart menu only for users in orgchart.hr_admins
   checkOrgChartAccess();
   // Load org structure for dropdowns
@@ -3146,6 +3188,95 @@ function renderAssigneeChecks(selectedIds){
   const box = document.getElementById('tf-assignees'); if (!box) return;
   const sel = new Set(selectedIds||[]);
   box.innerHTML = members.map(m=>`<label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer"><input type="checkbox" class="tf-asg" value="${m.id}" ${sel.has(m.id)?'checked':''} style="width:auto"> ${ocEsc(m.name)} <span style="color:var(--muted);font-size:11px">${ocEsc(m.pos||'')}</span></label>`).join('');
+}
+
+// ===================== RECURRING (monthly) TASK TEMPLATES =====================
+let recTemplates = [], recAssignees = {}, recEditId = null;
+async function openRecurring(){
+  if(!isManagerOrAdmin()){ toast('🔒 '+T('cannotEdit')); return; }
+  recClearForm();
+  await loadRecurring();
+  openModal('modal-recurring');
+}
+async function loadRecurring(){
+  try{
+    recTemplates = await sbFetch('recurring_tasks?select=*&order=title') || [];
+    const links = await sbFetch('recurring_task_assignees?select=recurring_id,member_id') || [];
+    recAssignees = {};
+    links.forEach(l=>{ (recAssignees[l.recurring_id]=recAssignees[l.recurring_id]||[]).push(l.member_id); });
+  }catch(e){ recTemplates=[]; recAssignees={}; }
+  renderRecurringList();
+}
+function recNames(ids){ return (ids||[]).map(id=>{ const m=members.find(x=>x.id===id); return m?m.name:''; }).filter(Boolean).join(', '); }
+function renderRecurringList(){
+  const el=document.getElementById('rec-list'); if(!el) return;
+  if(!recTemplates.length){ el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:12px;text-align:center;border:1px dashed var(--border);border-radius:8px">${ocT('ยังไม่มีงานประจำ — เพิ่มด้านล่าง','No recurring tasks yet — add below')}</div>`; return; }
+  el.innerHTML = recTemplates.map(rt=>{
+    const who = recNames(recAssignees[rt.id]) || ocT('(ยังไม่ระบุ)','(none)');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;${rt.active?'':'opacity:.55'}">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13.5px">${ocEsc(rt.title)} ${rt.active?'':'<span style="font-size:11px;color:var(--muted)">('+ocT('ปิดอยู่','off')+')</span>'}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${ocT('ทุกวันที่','Day')} ${rt.due_day} ${ocT('ของเดือน','of month')} · ${ocEsc(who)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="toggleRecurring('${rt.id}')">${rt.active?ocT('ปิด','Off'):ocT('เปิด','On')}</button>
+      <button class="btn btn-ghost btn-sm" onclick="editRecurring('${rt.id}')">${ocT('แก้ไข','Edit')}</button>
+    </div>`;
+  }).join('');
+}
+function recRenderAssignees(selectedIds){
+  const box=document.getElementById('rec-assignees'); if(!box) return;
+  const sel=new Set(selectedIds||[]);
+  box.innerHTML = members.map(m=>`<label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer"><input type="checkbox" class="rec-asg" value="${m.id}" ${sel.has(m.id)?'checked':''} style="width:auto"> ${ocEsc(m.name)}</label>`).join('');
+}
+function recClearForm(){
+  recEditId=null;
+  document.getElementById('rec-id').value='';
+  document.getElementById('rec-title').value='';
+  document.getElementById('rec-desc').value='';
+  document.getElementById('rec-prio').value='ปานกลาง';
+  document.getElementById('rec-dueday').value='5';
+  document.getElementById('rec-del-btn').style.display='none';
+  document.getElementById('rec-form-title').textContent=ocT('เพิ่มแม่แบบใหม่','Add new template');
+  recRenderAssignees([]);
+}
+function editRecurring(id){
+  const rt=recTemplates.find(x=>x.id===id); if(!rt) return;
+  recEditId=id;
+  document.getElementById('rec-id').value=id;
+  document.getElementById('rec-title').value=rt.title||'';
+  document.getElementById('rec-desc').value=rt.description||'';
+  document.getElementById('rec-prio').value=rt.prio||'ปานกลาง';
+  document.getElementById('rec-dueday').value=rt.due_day||5;
+  document.getElementById('rec-del-btn').style.display='';
+  document.getElementById('rec-form-title').textContent=ocT('แก้ไขแม่แบบ','Edit template');
+  recRenderAssignees(recAssignees[id]||[]);
+}
+async function saveRecurring(){
+  const title=document.getElementById('rec-title').value.trim();
+  if(!title){ toast(ocT('กรุณาใส่ชื่องาน','Title required')); return; }
+  const dueDay=Math.min(28,Math.max(1,parseInt(document.getElementById('rec-dueday').value)||5));
+  const asg=Array.from(document.querySelectorAll('#rec-assignees .rec-asg:checked')).map(c=>c.value);
+  const id=recEditId||uid();
+  const row={ id, title, description:document.getElementById('rec-desc').value.trim()||null, prio:document.getElementById('rec-prio').value, due_day:dueDay };
+  if(!recEditId){ row.created_by=currentMember.id; row.active=true; }
+  try{
+    await sbFetch('recurring_tasks?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates',body:JSON.stringify(row)});
+    await sbFetch('recurring_task_assignees?recurring_id=eq.'+id,{method:'DELETE'});
+    if(asg.length) await sbFetch('recurring_task_assignees',{method:'POST',prefer:'return=minimal',body:JSON.stringify(asg.map(mid=>({recurring_id:id,member_id:mid})))});
+    toast(ocT('บันทึกแม่แบบแล้ว','Template saved'));
+    recClearForm(); await loadRecurring();
+  }catch(e){ toast(ocT('บันทึกไม่สำเร็จ','Failed')+': '+e.message); }
+}
+async function toggleRecurring(id){
+  const rt=recTemplates.find(x=>x.id===id); if(!rt) return;
+  try{ await sbFetch('recurring_tasks?id=eq.'+id,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({active:!rt.active})}); await loadRecurring(); }
+  catch(e){ toast(ocT('เปลี่ยนสถานะไม่สำเร็จ','Failed')); }
+}
+async function deleteRecurring(){
+  if(!recEditId) return;
+  if(!confirm(ocT('ลบแม่แบบงานประจำนี้? (งานที่สร้างไปแล้วยังอยู่)','Delete this template? (already-created tasks remain)'))) return;
+  try{ await sbFetch('recurring_tasks?id=eq.'+recEditId,{method:'DELETE'}); toast(ocT('ลบแล้ว','Deleted')); recClearForm(); await loadRecurring(); }
+  catch(e){ toast(ocT('ลบไม่สำเร็จ','Delete failed')); }
 }
 
 function openEditTask(id) {
