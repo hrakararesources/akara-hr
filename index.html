@@ -1914,6 +1914,11 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="fg"><label id="lbl-task-due">Due Date</label><input id="tf-due" type="date"></div>
         <div class="fg"><label id="lbl-task-prog">Progress (%)</label><input id="tf-prog" type="number" min="0" max="100" value="0"></div>
         <div class="fg full"><label id="lbl-task-note">Note</label><input id="tf-note" placeholder="Additional note..."></div>
+        <div class="fg full" id="tf-att-wrap" style="display:none">
+          <label data-en="Attachments" data-th="ไฟล์แนบ">ไฟล์แนบ</label>
+          <div id="tf-att-list"></div>
+          <label class="btn btn-ghost btn-sm" style="margin-top:8px;cursor:pointer">📎 <span data-en="Attach file" data-th="แนบไฟล์">แนบไฟล์</span><input type="file" style="display:none" onchange="onTaskFile(this)"></label>
+        </div>
       </div>
     </div>
     <div class="modal-foot" style="justify-content:space-between">
@@ -2504,6 +2509,74 @@ async function sbFetch(path, opts={}) {
   return text ? JSON.parse(text) : null;
 }
 
+// ===================== FILE ATTACHMENTS (Supabase Storage, private bucket) =====================
+const ATT_BUCKET='attachments';
+function stHeaders(extra){ return { apikey:SUPABASE_KEY, Authorization:'Bearer '+(currentUser?.access_token||SUPABASE_KEY), ...(extra||{}) }; }
+async function stUpload(path, file){
+  const res=await fetch(SUPABASE_URL+'/storage/v1/object/'+ATT_BUCKET+'/'+encodeURI(path), {
+    method:'POST', headers:stHeaders({ 'Content-Type':file.type||'application/octet-stream', 'x-upsert':'true' }), body:file });
+  if(!res.ok) throw new Error('upload '+res.status+': '+await res.text());
+}
+async function stSignedUrl(path){
+  const res=await fetch(SUPABASE_URL+'/storage/v1/object/sign/'+ATT_BUCKET+'/'+encodeURI(path), {
+    method:'POST', headers:stHeaders({ 'Content-Type':'application/json' }), body:JSON.stringify({ expiresIn:3600 }) });
+  if(!res.ok) throw new Error(await res.text());
+  const j=await res.json(); return SUPABASE_URL+'/storage/v1'+j.signedURL;
+}
+async function stDelete(path){
+  try{ await fetch(SUPABASE_URL+'/storage/v1/object/'+ATT_BUCKET+'/'+encodeURI(path), { method:'DELETE', headers:stHeaders() }); }catch(e){}
+}
+let attByEntity={};
+async function loadAttachments(){
+  try{
+    const rows=await sbFetch('attachments?select=*&order=created_at') || [];
+    attByEntity={};
+    rows.forEach(a=>{ const k=a.entity_type+':'+a.entity_id; (attByEntity[k]=attByEntity[k]||[]).push(a); });
+  }catch(e){ attByEntity={}; }
+}
+async function uploadAttachment(entityType, entityId, file){
+  if(!file) return;
+  if(file.size > 15*1024*1024){ toast(ocT('ไฟล์ใหญ่เกิน 15MB','File exceeds 15MB')); return; }
+  const safe=(file.name||'file').replace(/[^\w.\-ก-๙]+/g,'_');
+  const path=`${entityType}/${entityId}/${Date.now()}-${safe}`;
+  showLoading(ocT('กำลังอัปโหลด...','Uploading...'));
+  try{
+    await stUpload(path, file);
+    const row={ id:uid(), entity_type:entityType, entity_id:entityId, file_name:file.name, storage_path:path, mime:file.type||null, size:file.size, uploaded_by:currentMember.id };
+    await sbFetch('attachments',{method:'POST',prefer:'return=minimal',body:JSON.stringify(row)});
+    const k=entityType+':'+entityId; (attByEntity[k]=attByEntity[k]||[]).push(row);
+    toast(ocT('แนบไฟล์แล้ว','File attached'));
+  }catch(e){ toast(ocT('อัปโหลดไม่สำเร็จ','Upload failed')+': '+e.message); }
+  hideLoading();
+}
+async function openAttachment(path){
+  try{ const url=await stSignedUrl(path); window.open(url,'_blank'); }
+  catch(e){ toast(ocT('เปิดไฟล์ไม่สำเร็จ','Cannot open file')); }
+}
+async function removeAttachment(id, path, entityType, entityId, afterFn){
+  if(!confirm(ocT('ลบไฟล์นี้?','Delete this file?'))) return;
+  try{
+    await sbFetch('attachments?id=eq.'+id,{method:'DELETE'});
+    await stDelete(path);
+    const k=entityType+':'+entityId; attByEntity[k]=(attByEntity[k]||[]).filter(a=>a.id!==id);
+    if(typeof window[afterFn]==='function') window[afterFn](entityId);
+  }catch(e){ toast(ocT('ลบไม่สำเร็จ','Delete failed')); }
+}
+function attIcon(mime){ mime=mime||''; return mime.includes('pdf')?'📄':mime.startsWith('image')?'🖼️':mime.includes('sheet')||mime.includes('excel')?'📊':mime.includes('word')?'📝':'📎'; }
+function attListHtml(entityType, entityId, afterFn){
+  const list=attByEntity[entityType+':'+entityId]||[];
+  if(!list.length) return `<div style="font-size:12px;color:var(--muted)">${ocT('ยังไม่มีไฟล์แนบ','No files attached')}</div>`;
+  return list.map(a=>{
+    const can=isManagerOrAdmin() || a.uploaded_by===currentMember?.id;
+    const p=(a.storage_path||'').replace(/'/g,"\\'");
+    return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px">
+      <a href="#" onclick="event.preventDefault();openAttachment('${p}')" style="color:var(--blue);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${attIcon(a.mime)} ${ocEsc(a.file_name)}</a>
+      <span style="color:var(--muted);font-size:11px;flex-shrink:0">${a.size?Math.round(a.size/1024)+' KB':''}</span>
+      ${can?`<button class="btn btn-ghost btn-xs" style="flex-shrink:0" onclick="removeAttachment('${a.id}','${p}','${entityType}','${entityId}','${afterFn||''}')">✕</button>`:''}
+    </div>`;
+  }).join('');
+}
+
 async function sbAuth(action, body) {
   const res = await fetch(SUPABASE_URL + '/auth/v1/' + action, {
     method: 'POST',
@@ -2639,7 +2712,7 @@ async function loadData() {
 async function loadDataAndEnter() {
   showLoading('Loading...');
   await loadData();
-  await Promise.all([loadAnnouncements(), loadMeetings()]);
+  await Promise.all([loadAnnouncements(), loadMeetings(), loadAttachments()]);
   // find currentMember by user_id
   const uid = currentUser.user.id;
   currentMember = members.find(m => m.user_id === uid) || null;
@@ -3182,8 +3255,11 @@ function openAddTask() {
   } else {
     wrap.style.display='none';
   }
+  document.getElementById('tf-att-wrap').style.display='none';  // แนบไฟล์ได้หลังบันทึกงาน (โหมดแก้ไข)
   openModal('modal-task');
 }
+function renderTaskAtt(id){ const el=document.getElementById('tf-att-list'); if(el) el.innerHTML=attListHtml('task',id,'renderTaskAtt'); }
+async function onTaskFile(input){ const f=input.files&&input.files[0]; if(!f||!editTaskId) return; await uploadAttachment('task',editTaskId,f); input.value=''; renderTaskAtt(editTaskId); }
 function renderAssigneeChecks(selectedIds){
   const box = document.getElementById('tf-assignees'); if (!box) return;
   const sel = new Set(selectedIds||[]);
@@ -3303,6 +3379,9 @@ function openEditTask(id) {
   // Show history button when editing
   const histBtn = document.getElementById('btn-view-history');
   if (histBtn) histBtn.style.display = editTaskId ? '' : 'none';
+  // Attachments (edit mode only)
+  document.getElementById('tf-att-wrap').style.display='';
+  renderTaskAtt(id);
   openModal('modal-task');
 }
 
@@ -3732,10 +3811,15 @@ function renderMeetings() {
             </div>`;
           }).join('')}
         `:''}
+        <div class="section-label">${ocT('ไฟล์แนบ','Attachments')}</div>
+        <div id="meet-att-${m.id}">${attListHtml('meeting',m.id,'renderMeetAtt')}</div>
+        <label class="btn btn-ghost btn-sm" style="margin-top:8px;cursor:pointer">📎 ${ocT('แนบไฟล์','Attach file')}<input type="file" style="display:none" onchange="onMeetFile('${m.id}',this)"></label>
       </div>
     </div>`;
   }).join('');
 }
+function renderMeetAtt(id){ const el=document.getElementById('meet-att-'+id); if(el) el.innerHTML=attListHtml('meeting',id,'renderMeetAtt'); }
+async function onMeetFile(id, input){ const f=input.files&&input.files[0]; if(!f) return; await uploadAttachment('meeting',id,f); input.value=''; renderMeetAtt(id); }
 
 function toggleMeeting(id) {
   const body = document.getElementById('meet-body-'+id);
