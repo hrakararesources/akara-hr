@@ -2543,13 +2543,16 @@ async function uploadAttachment(entityType, entityId, file){
   const safe=(file.name||'file').replace(/[^\w.\-ก-๙]+/g,'_');
   const path=`${entityType}/${entityId}/${Date.now()}-${safe}`;
   showLoading(ocT('กำลังอัปโหลด...','Uploading...'));
+  let stage='start';
   try{
+    stage='storage-upload';
     await stUpload(path, file);
+    stage='db-insert';
     const row={ id:uid(), entity_type:entityType, entity_id:entityId, file_name:file.name, storage_path:path, mime:file.type||null, size:file.size, uploaded_by:currentMember.id };
     await sbFetch('attachments',{method:'POST',prefer:'return=minimal',body:JSON.stringify(row)});
     const k=entityType+':'+entityId; (attByEntity[k]=attByEntity[k]||[]).push(row);
     toast(ocT('แนบไฟล์แล้ว','File attached'));
-  }catch(e){ toast(ocT('อัปโหลดไม่สำเร็จ','Upload failed')+': '+e.message); }
+  }catch(e){ hideLoading(); alert('❌ แนบไฟล์ไม่สำเร็จ\nstage: '+stage+'\n'+(e&&e.message||e)); return; }
   hideLoading();
 }
 async function openAttachment(path){
