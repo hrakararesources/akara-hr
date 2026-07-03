@@ -2540,19 +2540,21 @@ async function loadAttachments(){
 async function uploadAttachment(entityType, entityId, file){
   if(!file) return;
   if(file.size > 15*1024*1024){ toast(ocT('ไฟล์ใหญ่เกิน 15MB','File exceeds 15MB')); return; }
-  const safe=(file.name||'file').replace(/[^\w.\-ก-๙]+/g,'_');
-  const path=`${entityType}/${entityId}/${Date.now()}-${safe}`;
+  // storage key ต้องเป็น ASCII ล้วน (ไม่รับอักษรไทย) — เก็บชื่อจริงไว้ที่ file_name สำหรับแสดง
+  const nm=file.name||'file';
+  const dot=nm.lastIndexOf('.');
+  const ext=dot>=0 ? nm.slice(dot).replace(/[^.\w]/g,'') : '';
+  let base=(dot>=0 ? nm.slice(0,dot) : nm).replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,50);
+  if(!base) base='file';
+  const path=`${entityType}/${entityId}/${Date.now()}-${base}${ext}`;
   showLoading(ocT('กำลังอัปโหลด...','Uploading...'));
-  let stage='start';
   try{
-    stage='storage-upload';
     await stUpload(path, file);
-    stage='db-insert';
-    const row={ id:uid(), entity_type:entityType, entity_id:entityId, file_name:file.name, storage_path:path, mime:file.type||null, size:file.size, uploaded_by:currentMember.id };
+    const row={ id:uid(), entity_type:entityType, entity_id:entityId, file_name:nm, storage_path:path, mime:file.type||null, size:file.size, uploaded_by:currentMember.id };
     await sbFetch('attachments',{method:'POST',prefer:'return=minimal',body:JSON.stringify(row)});
     const k=entityType+':'+entityId; (attByEntity[k]=attByEntity[k]||[]).push(row);
     toast(ocT('แนบไฟล์แล้ว','File attached'));
-  }catch(e){ hideLoading(); alert('❌ แนบไฟล์ไม่สำเร็จ\nstage: '+stage+'\n'+(e&&e.message||e)); return; }
+  }catch(e){ toast(ocT('อัปโหลดไม่สำเร็จ','Upload failed')+': '+(e&&e.message||e)); }
   hideLoading();
 }
 async function openAttachment(path){
