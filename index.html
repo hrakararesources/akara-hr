@@ -2080,6 +2080,9 @@ tbody tr:hover{background:var(--blue-lt)}
         </div>
         <div id="ai-list"></div>
       </div>
+      <div class="section-label" data-en="Attachments" data-th="ไฟล์แนบ">ไฟล์แนบ</div>
+      <div id="mf-att-list"></div>
+      <label class="btn btn-ghost btn-sm" style="margin-top:8px;cursor:pointer">📎 <span data-en="Attach file" data-th="แนบไฟล์">แนบไฟล์</span><input type="file" style="display:none" onchange="onMeetModalFile(this)"></label>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-meeting')">Cancel</button>
@@ -3294,6 +3297,7 @@ function renderRecurringList(){
         <div style="font-weight:600;font-size:13.5px">${ocEsc(rt.title)} ${rt.active?'':'<span style="font-size:11px;color:var(--muted)">('+ocT('ปิดอยู่','off')+')</span>'}</div>
         <div style="font-size:11.5px;color:var(--muted)">${ocT('ทุกวันที่','Day')} ${rt.due_day} ${ocT('ของเดือน','of month')} · ${ocEsc(who)}</div>
       </div>
+      <button class="btn btn-ghost btn-sm" onclick="recGenerateNow('${rt.id}',false)" title="${ocT('สร้างงานของเดือนนี้ทันที','Generate this month now')}">▶ ${ocT('สร้างเดือนนี้','This month')}</button>
       <button class="btn btn-ghost btn-sm" onclick="toggleRecurring('${rt.id}')">${rt.active?ocT('ปิด','Off'):ocT('เปิด','On')}</button>
       <button class="btn btn-ghost btn-sm" onclick="editRecurring('${rt.id}')">${ocT('แก้ไข','Edit')}</button>
     </div>`;
@@ -3339,9 +3343,34 @@ async function saveRecurring(){
     await sbFetch('recurring_tasks?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates',body:JSON.stringify(row)});
     await sbFetch('recurring_task_assignees?recurring_id=eq.'+id,{method:'DELETE'});
     if(asg.length) await sbFetch('recurring_task_assignees',{method:'POST',prefer:'return=minimal',body:JSON.stringify(asg.map(mid=>({recurring_id:id,member_id:mid})))});
-    toast(ocT('บันทึกแม่แบบแล้ว','Template saved'));
+    const isNew=!recEditId;
     recClearForm(); await loadRecurring();
+    if(isNew){ await recGenerateNow(id, true); }  // สร้างงานเดือนนี้ให้ทันที (พนักงานเห็นเลย)
+    renderRecurringList();
+    toast(ocT('บันทึกแม่แบบแล้ว + สร้างงานเดือนนี้','Saved + generated this month'));
   }catch(e){ toast(ocT('บันทึกไม่สำเร็จ','Failed')+': '+e.message); }
+}
+// สร้าง Task จริงของ "เดือนนี้" จากแม่แบบทันที (ฝั่ง client) — เหมือน recurring.js แต่ให้เห็นเดี๋ยวนั้น
+async function recGenerateNow(id, silent){
+  const rt=recTemplates.find(x=>x.id===id); if(!rt){ if(!silent) toast(ocT('ไม่พบแม่แบบ','Template not found')); return; }
+  const now=new Date(); const period=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  if(rt.last_period===period){ if(!silent) toast(ocT('งานเดือนนี้สร้างไปแล้ว','Already generated this month')); return; }
+  let ids=(recAssignees[id]||[]).slice(); if(!ids.length && rt.created_by) ids=[rt.created_by];
+  if(!ids.length){ if(!silent) toast(ocT('ยังไม่ได้ระบุผู้รับผิดชอบ','No assignee set')); return; }
+  const taskId=uid();
+  const due=period+'-'+String(rt.due_day||1).padStart(2,'0');
+  try{
+    await sbFetch('tasks?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates',body:JSON.stringify({id:taskId,member_id:ids[0],title:rt.title,description:rt.description||null,prio:rt.prio||'ปานกลาง',status:'รอดำเนินการ',due,prog:0,note:ocT('สร้างจากงานประจำเดือน','From monthly recurring'),created_by:rt.created_by||currentMember.id})});
+    await sbFetch('task_assignees',{method:'POST',prefer:'return=minimal',body:JSON.stringify(ids.map(mid=>({task_id:taskId,member_id:mid})))});
+    await sbFetch('notifications',{method:'POST',prefer:'return=minimal',body:JSON.stringify(ids.map(mid=>({member_id:mid,type:'task_assigned',task_id:taskId,title:ocT('งานประจำเดือนใหม่','New monthly task'),body:rt.title+' · '+due,created_by:rt.created_by||currentMember.id})))});
+    await sbFetch('recurring_tasks?id=eq.'+id,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({last_period:period})});
+    rt.last_period=period;
+    tasks.push({id:taskId,memberId:ids[0],title:rt.title,desc:rt.description||'',prio:rt.prio||'ปานกลาง',status:'รอดำเนินการ',due,prog:0,note:''});
+    taskAssignees[taskId]=ids.slice();
+    if(typeof renderMyTasks==='function') renderMyTasks();
+    if(typeof renderMyKpi==='function') renderMyKpi();
+    if(!silent) toast(ocT('สร้างงานเดือนนี้แล้ว','Task created for this month'));
+  }catch(e){ if(!silent) toast(ocT('สร้างงานไม่สำเร็จ','Generate failed')+': '+e.message); }
 }
 async function toggleRecurring(id){
   const rt=recTemplates.find(x=>x.id===id); if(!rt) return;
@@ -3847,8 +3876,10 @@ async function toggleActionItem(aiId, meetId, done) {
   } catch(e) { toast('❌ '+e.message); }
 }
 
+let meetDraftId = null;
 function openAddMeeting() {
   meetEditId = null;
+  meetDraftId = uid();   // สร้าง id ล่วงหน้า เพื่อให้แนบไฟล์ได้ตั้งแต่ตอนสร้าง
   tempActionItems = [];
   document.getElementById('meet-modal-title').textContent = lang==='th'?'บันทึกประชุม':'New Meeting Note';
   document.getElementById('mf-title').value='';
@@ -3861,8 +3892,11 @@ function openAddMeeting() {
   const sel = document.getElementById('ai-assignee');
   sel.innerHTML='<option value="">Assignee</option>'+members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
   renderTempActionItems();
+  renderMeetModalAtt();
   openModal('modal-meeting');
 }
+function renderMeetModalAtt(){ const el=document.getElementById('mf-att-list'); if(el) el.innerHTML=attListHtml('meeting', meetDraftId, 'renderMeetModalAtt'); }
+async function onMeetModalFile(input){ const f=input.files&&input.files[0]; if(!f||!meetDraftId) return; await uploadAttachment('meeting', meetDraftId, f); input.value=''; renderMeetModalAtt(); }
 
 function addActionItem() {
   const title = document.getElementById('ai-title').value.trim();
@@ -3902,7 +3936,7 @@ function removeTempAI(i) {
 async function saveMeeting() {
   const title = document.getElementById('mf-title').value.trim();
   if (!title) { alert('กรุณาระบุชื่อการประชุม'); return; }
-  const meetId = uid();
+  const meetId = meetDraftId || uid();   // ใช้ draft id เดิม (ไฟล์แนบผูกไว้แล้ว)
   const meetRow = {
     id: meetId, title,
     meeting_date: document.getElementById('mf-date').value||null,
