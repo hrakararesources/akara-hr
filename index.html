@@ -6630,17 +6630,28 @@ function rcRender(){
   }).join('')||`<tr><td colspan="7"><div style="text-align:center;color:var(--muted);padding:30px">${ocT('ไม่พบรายการ','No items')}</div></td></tr>`;
   document.getElementById('rc-count').textContent=`${rows.length} ${ocT('รายการ','items')}`;
 }
-function rcOpenModal(pid,title){ rcTargetPos=pid; document.getElementById('rc-modal-title').textContent=ocT('เปิดใบสรรหา','Open requisition')+': '+title; document.getElementById('rc-modal').style.display='flex'; }
+function rcOpenModal(pid,title){
+  rcTargetPos=pid;
+  // ล้างฟอร์มเป็นค่าเริ่มต้นทุกครั้งที่เปิด (กันค่าเก่าค้าง)
+  document.getElementById('rc-prio').value='normal';
+  document.getElementById('rc-headcount').value='1';
+  document.getElementById('rc-target').value='';
+  document.getElementById('rc-notes').value='';
+  document.getElementById('rc-modal-title').textContent=ocT('เปิดใบสรรหา','Open requisition')+': '+title;
+  document.getElementById('rc-modal').style.display='flex';
+}
+// โหลดข้อมูลใหม่โดยคงตัวกรอง/แท็บไว้ (ไม่สร้าง dropdown ใหม่)
+async function rcReload(){ try{ rcVac = await sbFetch('v_recruitment_vacancies?select=*&order=division,department')||[]; }catch(e){} rcRender(); }
 function rcCloseModal(){ document.getElementById('rc-modal').style.display='none'; rcTargetPos=null; }
 async function rcSubmitReq(){
   if(!rcTargetPos) return;
   const body={ id:ocUuid(), position_id:rcTargetPos, status:'open', priority:document.getElementById('rc-prio').value, headcount:parseInt(document.getElementById('rc-headcount').value)||1, target_start_date:document.getElementById('rc-target').value||null, notes:document.getElementById('rc-notes').value||null, opened_by:currentUser?.user?.id||null };
-  try{ await sbFetch('recruitment_requisitions',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)}); toast(ocT('เปิดใบสรรหาเรียบร้อย','Requisition opened')); rcCloseModal(); await rcInit(); }
+  try{ await sbFetch('recruitment_requisitions',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)}); toast(ocT('เปิดใบสรรหาเรียบร้อย','Requisition opened')); rcCloseModal(); await rcReload(); }
   catch(e){ toast(ocT('บันทึกไม่สำเร็จ','Failed')+': '+e.message); }
 }
 async function rcUpdateStatus(id,status){
   const body={status}; if(status==='closed') body.closed_at=new Date().toISOString();
-  try{ await sbFetch('recruitment_requisitions?id=eq.'+id,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)}); toast(ocT('อัปเดตแล้ว','Updated')); await rcInit(); }
+  try{ await sbFetch('recruitment_requisitions?id=eq.'+id,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)}); toast(ocT('อัปเดตแล้ว','Updated')); await rcReload(); }
   catch(e){ toast(ocT('อัปเดตไม่สำเร็จ','Update failed')+': '+e.message); }
 }
 
