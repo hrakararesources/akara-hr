@@ -6434,7 +6434,7 @@ function ocmAutoPos(inId,resId,chipId,onPick,onClear){
     let data=[]; try{ data=await ocmSearchPositions(q); }catch(e){ return; }
     res.innerHTML = data.length ? data.map(r=>{ const nm=ocNm(r); return `<div class="it"><div>${ocEsc(r.title)} ${nm?'— '+ocEsc(nm):`<span class="s">(${ocT('ว่าง','Vacant')})</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}</div></div>`; }).join('') : `<div class="empty">${ocT('ไม่พบตำแหน่ง','No positions found')}</div>`;
     res.style.display='block';
-    res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const r=data[i]; const nm=ocNm(r); input.value=''; res.style.display='none'; ocmChip(chipId, r.title+(nm?' — '+nm:' ('+ocT('ว่าง','Vacant')+')'), onClear); onPick({ id:r.position_id, title:r.title, reportsToObj: r.reports_to_position_id?{id:r.reports_to_position_id,title:r.reports_to_title}:null }); }); });
+    res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const r=data[i]; const nm=ocNm(r); input.value=''; res.style.display='none'; ocmChip(chipId, r.title+(nm?' — '+nm:' ('+ocT('ว่าง','Vacant')+')'), onClear); onPick({ id:r.position_id, title:r.title, status:r.status, reportsToObj: r.reports_to_position_id?{id:r.reports_to_position_id,title:r.reports_to_title}:null }); }); });
   },250); });
   document.addEventListener('click',e=>{ if(!input.contains(e.target)&&!res.contains(e.target)) res.style.display='none'; });
 }
@@ -6466,7 +6466,7 @@ function ocmSetup(){
   if(ocmSetupDone) return; ocmSetupDone=true;
   ocmAutoPos('oc-addReportsToSearch','oc-addReportsToResults','oc-addReportsToChip',(p)=>{ ocmSel.addReportsTo=p; ocmRenderChain('oc-addChain', p, document.getElementById('oc-addTitle').value||'ตำแหน่งใหม่'); }, ()=>{ ocmSel.addReportsTo=null; document.getElementById('oc-addChain').style.display='none'; });
   ocmAutoEmp('oc-addEmpSearch','oc-addEmpResults','oc-addEmpChip',(e)=>{ ocmSel.addEmp=e; }, ()=>{ ocmSel.addEmp=null; });
-  ocmAutoPos('oc-asgPosSearch','oc-asgPosResults','oc-asgPosChip',(p)=>{ ocmSel.asgPos=p; document.getElementById('oc-asgForm').style.display='block'; ocmRenderChain('oc-asgChain', p.reportsToObj, p.title); ocmAssignStatusChange(); }, ()=>{ ocmSel.asgPos=null; document.getElementById('oc-asgForm').style.display='none'; document.getElementById('oc-asgChain').style.display='none'; });
+  ocmAutoPos('oc-asgPosSearch','oc-asgPosResults','oc-asgPosChip',(p)=>{ ocmSel.asgPos=p; document.getElementById('oc-asgForm').style.display='block'; const st=document.getElementById('oc-asgStatus'); st.value=(p.status==='vacant'||p.status==='filled_pending_name')?p.status:'filled'; ocmRenderChain('oc-asgChain', p.reportsToObj, p.title); ocmAssignStatusChange(); }, ()=>{ ocmSel.asgPos=null; document.getElementById('oc-asgForm').style.display='none'; document.getElementById('oc-asgChain').style.display='none'; });
   ocmAutoEmp('oc-asgEmpSearch','oc-asgEmpResults','oc-asgEmpChip',(e)=>{ ocmSel.asgEmp=e; }, ()=>{ ocmSel.asgEmp=null; });
   ocmAutoEmp('oc-asgActSearch','oc-asgActResults','oc-asgActChip',(e)=>{ ocmSel.asgAct=e; }, ()=>{ ocmSel.asgAct=null; });
   ocmAutoPos('oc-deacPosSearch','oc-deacPosResults','oc-deacPosChip',(p)=>{ ocmSel.deacPos=p; document.getElementById('oc-deacBtn').style.display='inline-block'; }, ()=>{ ocmSel.deacPos=null; document.getElementById('oc-deacBtn').style.display='none'; });
