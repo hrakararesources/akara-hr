@@ -6403,7 +6403,7 @@ async function ocmReload(){
   }catch(e){}
 }
 
-async function ocmSearchPositions(q){ const s=encodeURIComponent(ocmSan(q)); return (await sbFetch(`v_org_chart_current?select=position_id,title,incumbent,department,division,status,reports_to_position_id,reports_to_title&is_active=eq.true&or=(title.ilike.*${s}*,incumbent.ilike.*${s}*)&limit=15`,{headers:{'Accept-Profile':'orgchart'}}))||[]; }
+async function ocmSearchPositions(q){ const s=encodeURIComponent(ocmSan(q)); return (await sbFetch(`v_org_chart_current?select=position_id,title,incumbent,incumbent_th,department,division,status,reports_to_position_id,reports_to_title&is_active=eq.true&or=(title.ilike.*${s}*,incumbent.ilike.*${s}*,incumbent_th.ilike.*${s}*)&limit=15`,{headers:{'Accept-Profile':'orgchart'}}))||[]; }
 // ค้นหา "คน" สำหรับมอบหมายตำแหน่ง = พนักงานที่มีอยู่ในผัง (orgchart.employees) + พนักงานใหม่ที่ onboard แล้ว (new_employees)
 // ไม่รับพิมพ์ชื่อลอยๆ — คนใหม่ต้องเพิ่มที่เมนู "พนักงานใหม่" ก่อน
 async function ocmSearchPeople(q){
@@ -6428,9 +6428,9 @@ function ocmAutoPos(inId,resId,chipId,onPick,onClear){
   const input=document.getElementById(inId), res=document.getElementById(resId); let timer;
   input.addEventListener('input',()=>{ clearTimeout(timer); const q=input.value.trim(); if(q.length<2){res.style.display='none';return;} timer=setTimeout(async()=>{
     let data=[]; try{ data=await ocmSearchPositions(q); }catch(e){ return; }
-    res.innerHTML = data.length ? data.map(r=>`<div class="it"><div>${ocEsc(r.title)} ${r.incumbent?'— '+ocEsc(r.incumbent):`<span class="s">(${ocT('ว่าง','Vacant')})</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}</div></div>`).join('') : `<div class="empty">${ocT('ไม่พบตำแหน่ง','No positions found')}</div>`;
+    res.innerHTML = data.length ? data.map(r=>{ const nm=ocNm(r); return `<div class="it"><div>${ocEsc(r.title)} ${nm?'— '+ocEsc(nm):`<span class="s">(${ocT('ว่าง','Vacant')})</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}</div></div>`; }).join('') : `<div class="empty">${ocT('ไม่พบตำแหน่ง','No positions found')}</div>`;
     res.style.display='block';
-    res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const r=data[i]; input.value=''; res.style.display='none'; ocmChip(chipId, r.title+(r.incumbent?' — '+r.incumbent:' ('+ocT('ว่าง','Vacant')+')'), onClear); onPick({ id:r.position_id, title:r.title, reportsToObj: r.reports_to_position_id?{id:r.reports_to_position_id,title:r.reports_to_title}:null }); }); });
+    res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const r=data[i]; const nm=ocNm(r); input.value=''; res.style.display='none'; ocmChip(chipId, r.title+(nm?' — '+nm:' ('+ocT('ว่าง','Vacant')+')'), onClear); onPick({ id:r.position_id, title:r.title, reportsToObj: r.reports_to_position_id?{id:r.reports_to_position_id,title:r.reports_to_title}:null }); }); });
   },250); });
   document.addEventListener('click',e=>{ if(!input.contains(e.target)&&!res.contains(e.target)) res.style.display='none'; });
 }
