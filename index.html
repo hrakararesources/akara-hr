@@ -6297,26 +6297,30 @@ function ocRenderChart(focus){
   if(!root){ cv.innerHTML=`<div class="oc-empty">${ocT('ไม่มีข้อมูล','No data')}</div>`; return; }
   const MAXD=ocChartDepth;
   const BW=200,BH=132,SLOT=218,VGAP=54,PADT=12,PADL=10;
-  const GCOLS=6,GMIN=7,GVGAP=14;   // ลูกน้อง leaf ≥ GMIN คน → พับเป็นตาราง GCOLS คอลัมน์ใต้หัวหน้า
-  const nodes=[],depth=new Map(),grid=new Map(),grow=new Map(),xs=new Map(),width=new Map();
-  (function rec(n,d){ nodes.push(n); depth.set(n.position_id,d);
-    const kids=d<MAXD?n.children:[];
-    grid.set(n.position_id, kids.length>=GMIN && kids.every(k=> d+1>=MAXD || k.children.length===0));
-    kids.forEach(c=>rec(c,d+1)); })(root,0);
-  (function w(n){ const d=depth.get(n.position_id); const kids=d<MAXD?n.children:[];
+  const GCOLS=6,GMIN=7,GVGAP=14;   // ลูกน้อง leaf ≥ GMIN → พับเป็นตาราง GCOLS คอลัมน์ (ทำได้ทุก level แม้ลูกปนหัวหน้าย่อย)
+  const nodes=[],depth=new Map(),gridC=new Map(),gridLeaves=new Map(),grow=new Map(),xs=new Map(),width=new Map();
+  const kidsOf=(n,d)=> d<MAXD ? n.children : [];
+  const isLeaf=(n,d)=> d+1>=MAXD || n.children.length===0;
+  (function rec(n,d){ nodes.push(n); depth.set(n.position_id,d); kidsOf(n,d).forEach(c=>rec(c,d+1)); })(root,0);
+  (function w(n){ const d=depth.get(n.position_id); const kids=kidsOf(n,d);
     if(!kids.length){ width.set(n.position_id,1); return 1; }
-    if(grid.get(n.position_id)){ const c=Math.min(GCOLS,kids.length); kids.forEach(k=>width.set(k.position_id,1)); width.set(n.position_id,c); return c; }
-    let s=0; kids.forEach(k=>s+=w(k)); s=Math.max(1,s); width.set(n.position_id,s); return s; })(root);
-  (function ax(n,left){ const d=depth.get(n.position_id); const kids=d<MAXD?n.children:[];
+    const leaves=kids.filter(k=>isLeaf(k,d+1)), branches=kids.filter(k=>!isLeaf(k,d+1));
+    let bw=0; branches.forEach(b=>bw+=w(b));
+    let lw;
+    if(leaves.length>=GMIN){ const c=Math.min(GCOLS,leaves.length); gridC.set(n.position_id,c); gridLeaves.set(n.position_id,leaves); leaves.forEach(k=>width.set(k.position_id,1)); lw=c; }
+    else { leaves.forEach(k=>width.set(k.position_id,1)); lw=leaves.length; }
+    const tot=Math.max(1,bw+lw); width.set(n.position_id,tot); return tot; })(root);
+  (function ax(n,left){ const d=depth.get(n.position_id); const kids=kidsOf(n,d);
     if(!kids.length){ xs.set(n.position_id,left); return; }
-    if(grid.get(n.position_id)){ const c=Math.min(GCOLS,kids.length);
-      kids.forEach((k,i)=>{ xs.set(k.position_id,left+(i%c)); grow.set(k.position_id,Math.floor(i/c)); });
-      xs.set(n.position_id,left+(c-1)/2); return; }
-    let cur=left; kids.forEach(k=>{ ax(k,cur); cur+=width.get(k.position_id); });
+    const leaves=kids.filter(k=>isLeaf(k,d+1)), branches=kids.filter(k=>!isLeaf(k,d+1));
+    let cur=left; branches.forEach(b=>{ ax(b,cur); cur+=width.get(b.position_id); });
+    const c=gridC.get(n.position_id);
+    if(c){ leaves.forEach((k,i)=>{ xs.set(k.position_id, cur+(i%c)); grow.set(k.position_id, Math.floor(i/c)); }); cur+=c; }
+    else { leaves.forEach(k=>{ xs.set(k.position_id,cur); cur++; }); }
     const a=kids.map(k=>xs.get(k.position_id)); xs.set(n.position_id,(Math.min(...a)+Math.max(...a))/2); })(root,0);
   const maxD=Math.max(...nodes.map(n=>depth.get(n.position_id)));
   const rowH=new Array(maxD+1).fill(BH);
-  nodes.forEach(n=>{ if(grid.get(n.position_id)){ const cnt=n.children.length, c=Math.min(GCOLS,cnt), rows=Math.ceil(cnt/c); const bh=rows*BH+(rows-1)*GVGAP, cd=depth.get(n.position_id)+1; if(cd<=maxD) rowH[cd]=Math.max(rowH[cd],bh); } });
+  nodes.forEach(n=>{ const c=gridC.get(n.position_id); if(c){ const cnt=gridLeaves.get(n.position_id).length, rows=Math.ceil(cnt/c); const bh=rows*BH+(rows-1)*GVGAP, cd=depth.get(n.position_id)+1; if(cd<=maxD) rowH[cd]=Math.max(rowH[cd],bh); } });
   const rowY=new Array(maxD+1); rowY[0]=PADT; for(let d=1;d<=maxD;d++) rowY[d]=rowY[d-1]+rowH[d-1]+VGAP;
   const yOf=n=>{ const pid=n.position_id; return grow.has(pid) ? rowY[depth.get(pid)]+grow.get(pid)*(BH+GVGAP) : rowY[depth.get(pid)]; };
   const xpx=n=>PADL+xs.get(n.position_id)*SLOT;
@@ -6325,12 +6329,12 @@ function ocRenderChart(focus){
   const boxes=nodes.map(n=>`<div class="oc-tnode" style="left:${xpx(n)}px;top:${yOf(n)}px">${ocChartBox(n)}</div>`).join('');
   let paths='';
   nodes.forEach(n=>{ if(n===root) return; const p=ocById.get(n.reports_to_position_id); if(!p||!xs.has(p.position_id)) return;
-    if(grid.get(p.position_id)&&grow.has(n.position_id)) return;
+    if(grow.has(n.position_id)) return;
     const cx=xpx(n)+BW/2,ct=yOf(n),px=xpx(p)+BW/2,pb=yOf(p)+BH,bus=pb+VGAP/2;
     paths+=`<path d="M${px} ${pb} V${bus} H${cx} V${ct}" fill="none" stroke="#b9c2d6" stroke-width="1.5"/>`; });
-  nodes.forEach(P=>{ if(!grid.get(P.position_id)) return; const cnt=P.children.length, c=Math.min(GCOLS,cnt), d=depth.get(P.position_id), cd=d+1; if(cd>maxD) return;
-    const left=xs.get(P.position_id)-(c-1)/2, blockTop=rowY[cd], busY=blockTop-18, Px=xpx(P)+BW/2, Pb=yOf(P)+BH;
-    const colX=cc=>PADL+(left+cc)*SLOT+BW/2, cols0=Math.min(c,cnt);
+  nodes.forEach(P=>{ const c=gridC.get(P.position_id); if(!c) return; const leaves=gridLeaves.get(P.position_id), cnt=leaves.length, d=depth.get(P.position_id), cd=d+1; if(cd>maxD) return;
+    const blockLeft=xs.get(leaves[0].position_id), blockTop=rowY[cd], busY=blockTop-18, Px=xpx(P)+BW/2, Pb=yOf(P)+BH;
+    const colX=cc=>PADL+(blockLeft+cc)*SLOT+BW/2, cols0=Math.min(c,cnt);
     paths+=`<path d="M${Px} ${Pb} V${busY}" fill="none" stroke="#b9c2d6" stroke-width="1.5"/>`;
     paths+=`<path d="M${colX(0)} ${busY} H${colX(cols0-1)}" fill="none" stroke="#b9c2d6" stroke-width="1.5"/>`;
     for(let cc=0;cc<cols0;cc++){ const lastRow=Math.floor((cnt-1-cc)/c), bottom=blockTop+lastRow*(BH+GVGAP)+BH; paths+=`<path d="M${colX(cc)} ${busY} V${bottom}" fill="none" stroke="#e0e5ee" stroke-width="1.2"/>`; }
