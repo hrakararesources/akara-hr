@@ -6413,11 +6413,11 @@ async function ocmSearchPositions(q){ const s=encodeURIComponent(ocmSan(q)); ret
 async function ocmSearchPeople(q){
   const s=encodeURIComponent(ocmSan(q));
   const [orgEmps,newHires]=await Promise.all([
-    sbFetch(`employees?select=id,full_name,employee_code&full_name=ilike.*${s}*&is_active=eq.true&order=full_name&limit=8`,{headers:{'Accept-Profile':'orgchart'}}).catch(()=>[]),
+    sbFetch(`employees?select=id,full_name,full_name_th,employee_code&or=(full_name.ilike.*${s}*,full_name_th.ilike.*${s}*)&is_active=eq.true&order=full_name&limit=8`,{headers:{'Accept-Profile':'orgchart'}}).catch(()=>[]),
     sbFetch(`new_employees?select=id,employee_id,full_name_th,full_name_en,nickname&or=(full_name_th.ilike.*${s}*,full_name_en.ilike.*${s}*,nickname.ilike.*${s}*)&limit=8`).catch(()=>[])
   ]);
   const list=[]; const byKey=new Map();
-  (orgEmps||[]).forEach(e=>{ const o={src:'org',orgId:e.id,name:e.full_name,code:e.employee_code,nickname:null,nameTh:null,nameEn:null}; list.push(o); if(e.employee_code) byKey.set('c:'+e.employee_code,o); byKey.set('n:'+e.full_name,o); });
+  (orgEmps||[]).forEach(e=>{ const o={src:'org',orgId:e.id,name:e.full_name||e.full_name_th,code:e.employee_code,nickname:null,nameTh:e.full_name_th||null,nameEn:e.full_name||null}; list.push(o); if(e.employee_code) byKey.set('c:'+e.employee_code,o); if(e.full_name) byKey.set('n:'+e.full_name,o); });
   (newHires||[]).forEach(n=>{ const th=n.full_name_th, en=n.full_name_en, disp=th||en; if(!disp) return;
     // ถ้าคนนี้มีอยู่ในผังแล้ว (จับด้วยรหัส/ชื่อ) → เติมชื่อ 2 ภาษาให้ entry เดิม เพื่อให้ heal ได้ตอนบันทึก
     const m=(n.employee_id&&byKey.get('c:'+n.employee_id))||(th&&byKey.get('n:'+th))||(en&&byKey.get('n:'+en));
@@ -6443,7 +6443,7 @@ function ocmAutoEmp(inId,resId,chipId,onPick,onClear){
   input.addEventListener('input',()=>{ clearTimeout(timer); const q=input.value.trim(); if(q.length<2){res.style.display='none';return;} timer=setTimeout(async()=>{
     let data=[]; try{ data=await ocmSearchPeople(q); }catch(e){ data=[]; }
     res.innerHTML = data.length
-      ? data.map(p=>`<div class="it"><div>${ocEsc(p.name)}${p.nickname?' ('+ocEsc(p.nickname)+')':''} ${p.src==='new'?`<span class="s" style="color:var(--green)">• ${ocT('พนักงานใหม่','New hire')}</span>`:(p.code?`<span class="s">${ocEsc(p.code)}</span>`:'')}</div></div>`).join('')
+      ? data.map(p=>`<div class="it"><div>${ocEsc(p.name)}${p.nameTh&&p.nameTh!==p.name?' <span class="s">'+ocEsc(p.nameTh)+'</span>':''}${p.nickname?' ('+ocEsc(p.nickname)+')':''} ${p.src==='new'?`<span class="s" style="color:var(--green)">• ${ocT('พนักงานใหม่','New hire')}</span>`:(p.code?`<span class="s">${ocEsc(p.code)}</span>`:'')}</div></div>`).join('')
       : `<div class="empty">${ocT('ไม่พบชื่อ — กรุณาเพิ่มที่เมนู "พนักงานใหม่" ก่อน','Not found — add via the New Employees menu first')}</div>`;
     res.style.display='block';
     res.querySelectorAll('.it').forEach((el,i)=>{ if(!data.length)return; el.addEventListener('click',()=>{ const p=data[i]; input.value=''; res.style.display='none'; ocmChip(chipId, p.name+(p.nickname?' ('+p.nickname+')':''), onClear); onPick(p); }); });
