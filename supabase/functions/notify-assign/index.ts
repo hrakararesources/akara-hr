@@ -1,5 +1,5 @@
 // ============================================================================
-// notify-assign — ส่งอีเมล "ทันที" เมื่อถูกมอบหมายงาน
+// notify-assign — ส่งอีเมล "ทันที" เมื่อถูกมอบหมายงาน หรือมีกิจกรรม HR ใหม่
 //   ทริกโดย Database Webhook: ตาราง public.notifications · INSERT
 //   ส่งผ่าน Microsoft 365 (Microsoft Graph API · client credentials)
 //   แล้ว set notifications.emailed = true (กัน cron ส่งซ้ำ)
@@ -39,7 +39,21 @@ async function graphToken(): Promise<string> {
   return (await res.json()).access_token
 }
 
-function emailHtml(name: string, n: any): string {
+// หัวข้อ/ข้อความ ต่างกันตามชนิดแจ้งเตือน (งานที่ถูกมอบหมาย vs กิจกรรม HR ใหม่)
+const KIND: Record<string, { subject: string; heading: string; fallback: string }> = {
+  task_assigned: {
+    subject: "📨 คุณได้รับมอบหมายงานใหม่ — Akara HR",
+    heading: "📨 คุณได้รับมอบหมายงานใหม่",
+    fallback: "งานใหม่",
+  },
+  event_created: {
+    subject: "🗓️ มีกิจกรรม HR ใหม่ — Akara HR",
+    heading: "🗓️ มีกิจกรรม HR ใหม่ในปฏิทิน",
+    fallback: "กิจกรรมใหม่",
+  },
+}
+
+function emailHtml(name: string, n: any, kind: typeof KIND[string]): string {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
   <body style="font-family:'Sarabun','IBM Plex Sans Thai',Arial,sans-serif;background:#f2f4f8;margin:0;padding:20px">
     <div style="max-width:600px;margin:0 auto">
@@ -49,9 +63,9 @@ function emailHtml(name: string, n: any): string {
         <div style="width:36px;height:3px;background:#F5C02B;border-radius:2px;margin:12px auto 0"></div>
       </div>
       <div style="background:#fff;padding:28px 32px">
-        <div style="font-size:18px;font-weight:600;color:#1a1e2e;margin-bottom:6px">📨 คุณได้รับมอบหมายงานใหม่</div>
+        <div style="font-size:18px;font-weight:600;color:#1a1e2e;margin-bottom:6px">${kind.heading}</div>
         <div style="font-size:14px;color:#6b7899;margin-bottom:16px">สวัสดีคุณ <strong style="color:#1a1e2e">${esc(name)}</strong></div>
-        <div style="padding:14px 16px;background:#f2f4f8;border-radius:8px;border-left:4px solid #2B5BAE;font-size:14px;color:#1a2b4a;font-weight:600">${esc(n.body || n.title || "งานใหม่")}</div>
+        <div style="padding:14px 16px;background:#f2f4f8;border-radius:8px;border-left:4px solid #2B5BAE;font-size:14px;color:#1a2b4a;font-weight:600">${esc(n.body || n.title || kind.fallback)}</div>
         <div style="margin-top:20px;text-align:center">
           <a href="${APP_URL}" style="display:inline-block;padding:12px 28px;background:#2B5BAE;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">เปิดระบบ HR Task Board →</a>
         </div>
@@ -70,7 +84,8 @@ Deno.serve(async (req) => {
     }
     const body = await req.json()
     const n = body?.record ?? body
-    if (!n || n.type !== "task_assigned" || !n.member_id) return new Response("skip", { status: 200 })
+    const kind = n?.type ? KIND[n.type] : undefined
+    if (!n || !kind || !n.member_id) return new Response("skip", { status: 200 })
     if (n.emailed === true) return new Response("already emailed", { status: 200 })
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
@@ -88,8 +103,8 @@ Deno.serve(async (req) => {
         headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           message: {
-            subject: "📨 คุณได้รับมอบหมายงานใหม่ — Akara HR",
-            body: { contentType: "HTML", content: emailHtml(m.name || "", n) },
+            subject: kind.subject,
+            body: { contentType: "HTML", content: emailHtml(m.name || "", n, kind) },
             toRecipients: [{ emailAddress: { address: m.email } }],
           },
           saveToSentItems: false,

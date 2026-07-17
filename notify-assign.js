@@ -1,5 +1,5 @@
-// notify-assign.js — Email when a task is assigned (via Microsoft Graph API)
-// รันโดย GitHub Actions ทุก ~15 นาที: อ่านแจ้งเตือน type=task_assigned ที่ยังไม่ส่งอีเมล
+// notify-assign.js — Email when a task is assigned / an HR event is created (via Microsoft Graph API)
+// รันโดย GitHub Actions ทุก ~15 นาที: อ่านแจ้งเตือน type=task_assigned | event_created ที่ยังไม่ส่งอีเมล
 // (notifications.emailed=false) → ส่งอีเมลถึงพนักงานผ่าน MS365 Graph → mark emailed=true
 //
 // Secrets ที่ต้องมี:
@@ -57,7 +57,23 @@ async function sendMail(token, to, subject, html) {
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function emailHtml(name, list) {
+// หัวข้อ/ข้อความ ต่างกันตามชนิดแจ้งเตือน (งานที่ถูกมอบหมาย vs กิจกรรม HR ใหม่)
+const KIND = {
+  task_assigned: {
+    subject: n => `📨 คุณได้รับมอบหมายงานใหม่ (${n}) — Akara HR`,
+    heading: '📨 คุณได้รับมอบหมายงานใหม่',
+    intro: n => `มี ${n} งานที่เพิ่งได้รับมอบหมายให้คุณ`,
+    col: 'งาน',
+  },
+  event_created: {
+    subject: n => `🗓️ มีกิจกรรม HR ใหม่ (${n}) — Akara HR`,
+    heading: '🗓️ มีกิจกรรม HR ใหม่ในปฏิทิน',
+    intro: n => `มี ${n} กิจกรรมใหม่ถูกเพิ่มเข้าปฏิทินกิจกรรม HR`,
+    col: 'กิจกรรม',
+  },
+};
+
+function emailHtml(name, list, kind) {
   const rows = list.map(n => `
     <tr>
       <td style="padding:10px 14px;border-bottom:1px solid #eee;font-weight:600">${esc(n.body||n.title||'งานใหม่')}</td>
@@ -72,11 +88,11 @@ function emailHtml(name, list) {
       <div style="width:36px;height:3px;background:#F5C02B;border-radius:2px;margin:12px auto 0"></div>
     </div>
     <div style="background:#fff;padding:28px 32px">
-      <div style="font-size:18px;font-weight:600;color:#1a1e2e;margin-bottom:6px">📨 คุณได้รับมอบหมายงานใหม่</div>
-      <div style="font-size:14px;color:#6b7899;margin-bottom:20px">สวัสดีคุณ <strong style="color:#1a1e2e">${esc(name)}</strong> — มี ${list.length} งานที่เพิ่งได้รับมอบหมายให้คุณ</div>
+      <div style="font-size:18px;font-weight:600;color:#1a1e2e;margin-bottom:6px">${kind.heading}</div>
+      <div style="font-size:14px;color:#6b7899;margin-bottom:20px">สวัสดีคุณ <strong style="color:#1a1e2e">${esc(name)}</strong> — ${kind.intro(list.length)}</div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr style="background:#f2f4f8">
-          <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7899">งาน</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7899">${kind.col}</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7899">วันที่</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -93,29 +109,33 @@ function emailHtml(name, list) {
 }
 
 async function main() {
-  console.log('🚀 Assign-notification email (Graph) run...');
-  const notifs = await sb(`notifications?type=eq.task_assigned&emailed=eq.false&select=id,member_id,title,body,task_id,created_at&order=created_at`);
-  if (!Array.isArray(notifs) || !notifs.length) { console.log('✅ No new assignment notifications to email.'); return; }
-  console.log(`📋 Found ${notifs.length} unemailed assignment notification(s)`);
+  console.log('🚀 Assign/event-notification email (Graph) run...');
+  const types = Object.keys(KIND).join(',');
+  const notifs = await sb(`notifications?type=in.(${types})&emailed=eq.false&select=id,member_id,type,title,body,task_id,created_at&order=created_at`);
+  if (!Array.isArray(notifs) || !notifs.length) { console.log('✅ No new notifications to email.'); return; }
+  console.log(`📋 Found ${notifs.length} unemailed notification(s)`);
 
   const members = await sb('members?select=id,name,email');
   const memberMap = {};
   (members||[]).forEach(m => { memberMap[m.id] = m; });
 
-  const byMember = {};
-  notifs.forEach(n => { (byMember[n.member_id] = byMember[n.member_id] || []).push(n); });
+  // จัดกลุ่มตาม member + type — คนหนึ่งอาจได้ทั้งอีเมลงานใหม่และอีเมลกิจกรรมใหม่ในรอบเดียว
+  const groups = {};
+  notifs.forEach(n => { (groups[n.member_id + '|' + n.type] = groups[n.member_id + '|' + n.type] || []).push(n); });
 
   const token = await graphToken();
   const doneIds = [];
   let sent = 0, failed = 0;
 
-  for (const [memberId, list] of Object.entries(byMember)) {
+  for (const [key, list] of Object.entries(groups)) {
+    const [memberId, type] = key.split('|');
     const member = memberMap[memberId];
+    const kind = KIND[type];
     if (!member || !member.email) { list.forEach(n => doneIds.push(n.id)); console.log(`⚠️  No email for member ${memberId}, skip (${list.length})`); continue; }
     try {
-      await sendMail(token, member.email, `📨 คุณได้รับมอบหมายงานใหม่ (${list.length}) — Akara HR`, emailHtml(member.name, list));
+      await sendMail(token, member.email, kind.subject(list.length), emailHtml(member.name, list, kind));
       list.forEach(n => doneIds.push(n.id));
-      console.log(`✅ Sent to ${member.name} <${member.email}> (${list.length})`);
+      console.log(`✅ Sent ${type} to ${member.name} <${member.email}> (${list.length})`);
       sent++;
     } catch (e) { console.error(`❌ Failed to ${member.email}:`, e.message); failed++; }
   }

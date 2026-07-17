@@ -6757,6 +6757,24 @@ function calOpenModal(ev, ds){
   document.getElementById('cal-modal').style.display='flex';
 }
 function calCloseModal(){ document.getElementById('cal-modal').style.display='none'; calEditId=null; }
+// แจ้งเตือนสมาชิกทุกคน (ยกเว้นผู้สร้าง) เมื่อมีกิจกรรม HR ใหม่ — cron notify-assign จะหยิบไปส่งอีเมลต่อ
+async function calNotifyNewEvent(row){
+  try{
+    const recipients=(members||[]).filter(m=>m.id!==currentMember.id);
+    if(!recipients.length) return;
+    const when=calFmtDate(row.event_date)+(row.end_date&&row.end_date!==row.event_date?' – '+calFmtDate(row.end_date):'');
+    const body=row.title+' · '+when+(row.location?' · '+row.location:'');
+    await sbFetch('notifications',{method:'POST',prefer:'return=minimal',body:JSON.stringify(recipients.map(m=>({
+      member_id:m.id, type:'event_created',
+      title:ocT('กิจกรรม HR ใหม่','New HR event'),
+      body, created_by:currentMember.id
+    })))});
+  }catch(e){ console.warn('event notif error:', e.message); }
+}
+function calFmtDate(d){
+  if(!d) return '';
+  return new Date(d).toLocaleDateString(lang==='th'?'th-TH':'en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
 async function calSaveEvent(){
   const title=document.getElementById('cal-f-title').value.trim();
   const date=document.getElementById('cal-f-date').value;
@@ -6765,7 +6783,7 @@ async function calSaveEvent(){
   const row={ title, type:document.getElementById('cal-f-type').value, event_date:date, end_date:document.getElementById('cal-f-end').value||null, location:document.getElementById('cal-f-loc').value.trim()||null, description:document.getElementById('cal-f-desc').value.trim()||null };
   try{
     if(calEditId){ await sbFetch('hr_events?id=eq.'+calEditId,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(row)}); }
-    else { row.created_by=currentMember.id; await sbFetch('hr_events',{method:'POST',prefer:'return=minimal',body:JSON.stringify(row)}); }
+    else { row.created_by=currentMember.id; await sbFetch('hr_events',{method:'POST',prefer:'return=minimal',body:JSON.stringify(row)}); await calNotifyNewEvent(row); }
     toast(ocT('บันทึกกิจกรรมแล้ว','Event saved')); calCloseModal(); await calLoad();
   }catch(e){ toast(ocT('บันทึกไม่สำเร็จ','Failed')+': '+e.message); }
 }

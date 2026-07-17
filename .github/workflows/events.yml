@@ -1,0 +1,32 @@
+name: HR Event Reminder
+
+on:
+  schedule:
+    # รันทุกวัน เวลา 08:00 น. (UTC+7 = 01:00 UTC) — เตือนกิจกรรมที่จะถึงในวันพรุ่งนี้
+    - cron: '0 1 * * *'
+  workflow_dispatch: # รันมือได้สำหรับทดสอบ
+
+jobs:
+  events:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Send HR event reminders
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          GRAPH_SENDER: ${{ secrets.GRAPH_SENDER }}
+        run: node events.js
