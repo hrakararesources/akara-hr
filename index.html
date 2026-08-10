@@ -994,6 +994,8 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-orgchart .ocb-info { min-width:0; flex:1; }
 #page-orgchart .ocb-name { font-weight:700; font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #page-orgchart .ocb-name.vac { color:var(--red); font-weight:600; }
+#page-orgchart .ocb-code { font-size:10.5px; color:var(--muted); font-weight:600; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+#page-orgchart .oc-ccode { font-size:11.5px; color:var(--muted); font-weight:600; margin-left:6px; }
 #page-orgchart .ocb-title { font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 #page-orgchart .ocb-title2 { font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 #page-orgchart .oc-tnode { position:absolute; width:200px; z-index:1; }
@@ -1060,6 +1062,18 @@ tbody tr:hover{background:var(--blue-lt)}
 #page-recruitment table.rc-table{width:100%;border-collapse:collapse;font-size:13.5px;}
 #page-recruitment .rc-table th{text-align:left;padding:9px 10px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;}
 #page-recruitment .rc-table td{padding:9px 10px;border-bottom:1px solid var(--border);}
+/* Bulk import preview table */
+.imp-table th{text-align:left;padding:7px 9px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;white-space:nowrap;}
+.imp-table td{padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:top;}
+.imp-table tr.imp-err td{background:var(--red-lt);}
+.imp-b{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+.imp-b-new{background:var(--green-lt);color:var(--green);}
+.imp-b-upd{background:var(--blue-lt);color:var(--blue);}
+.imp-b-warn{background:var(--orange-lt);color:var(--orange);}
+.imp-b-err{background:var(--red-lt);color:var(--red);}
+.imp-note{color:var(--muted);font-size:11.5px;line-height:1.5;}
+.imp-stat{padding:5px 12px;border-radius:8px;font-size:12.5px;font-weight:600;}
+
 #page-recruitment .rc-badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:500;}
 #page-recruitment .rc-b-none{background:var(--gray);color:var(--muted);}
 #page-recruitment .rc-b-open{background:var(--blue-lt);color:var(--blue);}
@@ -1541,6 +1555,9 @@ tbody tr:hover{background:var(--blue-lt)}
 
       <!-- Assign / Move -->
       <div id="oc-view-assign" class="oc-form" style="display:none;max-width:760px">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <button class="btn btn-ghost btn-sm" onclick="openImportNewEmp()" data-en="⬆ Bulk import from Excel" data-th="⬆ นำเข้าพนักงานหลายคนจาก Excel">⬆ นำเข้าพนักงานหลายคนจาก Excel</button>
+        </div>
         <label data-en="Position to edit" data-th="ตำแหน่งที่จะแก้ไข">ตำแหน่งที่จะแก้ไข</label>
         <div class="oc-acwrap"><input type="text" id="oc-asgPosSearch" placeholder="ค้นหาชื่อตำแหน่ง/ชื่อผู้ดำรงตำแหน่งปัจจุบัน..."><div class="oc-ac" id="oc-asgPosResults" style="display:none"></div></div>
         <div id="oc-asgPosChip"></div>
@@ -2150,6 +2167,85 @@ tbody tr:hover{background:var(--blue-lt)}
     <button class="btn btn-primary" onclick="saveNewEmp()">บันทึก</button>
   </div>
  </div>
+</div>
+
+<!-- BULK IMPORT EMPLOYEES MODAL -->
+<div class="overlay" id="modal-import-emp">
+  <div class="modal" style="max-width:1040px">
+    <div class="modal-head">
+      <h3 id="imp-title">⬆ นำเข้าพนักงานจากไฟล์ Excel / CSV</h3>
+      <button class="modal-close" onclick="closeModal('modal-import-emp')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- STEP 1: pick file -->
+      <div id="imp-step1">
+        <div class="fg full" style="margin-bottom:14px">
+          <label>นำเข้าไปที่ไหน</label>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:13.5px">
+            <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-weight:400">
+              <input type="radio" name="imp-target" value="both" checked style="margin-top:3px">
+              <span><b>ทั้งสองที่</b> — ผังองค์กร + รายการพนักงานใหม่ (Onboarding)</span></label>
+            <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-weight:400">
+              <input type="radio" name="imp-target" value="org" style="margin-top:3px">
+              <span><b>ผังองค์กรอย่างเดียว</b> — พนักงานปัจจุบัน ไม่ต้องติดตาม Probation</span></label>
+            <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-weight:400">
+              <input type="radio" name="imp-target" value="new" style="margin-top:3px">
+              <span><b>พนักงานใหม่อย่างเดียว</b> — เข้าระบบ Onboarding/Probation</span></label>
+          </div>
+        </div>
+        <div class="fg full" style="margin-bottom:14px">
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400;cursor:pointer">
+            <input type="checkbox" id="imp-overwrite">
+            <span>แทนที่ผู้ดำรงตำแหน่งเดิม ถ้าตำแหน่งในไฟล์มีคนอยู่แล้ว (ประวัติเดิมยังถูกเก็บไว้)</span>
+          </label>
+        </div>
+        <div style="background:var(--bg);border:1px dashed var(--border);border-radius:10px;padding:18px;text-align:center">
+          <input type="file" id="imp-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="impFilePicked(this)">
+          <button class="btn btn-gold" onclick="document.getElementById('imp-file').click()">📄 เลือกไฟล์ (.xlsx / .csv)</button>
+          <div style="margin-top:10px;font-size:12.5px;color:var(--muted)">
+            ยังไม่มีไฟล์? <a href="#" onclick="impDownloadTemplate();return false;" style="color:var(--blue);font-weight:600">ดาวน์โหลดเทมเพลต</a>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:var(--muted);line-height:1.75">
+          <b>คอลัมน์ที่รองรับ</b> (แถวแรกของไฟล์ต้องเป็นชื่อหัวคอลัมน์ — สลับลำดับได้ ตัดคอลัมน์ที่ไม่ใช้ออกได้):<br>
+          รหัสพนักงาน · ชื่อ-นามสกุล (TH) · ชื่อ-นามสกุล (EN) · ชื่อเล่น · วันเริ่มงาน · ระยะทดลองงาน (วัน) ·
+          ตำแหน่ง (TH) · ตำแหน่ง (EN) · ฝ่าย · <b>ตำแหน่งในผังองค์กร</b> · สถานะ · หมายเหตุ<br>
+          <span style="color:var(--red)">จำเป็น:</span> ชื่อ-นามสกุล (TH หรือ EN) และ วันเริ่มงาน (เฉพาะเมื่อนำเข้าพนักงานใหม่)
+        </div>
+      </div>
+
+      <!-- STEP 2: preview -->
+      <div id="imp-step2" style="display:none">
+        <div id="imp-summary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
+        <div style="max-height:46vh;overflow:auto;border:1px solid var(--border);border-radius:8px">
+          <table class="imp-table" style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead><tr>
+              <th>#</th><th>สถานะ</th><th>รหัส</th><th>ชื่อ (TH)</th><th>ชื่อ (EN)</th>
+              <th>วันเริ่มงาน</th><th>ตำแหน่งในผัง</th><th>หมายเหตุตรวจสอบ</th>
+            </tr></thead>
+            <tbody id="imp-rows"></tbody>
+          </table>
+        </div>
+        <div id="imp-progress" style="display:none;margin-top:12px">
+          <div style="height:8px;background:var(--border);border-radius:99px;overflow:hidden">
+            <div id="imp-bar" style="height:100%;width:0;background:var(--gold);transition:width .2s"></div>
+          </div>
+          <div id="imp-progress-text" style="font-size:12.5px;color:var(--muted);margin-top:6px"></div>
+        </div>
+      </div>
+
+      <!-- STEP 3: result -->
+      <div id="imp-step3" style="display:none"></div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn btn-ghost btn-sm" id="imp-back" style="display:none" onclick="impBack()">← เลือกไฟล์ใหม่</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('modal-import-emp')" id="imp-close">ปิด</button>
+        <button class="btn btn-primary" id="imp-run" style="display:none" onclick="impRun()">ยืนยันนำเข้า</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS ITEM MODAL -->
@@ -5617,8 +5713,354 @@ async function deleteNewEmp() {
   } catch(e) { toast('❌ '+e.message); }
 }
 
+// ===================== BULK IMPORT EMPLOYEES (Excel / CSV) =====================
+// นำเข้าพนักงานทีละหลายคน → orgchart.employees (ผัง) และ/หรือ new_employees (onboarding)
+// ถ้าไฟล์มีคอลัมน์ชื่อตำแหน่ง จะจับคู่กับตำแหน่งในผังแล้วตั้งสถานะเป็น filled ให้อัตโนมัติ
+let impRows = [];        // แถวที่ผ่านการตรวจแล้ว (พร้อม resolution)
+let impCtx  = null;      // { target, overwrite, usedJobAsPosition }
+
 function openImportNewEmp() {
-  toast(lang==='th'?'ฟีเจอร์ Import Excel สำหรับพนักงานใหม่ — เร็วๆ นี้':'Import Excel for new employees — Coming soon');
+  impRows = []; impCtx = null;
+  document.getElementById('imp-file').value = '';
+  document.getElementById('imp-step1').style.display = 'block';
+  document.getElementById('imp-step2').style.display = 'none';
+  document.getElementById('imp-step3').style.display = 'none';
+  document.getElementById('imp-step3').innerHTML = '';
+  document.getElementById('imp-run').style.display = 'none';
+  document.getElementById('imp-back').style.display = 'none';
+  document.getElementById('imp-progress').style.display = 'none';
+  openModal('modal-import-emp');
+}
+function impBack() { openImportNewEmp(); }
+
+// โหลด SheetJS แบบ lazy (ใช้ตอนกดนำเข้าเท่านั้น ไม่ถ่วงเวลาเปิดเว็บ)
+let impXlsxPromise = null;
+function impLoadXLSX() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (impXlsxPromise) return impXlsxPromise;
+  impXlsxPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload = () => resolve(window.XLSX);
+    s.onerror = () => { impXlsxPromise = null; reject(new Error('โหลดตัวอ่านไฟล์ Excel ไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต')); };
+    document.head.appendChild(s);
+  });
+  return impXlsxPromise;
+}
+
+const IMP_TEMPLATE_HEADERS = ['รหัสพนักงาน','ชื่อ-นามสกุล (TH)','ชื่อ-นามสกุล (EN)','ชื่อเล่น','วันเริ่มงาน','ระยะทดลองงาน (วัน)','ตำแหน่ง (TH)','ตำแหน่ง (EN)','ฝ่าย','ตำแหน่งในผังองค์กร','สถานะ','หมายเหตุ'];
+async function impDownloadTemplate() {
+  try {
+    const XLSX = await impLoadXLSX();
+    const aoa = [IMP_TEMPLATE_HEADERS,
+      ['AKR25001','นาย สมชาย ใจดี','Mr. Somchai Jaidee','ชาย','2025-01-15',119,'เจ้าหน้าที่บุคคล','HR Officer','ทรัพยากรบุคคล','HR Officer','probation',''],
+      ['AKR25002','นางสาว สมหญิง รักงาน','Ms. Somying Rakngan','หญิง','2025-02-01',119,'นักบัญชี','Accountant','บัญชีและการเงิน','Accountant','probation','']];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = IMP_TEMPLATE_HEADERS.map(h => ({ wch: Math.max(14, h.length + 4) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+    XLSX.writeFile(wb, 'akara-employee-import-template.xlsx');
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+function impNorm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[\s ._\-\/()]/g, '').trim(); }
+function impTrim(v) { return v == null ? '' : String(v).trim(); }
+function impKey(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim(); }
+
+// รูปแบบวันที่ที่เจอบ่อย: Date object (จาก Excel), serial number, 2025-01-15, 15/01/2025, พ.ศ. 2568
+function impParseDate(v) {
+  if (v == null || v === '') return null;
+  if (v instanceof Date && !isNaN(v)) return impFmtDate(v.getFullYear(), v.getMonth() + 1, v.getDate());
+  if (typeof v === 'number' && v > 0) { const d = new Date(Date.UTC(1899, 11, 30) + v * 86400000); return impFmtDate(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); }
+  const s = impTrim(v);
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if (m) return impFmtDate(+m[1], +m[2], +m[3]);
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+  if (m) return impFmtDate(+m[3], +m[2], +m[1]);   // d/m/Y (รูปแบบไทย)
+  return null;
+}
+function impFmtDate(y, mo, d) {
+  if (y > 2400) y -= 543;                           // พ.ศ. → ค.ศ.
+  if (!(y >= 1950 && y <= 2100) || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+// จับคู่หัวคอลัมน์ → field (เรียงจากคำที่เจาะจงที่สุดไปกว้างสุด, หนึ่งคอลัมน์ใช้ได้ครั้งเดียว)
+const IMP_HEADER_MAP = [
+  ['code',      ['รหัสพนักงาน','รหัสพนง','employeecode','employeeid','empid','empcode','รหัส','code']],
+  ['nameTh',    ['ชื่อนามสกุลth','ชื่อสกุลth','ชื่อไทย','ชื่อนามสกุลไทย','fullnameth','nameth','ชื่อสกุล','ชื่อนามสกุล']],
+  ['nameEn',    ['ชื่อนามสกุลen','ชื่อสกุลen','ชื่ออังกฤษ','ชื่อนามสกุลอังกฤษ','fullnameen','nameen','fullname','name']],
+  ['nickname',  ['ชื่อเล่น','nickname','nick']],
+  ['startDate', ['วันที่เริ่มงาน','วันเริ่มงาน','วันเข้างาน','เริ่มงาน','startdate','joindate','hiredate']],
+  ['probation', ['ระยะทดลองงานวัน','ระยะทดลองงาน','probationdays','probation','ทดลองงาน']],
+  ['posTitle',  ['ตำแหน่งในผังองค์กร','ตำแหน่งในผัง','ตำแหน่งผัง','positiontitle','orgposition','orgchartposition']],
+  ['jobTh',     ['ตำแหน่งth','ตำแหน่งไทย','jobtitleth','positionth']],
+  ['jobEn',     ['ตำแหน่งen','ตำแหน่งอังกฤษ','jobtitleen','positionen']],
+  ['dept',      ['ฝ่ายdepartment','ฝ่าย','แผนก','department','division','dept']],
+  ['status',    ['สถานะ','status']],
+  ['note',      ['หมายเหตุ','note','remark','remarks','comment']],
+  ['jobTh',     ['ตำแหน่ง','jobtitle','position','title']],
+];
+function impMapHeaders(headerRow) {
+  const cols = headerRow.map(impNorm);
+  const taken = new Set(), map = {};
+  for (const [field, aliases] of IMP_HEADER_MAP) {
+    if (map[field] != null) continue;
+    for (const a of aliases) {
+      const i = cols.findIndex((c, idx) => c === a && !taken.has(idx));
+      if (i >= 0) { map[field] = i; taken.add(i); break; }
+    }
+  }
+  return map;
+}
+
+async function impFilePicked(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  showLoading('กำลังอ่านไฟล์...');
+  try {
+    const XLSX = await impLoadXLSX();
+    const buf = await file.arrayBuffer();
+    let wb;
+    if (/\.csv$/i.test(file.name)) {
+      let text = new TextDecoder('utf-8').decode(buf);
+      // ไฟล์ CSV ที่ Excel ไทยบันทึกออกมามักเป็น windows-874 → ถ้าอ่าน UTF-8 แล้วเพี้ยนให้ลองอีกรอบ
+      if (text.indexOf('�') >= 0) { try { text = new TextDecoder('windows-874').decode(buf); } catch(e) {} }
+      wb = XLSX.read(text.replace(/^﻿/, ''), { type: 'string', cellDates: true });
+    } else {
+      wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    }
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if (!ws) throw new Error('ไม่พบชีตข้อมูลในไฟล์');
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '', blankrows: false });
+    if (aoa.length < 2) throw new Error('ไฟล์ไม่มีข้อมูล (ต้องมีหัวคอลัมน์ 1 แถว + ข้อมูลอย่างน้อย 1 แถว)');
+    await impBuildPreview(aoa);
+  } catch(e) {
+    toast('❌ ' + e.message);
+  } finally { hideLoading(); input.value = ''; }
+}
+
+async function impBuildPreview(aoa) {
+  const target = document.querySelector('input[name="imp-target"]:checked').value;
+  const overwrite = document.getElementById('imp-overwrite').checked;
+  const map = impMapHeaders(aoa[0]);
+  if (map.nameTh == null && map.nameEn == null)
+    throw new Error('ไม่พบคอลัมน์ชื่อพนักงาน — แถวแรกของไฟล์ต้องเป็นหัวคอลัมน์ เช่น "ชื่อ-นามสกุล (TH)"');
+
+  // ถ้าไม่มีคอลัมน์ "ตำแหน่งในผังองค์กร" โดยเฉพาะ ให้ใช้คอลัมน์ตำแหน่งทั่วไปแทน
+  const posCol = map.posTitle != null ? map.posTitle : (map.jobTh != null ? map.jobTh : map.jobEn);
+  const usedJobAsPosition = map.posTitle == null && posCol != null;
+
+  showLoading('กำลังตรวจสอบข้อมูล...');
+  let existingEmps = [], positions = [];
+  try {
+    [existingEmps, positions] = await Promise.all([
+      sbFetch('employees?select=id,full_name,full_name_th,employee_code&is_active=eq.true&limit=5000', { headers:{'Accept-Profile':'orgchart'} }).catch(()=>[]),
+      sbFetch('v_org_chart_current?select=position_id,title,incumbent,incumbent_th,division,department,status&is_active=eq.true&limit=5000', { headers:{'Accept-Profile':'orgchart'} }).catch(()=>[])
+    ]);
+  } finally { hideLoading(); }
+
+  const byCode = new Map(), byName = new Map();
+  (existingEmps||[]).forEach(e => {
+    if (e.employee_code) byCode.set(impKey(e.employee_code), e);
+    if (e.full_name)    byName.set(impKey(e.full_name), e);
+    if (e.full_name_th) byName.set(impKey(e.full_name_th), e);
+  });
+  const posByTitle = new Map();
+  (positions||[]).forEach(p => { const k = impKey(p.title); if (!posByTitle.has(k)) posByTitle.set(k, []); posByTitle.get(k).push(p); });
+
+  const seenCode = new Map(), seenName = new Map(), seenPos = new Map();
+  const rows = [];
+  for (let i = 1; i < aoa.length; i++) {
+    const raw = aoa[i];
+    const get = f => (map[f] == null ? '' : impTrim(raw[map[f]]));
+    const r = {
+      line: i + 1, errors: [], warns: [],
+      code: get('code'), nameTh: get('nameTh'), nameEn: get('nameEn'), nickname: get('nickname'),
+      startDate: null, probation: parseInt(get('probation')) || 119,
+      jobTh: get('jobTh'), jobEn: get('jobEn'), dept: get('dept'), note: get('note'),
+      statusRaw: get('status'), posTitle: posCol == null ? '' : impTrim(raw[posCol]),
+      emp: null, empIsNew: true, empId: null, position: null
+    };
+    if (!r.nameTh && !r.nameEn) continue;   // แถวว่าง — ข้ามเงียบๆ
+
+    // วันเริ่มงาน
+    const rawDate = map.startDate == null ? '' : raw[map.startDate];
+    r.startDate = impParseDate(rawDate);
+    if (impTrim(rawDate) && !r.startDate) r.errors.push('วันเริ่มงานอ่านไม่ออก: "' + impTrim(rawDate) + '"');
+    else if (!r.startDate && target !== 'org') r.errors.push('ต้องมีวันเริ่มงาน (เพราะนำเข้าเข้าระบบพนักงานใหม่ด้วย)');
+
+    // ซ้ำกันเองภายในไฟล์
+    const nk = impKey(r.nameTh || r.nameEn);
+    if (r.code) {
+      const ck = impKey(r.code);
+      if (seenCode.has(ck)) r.errors.push('รหัสพนักงานซ้ำกับแถวที่ ' + seenCode.get(ck) + ' ในไฟล์นี้');
+      else seenCode.set(ck, r.line);
+    }
+    if (seenName.has(nk)) r.errors.push('ชื่อซ้ำกับแถวที่ ' + seenName.get(nk) + ' ในไฟล์นี้');
+    else seenName.set(nk, r.line);
+
+    // มีอยู่ในผังแล้วหรือยัง (รหัสก่อน แล้วค่อยชื่อ)
+    const found = (r.code && byCode.get(impKey(r.code))) || byName.get(impKey(r.nameTh)) || byName.get(impKey(r.nameEn));
+    if (found) { r.emp = found; r.empIsNew = false; r.empId = found.id; }
+    else { r.empId = ocUuid(); }
+
+    // จับคู่ตำแหน่งในผัง (เฉพาะเมื่อนำเข้าเข้าผังองค์กรด้วย)
+    if (r.posTitle && target !== 'new') {
+      let cands = posByTitle.get(impKey(r.posTitle)) || [];
+      if (cands.length > 1 && r.dept) {
+        const dk = impKey(r.dept);
+        const narrowed = cands.filter(p => impKey(p.department) === dk || impKey(p.division) === dk);
+        if (narrowed.length) cands = narrowed;
+      }
+      if (!cands.length) r.warns.push('ไม่พบตำแหน่ง "' + r.posTitle + '" ในผัง — จะไม่ผูกตำแหน่ง');
+      else if (cands.length > 1) r.warns.push('ตำแหน่ง "' + r.posTitle + '" มี ' + cands.length + ' ที่ในผัง — ใส่คอลัมน์ "ฝ่าย" เพื่อระบุให้ชัด, จะไม่ผูกตำแหน่ง');
+      else {
+        const p = cands[0];
+        const holder = p.incumbent || p.incumbent_th;
+        if (seenPos.has(p.position_id)) r.errors.push('ตำแหน่งนี้ถูกใช้ไปแล้วในแถวที่ ' + seenPos.get(p.position_id));
+        else if (p.status === 'filled' && holder && !overwrite) r.warns.push('ตำแหน่งนี้มี "' + holder + '" อยู่แล้ว — จะไม่ผูก (ติ๊ก "แทนที่ผู้ดำรงตำแหน่งเดิม" ถ้าต้องการแทนที่)');
+        else { r.position = p; seenPos.set(p.position_id, r.line); if (p.status === 'filled' && holder) r.warns.push('จะแทนที่ "' + holder + '" ในตำแหน่งนี้'); }
+      }
+    }
+    rows.push(r);
+  }
+  if (!rows.length) throw new Error('ไม่พบแถวข้อมูลที่มีชื่อพนักงาน');
+
+  impRows = rows;
+  impCtx = { target, overwrite, usedJobAsPosition };
+  impRenderPreview();
+}
+
+function impRenderPreview() {
+  const ok = impRows.filter(r => !r.errors.length);
+  const bad = impRows.length - ok.length;
+  const creates = ok.filter(r => r.empIsNew).length;
+  const updates = ok.length - creates;
+  const binds = ok.filter(r => r.position).length;
+  const toOrg = impCtx.target !== 'new';
+
+  document.getElementById('imp-summary').innerHTML =
+    `<span class="imp-stat" style="background:var(--gray);color:var(--text)">อ่านได้ ${impRows.length} แถว</span>`
+    + (toOrg ? `<span class="imp-stat imp-b-new">เพิ่มเข้าผัง ${creates}</span><span class="imp-stat imp-b-upd">มีในผังแล้ว ${updates}</span><span class="imp-stat imp-b-warn">ผูกตำแหน่ง ${binds}</span>` : '')
+    + (impCtx.target !== 'org' ? `<span class="imp-stat imp-b-upd">เข้า Onboarding ${ok.length}</span>` : '')
+    + (bad ? `<span class="imp-stat imp-b-err">ข้าม ${bad}</span>` : '')
+    + (toOrg && impCtx.usedJobAsPosition ? `<span class="imp-stat imp-b-warn">ใช้คอลัมน์ "ตำแหน่ง" จับคู่กับผังองค์กร</span>` : '');
+
+  document.getElementById('imp-rows').innerHTML = impRows.map(r => {
+    const badge = r.errors.length ? '<span class="imp-b imp-b-err">ข้าม</span>'
+      : r.empIsNew ? '<span class="imp-b imp-b-new">เพิ่มใหม่</span>'
+      : '<span class="imp-b imp-b-upd">มีอยู่แล้ว</span>';
+    const notes = [...r.errors.map(e => '<span style="color:var(--red)">✕ ' + ocEsc(e) + '</span>'),
+                   ...r.warns.map(w => '<span style="color:var(--orange)">⚠ ' + ocEsc(w) + '</span>')].join('<br>');
+    return `<tr class="${r.errors.length?'imp-err':''}">
+      <td>${r.line}</td><td>${badge}</td><td>${ocEsc(r.code)||'—'}</td>
+      <td>${ocEsc(r.nameTh)||'—'}</td><td>${ocEsc(r.nameEn)||'—'}</td>
+      <td>${r.startDate||'—'}</td>
+      <td>${r.position ? '✅ '+ocEsc(r.position.title) : (r.posTitle ? ocEsc(r.posTitle) : '—')}</td>
+      <td class="imp-note">${notes||'—'}</td></tr>`;
+  }).join('');
+
+  document.getElementById('imp-step1').style.display = 'none';
+  document.getElementById('imp-step2').style.display = 'block';
+  document.getElementById('imp-back').style.display = 'inline-block';
+  const runBtn = document.getElementById('imp-run');
+  runBtn.style.display = ok.length ? 'inline-block' : 'none';
+  runBtn.textContent = `ยืนยันนำเข้า ${ok.length} คน`;
+  runBtn.disabled = false;
+}
+
+function impChunk(arr, n) { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; }
+function impSetProgress(done, total, label) {
+  document.getElementById('imp-bar').style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+  document.getElementById('imp-progress-text').textContent = label;
+}
+
+async function impRun() {
+  const rows = impRows.filter(r => !r.errors.length);
+  if (!rows.length) return;
+  const { target } = impCtx;
+  const runBtn = document.getElementById('imp-run');
+  runBtn.disabled = true;
+  document.getElementById('imp-back').style.display = 'none';
+  document.getElementById('imp-progress').style.display = 'block';
+
+  // เตรียม payload ทุกชุดก่อน แล้วค่อยยิงเป็นก้อน (เร็วกว่ายิงทีละแถว)
+  const toOrg = target !== 'new';
+  const newEmpRows = toOrg ? rows.filter(r => r.empIsNew).map(r => ({
+    id: r.empId, full_name: r.nameEn || r.nameTh, full_name_th: r.nameTh || null,
+    employee_code: r.code || null, is_active: true
+  })) : [];
+  // เติมชื่อที่ขาดให้พนักงานเดิมในผัง (เช่น เคยมีแต่ชื่อไทย ไฟล์มีชื่ออังกฤษมาด้วย)
+  const heals = toOrg ? rows.filter(r => !r.empIsNew).map(r => {
+    const patch = {};
+    if (r.nameEn && r.emp.full_name !== r.nameEn) patch.full_name = r.nameEn;
+    if (r.nameTh && r.emp.full_name_th !== r.nameTh) patch.full_name_th = r.nameTh;
+    if (r.code && !r.emp.employee_code) patch.employee_code = r.code;
+    return Object.keys(patch).length ? { id: r.empId, patch } : null;
+  }).filter(Boolean) : [];
+  const assignRows = toOrg ? rows.filter(r => r.position).map(r => ({
+    position_id: r.position.position_id, employee_id: r.empId, status: 'filled', is_current: true
+  })) : [];
+  const obRows = (target !== 'org') ? rows.map(r => ({
+    id: uid(), employee_id: r.code || null,
+    full_name_th: r.nameTh || r.nameEn, full_name_en: r.nameEn || null, nickname: r.nickname || null,
+    start_date: r.startDate, probation_days: r.probation,
+    job_title_th: r.jobTh || null, job_title_en: r.jobEn || null,
+    department_id: impMatchDeptId(r.dept), status: impMapObStatus(r.statusRaw),
+    note: r.note || null, created_by: currentMember.id
+  })) : [];
+
+  const steps = impChunk(newEmpRows, 200).map(c => ['พนักงานในผังองค์กร', () => sbFetch('employees', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })])
+    .concat(heals.map(h => ['อัปเดตชื่อพนักงานเดิม', () => sbFetch('employees?id=eq.' + h.id, { method:'PATCH', prefer:'return=minimal', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(h.patch) })]))
+    .concat(impChunk(obRows, 200).map(c => ['รายการพนักงานใหม่', () => sbFetch('new_employees?on_conflict=id', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', body: JSON.stringify(c) })]))
+    .concat(impChunk(assignRows, 100).map(c => ['ผูกตำแหน่งในผัง', () => sbFetch('position_assignments', { method:'POST', prefer:'return=minimal', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })]));
+
+  const failures = [];
+  for (let i = 0; i < steps.length; i++) {
+    const [label, fn] = steps[i];
+    impSetProgress(i, steps.length, `กำลังบันทึก: ${label} (${i + 1}/${steps.length})`);
+    try { await fn(); } catch(e) { failures.push(label + ': ' + e.message); }
+  }
+  impSetProgress(steps.length, steps.length, 'เสร็จสิ้น');
+
+  // รีเฟรชข้อมูลบนหน้าจอ
+  try {
+    if (target !== 'org') { newEmployees = await sbFetch('new_employees?select=*&order=start_date.desc') || []; renderNewEmpList(); renderObKpi(); }
+    if (toOrg && typeof ocmReload === 'function') await ocmReload();
+  } catch(e) {}
+
+  document.getElementById('imp-step2').style.display = 'none';
+  document.getElementById('imp-run').style.display = 'none';
+  document.getElementById('imp-step3').style.display = 'block';
+  document.getElementById('imp-step3').innerHTML = `
+    <div style="text-align:center;padding:18px 0">
+      <div style="font-size:40px">${failures.length ? '⚠️' : '✅'}</div>
+      <h3 style="margin:8px 0">${failures.length ? 'นำเข้าเสร็จ แต่มีบางส่วนไม่สำเร็จ' : 'นำเข้าเรียบร้อย'}</h3>
+      <div style="font-size:13.5px;color:var(--muted);line-height:1.9">
+        เพิ่มพนักงานเข้าผังองค์กร <b>${newEmpRows.length}</b> คน<br>
+        อัปเดตข้อมูลพนักงานเดิม <b>${heals.length}</b> คน<br>
+        ผูกตำแหน่งในผังองค์กร <b>${assignRows.length}</b> ตำแหน่ง<br>
+        เพิ่มเข้ารายการพนักงานใหม่ (Onboarding) <b>${obRows.length}</b> คน<br>
+        ข้ามแถวที่มีปัญหา <b>${impRows.length - rows.length}</b> แถว
+      </div>
+      ${failures.length ? `<div style="margin-top:14px;text-align:left;background:var(--red-lt);color:var(--red);padding:12px;border-radius:8px;font-size:12.5px">
+        <b>ไม่สำเร็จ ${failures.length} รายการ:</b><br>${failures.map(f=>ocEsc(f)).join('<br>')}</div>` : ''}
+    </div>`;
+  toast(failures.length ? '⚠️ นำเข้าเสร็จ แต่มีบางส่วนไม่สำเร็จ' : '✅ นำเข้าพนักงานเรียบร้อย');
+}
+
+function impMatchDeptId(name) {
+  if (!name) return null;
+  const k = impKey(name);
+  const d = orgDepts.find(x => impKey(x.name_th) === k || impKey(x.name_en) === k);
+  return d ? d.id : null;
+}
+function impMapObStatus(s) {
+  const k = impNorm(s);
+  if (['passed','ผ่าน','ผ่านทดลองงาน','pass'].includes(k)) return 'passed';
+  if (['failed','ไม่ผ่าน','ไม่ผ่านทดลองงาน','fail'].includes(k)) return 'failed';
+  return 'probation';
 }
 
 function openEditNewEmp(id) {
@@ -6133,7 +6575,7 @@ async function ocInit() {
   if (ocLoaded) return;
   showLoading('Loading org chart...');
   try {
-    const rows = await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active,incumbent_th,acting_coverage_th,reports_to_incumbent_th&is_active=eq.true', { headers:{'Accept-Profile':'orgchart'} });
+    const rows = await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active,incumbent_th,acting_coverage_th,reports_to_incumbent_th,incumbent_code,acting_code&is_active=eq.true', { headers:{'Accept-Profile':'orgchart'} });
     ocAllRows = rows || [];
     const hc = await sbFetch('headcount_summary?select=*', { headers:{'Accept-Profile':'orgchart'} });
     ocHeadcount = hc || [];
@@ -6227,6 +6669,8 @@ function ocDeptChange(){ ocDeptFilter=document.getElementById('oc-dept').value; 
 // เลือกชื่อแสดงตามภาษา (มี fallback ไปอีกภาษาถ้าไม่มี)
 function ocNm(n){ if(!n) return ''; return lang==='th' ? (n.incumbent_th||n.incumbent||'') : (n.incumbent||n.incumbent_th||''); }
 function ocActNm(n){ if(!n) return ''; return lang==='th' ? (n.acting_coverage_th||n.acting_coverage||'') : (n.acting_coverage||n.acting_coverage_th||''); }
+// รหัสพนักงาน — แสดงคู่กับชื่อ (ถ้าตำแหน่งว่างและมีผู้รักษาการ ใช้รหัสของผู้รักษาการ)
+function ocCode(n){ if(!n) return ''; return (ocNm(n) ? n.incumbent_code : n.acting_code) || ''; }
 function ocPerson(n,cls){ const nm=ocNm(n), act=ocActNm(n); return nm?`<span class="${cls}">${ocEsc(nm)}</span>`:`<span class="${cls} oc-vac-person">— ${act?ocT('รักษาการ','Acting')+': '+ocEsc(act):ocT('ว่าง','Vacant')}</span>`; }
 
 function ocSetMode(m){
@@ -6260,7 +6704,8 @@ function ocCardInner(n,isFocus){
   const third = act
     ? `<div class="oc-cstatus">${ocT('รักษาการ','Acting')}: ${ocEsc(act)}</div>`
     : `<div class="oc-cdept">${ocEsc(isFocus?(n.division+' / '+n.department):n.department)}</div>`;
-  return `${ocAvatar(n)}<div class="oc-cinfo"><div class="oc-cn ${vac?'vac':''}">${ocEsc(nm||ocT('ตำแหน่งว่าง','Vacant'))}</div><div class="oc-ct">${ocEsc(n.title)}${n.grade?' · '+ocEsc(n.grade):''}</div>${third}</div>`;
+  const cd=ocCode(n);
+  return `${ocAvatar(n)}<div class="oc-cinfo"><div class="oc-cn ${vac?'vac':''}">${ocEsc(nm||ocT('ตำแหน่งว่าง','Vacant'))}${cd?`<span class="oc-ccode">${ocEsc(cd)}</span>`:''}</div><div class="oc-ct">${ocEsc(n.title)}${n.grade?' · '+ocEsc(n.grade):''}</div>${third}</div>`;
 }
 function ocRenderCards(focus){
   const fb=document.getElementById('oc-focusBox'), rh=document.getElementById('oc-rhead'), rg=document.getElementById('oc-grid');
@@ -6288,7 +6733,7 @@ function ocRenderCards(focus){
   rg.innerHTML = reports.map(n=>{ const k=n.children.length; return `<div class="oc-card ${k?'kids':''}" ${k?`onclick="ocSetFocus('${n.position_id}')"`:''}>${ocCardInner(n,false)}${k?`<span class="oc-countbadge" title="${k} ${ocT('ตรง','direct')} / ${ocDescCount(n)} ${ocT('ใต้สังกัด','total')}">▾ ${k}/${ocDescCount(n)}</span>`:''}</div>`; }).join('') || `<div class="oc-empty">${ocT('ตำแหน่งนี้ไม่มีผู้ใต้บังคับบัญชา','This position has no subordinates')}</div>`;
 }
 
-function ocChartBox(n){ const nm=ocNm(n); const k=n.children.length; return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-head">${ocAvatar(n)}<div class="ocb-info"><div class="ocb-name ${nm?'':'vac'}">${ocEsc(nm||ocT('ตำแหน่งว่าง','Vacant'))}</div></div></div><div class="ocb-title2">${ocEsc(n.title)}</div><div class="ocb-foot"><span class="ocb-level">${n.grade?ocT('ระดับ','Level')+' '+ocEsc(n.grade):'—'}</span><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${k?`<span class="ocb-cnt">▾ ${k}/${ocDescCount(n)}</span>`:''}</div></div>`; }
+function ocChartBox(n){ const nm=ocNm(n); const k=n.children.length; const cd=ocCode(n); return `<div class="oc-box ${n.status}" onclick="ocSetFocus('${n.position_id}')"><div class="ocb-head">${ocAvatar(n)}<div class="ocb-info"><div class="ocb-name ${nm?'':'vac'}">${ocEsc(nm||ocT('ตำแหน่งว่าง','Vacant'))}</div>${cd?`<div class="ocb-code">${ocEsc(cd)}</div>`:''}</div></div><div class="ocb-title2">${ocEsc(n.title)}</div><div class="ocb-foot"><span class="ocb-level">${n.grade?ocT('ระดับ','Level')+' '+ocEsc(n.grade):'—'}</span><span class="oc-badge ${n.status}">${ocStatusLabel(n.status)}</span>${k?`<span class="ocb-cnt">▾ ${k}/${ocDescCount(n)}</span>`:''}</div></div>`; }
 const OC_GRADES=['CEO','M4','M3','M2','M1 Senior','M1','S3','S2','S1','O3','O2','O1'];
 function ocGRank(g){ const i=OC_GRADES.indexOf(g); return i<0?99:i; }
 function ocRenderChart(focus){
@@ -6299,7 +6744,9 @@ function ocRenderChart(focus){
   const BW=200,BH=132,SLOT=218,VGAP=54,PADT=12,PADL=10;
   const GCOLS=6,GMIN=7,GVGAP=14;   // ลูกน้อง leaf ≥ GMIN → พับเป็นตาราง GCOLS คอลัมน์ (ทำได้ทุก level แม้ลูกปนหัวหน้าย่อย)
   const nodes=[],depth=new Map(),gridC=new Map(),gridLeaves=new Map(),grow=new Map(),xs=new Map(),width=new Map();
-  const kidsOf=(n,d)=> d<MAXD ? n.children : [];
+  // ocChartDepth = "จำนวนชั้นที่แสดง" (root นับเป็นชั้นที่ 1) → ต้องตรงกับ isLeaf เป๊ะๆ
+  // ไม่งั้นลูกของโหนดชั้นสุดท้ายจะถูก render โดยไม่มีพิกัด x แล้วไปกองซ้อนกันมุมซ้ายล่าง
+  const kidsOf=(n,d)=> d+1<MAXD ? n.children : [];
   const isLeaf=(n,d)=> d+1>=MAXD || n.children.length===0;
   (function rec(n,d){ nodes.push(n); depth.set(n.position_id,d); kidsOf(n,d).forEach(c=>rec(c,d+1)); })(root,0);
   (function w(n){ const d=depth.get(n.position_id); const kids=kidsOf(n,d);
@@ -6351,9 +6798,9 @@ function ocRenderSearch(){
   const q=document.getElementById('oc-search').value.trim().toLowerCase();
   const sr=document.getElementById('oc-searchResults'), dv=document.getElementById('oc-drillView');
   if(q.length<1){ sr.style.display='none'; dv.style.display='block'; return; }
-  const m=ocAllRows.filter(r=>(r.title||'').toLowerCase().includes(q)||(r.incumbent||'').toLowerCase().includes(q)||(r.incumbent_th||'').toLowerCase().includes(q)).slice(0,50);
+  const m=ocAllRows.filter(r=>(r.title||'').toLowerCase().includes(q)||(r.incumbent||'').toLowerCase().includes(q)||(r.incumbent_th||'').toLowerCase().includes(q)||(r.incumbent_code||'').toLowerCase().includes(q)).slice(0,50);
   dv.style.display='none'; sr.style.display='block';
-  sr.innerHTML=m.length?m.map(r=>{ const nm=ocNm(r); return `<div class="it" onclick="ocSetFocus('${r.position_id}')"><div class="t">${ocEsc(r.title)} ${nm?'— '+ocEsc(nm):`<span class="oc-badge vacant">${ocT('ว่าง','Vacant')}</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}${r.grade?' · '+ocEsc(r.grade):''}</div></div>`; }).join(''):`<div class="oc-empty">${ocT('ไม่พบตำแหน่งที่ตรงกับคำค้นหา','No matching positions')}</div>`;
+  sr.innerHTML=m.length?m.map(r=>{ const nm=ocNm(r), cd=ocCode(r); return `<div class="it" onclick="ocSetFocus('${r.position_id}')"><div class="t">${ocEsc(r.title)} ${nm?'— '+ocEsc(nm)+(cd?` <span class="oc-ccode">${ocEsc(cd)}</span>`:''):`<span class="oc-badge vacant">${ocT('ว่าง','Vacant')}</span>`}</div><div class="s">${ocEsc(r.division)} / ${ocEsc(r.department)}${r.grade?' · '+ocEsc(r.grade):''}</div></div>`; }).join(''):`<div class="oc-empty">${ocT('ไม่พบตำแหน่งที่ตรงกับคำค้นหา','No matching positions')}</div>`;
 }
 
 function ocVacPopulateDept(){
@@ -6397,7 +6844,7 @@ function ocmSan(q){ return q.replace(/[,()*]/g,' '); }
 
 async function ocmReload(){
   try{
-    const rows=await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active,incumbent_th,acting_coverage_th,reports_to_incumbent_th&is_active=eq.true',{headers:{'Accept-Profile':'orgchart'}});
+    const rows=await sbFetch('v_org_chart_current?select=position_id,division,department,grade,title,incumbent,status,acting_coverage,reports_to_position_id,reports_to_title,is_active,incumbent_th,acting_coverage_th,reports_to_incumbent_th,incumbent_code,acting_code&is_active=eq.true',{headers:{'Accept-Profile':'orgchart'}});
     ocAllRows=rows||[];
     const hc=await sbFetch('headcount_summary?select=*',{headers:{'Accept-Profile':'orgchart'}});
     ocHeadcount=hc||[];
