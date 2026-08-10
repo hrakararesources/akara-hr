@@ -2194,9 +2194,14 @@ tbody tr:hover{background:var(--blue-lt)}
               <span><b>พนักงานใหม่อย่างเดียว</b> — เข้าระบบ Onboarding/Probation</span></label>
           </div>
         </div>
-        <div class="fg full" style="margin-bottom:14px">
-          <label style="display:flex;gap:8px;align-items:center;font-weight:400;cursor:pointer">
-            <input type="checkbox" id="imp-overwrite">
+        <div class="fg full" style="margin-bottom:14px;display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;cursor:pointer">
+            <input type="checkbox" id="imp-bind" checked style="margin-top:3px">
+            <span>ผูกตำแหน่งในผังองค์กรจากคอลัมน์ตำแหน่งในไฟล์<br>
+              <span style="font-size:12px;color:var(--muted)">เอาออกถ้าต้องการแค่เติมข้อมูลคน (เช่น เติมรหัสพนักงาน) โดยไม่แตะผังองค์กร</span></span>
+          </label>
+          <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;cursor:pointer">
+            <input type="checkbox" id="imp-overwrite" style="margin-top:3px">
             <span>แทนที่ผู้ดำรงตำแหน่งเดิม ถ้าตำแหน่งในไฟล์มีคนอยู่แล้ว (ประวัติเดิมยังถูกเก็บไว้)</span>
           </label>
         </div>
@@ -5843,13 +5848,15 @@ async function impFilePicked(input) {
 async function impBuildPreview(aoa) {
   const target = document.querySelector('input[name="imp-target"]:checked').value;
   const overwrite = document.getElementById('imp-overwrite').checked;
+  const bindPos = document.getElementById('imp-bind').checked;
   const map = impMapHeaders(aoa[0]);
   if (map.nameTh == null && map.nameEn == null)
     throw new Error('ไม่พบคอลัมน์ชื่อพนักงาน — แถวแรกของไฟล์ต้องเป็นหัวคอลัมน์ เช่น "ชื่อ-นามสกุล (TH)"');
 
   // ถ้าไม่มีคอลัมน์ "ตำแหน่งในผังองค์กร" โดยเฉพาะ ให้ใช้คอลัมน์ตำแหน่งทั่วไปแทน
-  const posCol = map.posTitle != null ? map.posTitle : (map.jobTh != null ? map.jobTh : map.jobEn);
-  const usedJobAsPosition = map.posTitle == null && posCol != null;
+  const posColRaw = map.posTitle != null ? map.posTitle : (map.jobTh != null ? map.jobTh : map.jobEn);
+  const posCol = bindPos ? posColRaw : null;
+  const usedJobAsPosition = bindPos && map.posTitle == null && posColRaw != null;
 
   showLoading('กำลังตรวจสอบข้อมูล...');
   let existingEmps = [], positions = [];
