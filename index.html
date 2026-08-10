@@ -5772,6 +5772,17 @@ function impNorm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[
 function impTrim(v) { return v == null ? '' : String(v).trim(); }
 function impKey(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim(); }
 
+// คำนำหน้าชื่อ — ไฟล์ทะเบียนพนักงานมักมี "Mr./Miss/ว่าที่ ร.ต./นางสาว" แต่ชื่อในผังองค์กรไม่มี
+// ตัดออกเฉพาะตอน "จับคู่คน" เท่านั้น เพื่อไม่ให้สร้างพนักงานซ้ำเพราะคำนำหน้าไม่ตรงกัน
+const IMP_TITLE_RE = /^(?:mr|mrs|ms|miss|mstr|khun|dr|prof|acting|sub|lt|capt|maj|col|gen|sgt|pol|s\.?o\.?|ว่าที่|นาย|นาง|นางสาว|น\.?ส\.?|คุณ|ดร|ด\.?ช\.?|ด\.?ญ\.?|ร\.?ต\.?|ร\.?ท\.?|ร\.?อ\.?|พ\.?ต\.?|พ\.?ท\.?|พ\.?อ\.?|จ\.?ส\.?[อทต]\.?|ส\.?อ\.?)[.\s]+/i;
+function impStripTitle(s) {
+  let out = String(s == null ? '' : s).trim(), guard = 0;
+  while (guard++ < 6) { const next = out.replace(IMP_TITLE_RE, '').trim(); if (next === out || !next) break; out = next; }
+  return out;
+}
+// กุญแจสำหรับจับคู่ "คนเดียวกัน" — ตัดคำนำหน้า + ย่อช่องว่าง + ไม่สนตัวพิมพ์
+function impNameKey(s) { return impKey(impStripTitle(s)); }
+
 // รูปแบบวันที่ที่เจอบ่อย: Date object (จาก Excel), serial number, 2025-01-15, 15/01/2025, พ.ศ. 2568
 function impParseDate(v) {
   if (v == null || v === '') return null;
@@ -5792,7 +5803,7 @@ function impFmtDate(y, mo, d) {
 
 // จับคู่หัวคอลัมน์ → field (เรียงจากคำที่เจาะจงที่สุดไปกว้างสุด, หนึ่งคอลัมน์ใช้ได้ครั้งเดียว)
 const IMP_HEADER_MAP = [
-  ['code',      ['รหัสพนักงาน','รหัสพนง','employeecode','employeeid','empid','empcode','รหัส','code']],
+  ['code',      ['รหัสพนักงาน','รหัสพนง','เลขที่พนักงาน','employeecode','employeenumber','employeeno','employeeid','empno','empid','empcode','รหัส','code']],
   ['nameTh',    ['ชื่อนามสกุลth','ชื่อสกุลth','ชื่อไทย','ชื่อนามสกุลไทย','fullnameth','nameth','ชื่อสกุล','ชื่อนามสกุล']],
   ['nameEn',    ['ชื่อนามสกุลen','ชื่อสกุลen','ชื่ออังกฤษ','ชื่อนามสกุลอังกฤษ','fullnameen','nameen','fullname','name']],
   ['nickname',  ['ชื่อเล่น','nickname','nick']],
@@ -5805,7 +5816,10 @@ const IMP_HEADER_MAP = [
   ['status',    ['สถานะ','status']],
   ['note',      ['หมายเหตุ','note','remark','remarks','comment']],
   ['jobTh',     ['ตำแหน่ง','jobtitle','position','title']],
+  // คอลัมน์ชื่อแบบไม่ระบุภาษา (เช่น "พนักงาน") — เดาภาษาจากตัวอักษรในแต่ละแถวเอง
+  ['nameAny',   ['ชื่อพนักงาน','พนักงาน','ชื่อสกุล','ชื่อ','employeename','staffname','employee','staff']],
 ];
+function impHasThai(s) { return /[฀-๿]/.test(String(s || '')); }
 function impMapHeaders(headerRow) {
   const cols = headerRow.map(impNorm);
   const taken = new Set(), map = {};
@@ -5850,8 +5864,8 @@ async function impBuildPreview(aoa) {
   const overwrite = document.getElementById('imp-overwrite').checked;
   const bindPos = document.getElementById('imp-bind').checked;
   const map = impMapHeaders(aoa[0]);
-  if (map.nameTh == null && map.nameEn == null)
-    throw new Error('ไม่พบคอลัมน์ชื่อพนักงาน — แถวแรกของไฟล์ต้องเป็นหัวคอลัมน์ เช่น "ชื่อ-นามสกุล (TH)"');
+  if (map.nameTh == null && map.nameEn == null && map.nameAny == null)
+    throw new Error('ไม่พบคอลัมน์ชื่อพนักงาน — แถวแรกของไฟล์ต้องเป็นหัวคอลัมน์ เช่น "ชื่อ-นามสกุล (TH)" หรือ "พนักงาน"');
 
   // ถ้าไม่มีคอลัมน์ "ตำแหน่งในผังองค์กร" โดยเฉพาะ ให้ใช้คอลัมน์ตำแหน่งทั่วไปแทน
   const posColRaw = map.posTitle != null ? map.posTitle : (map.jobTh != null ? map.jobTh : map.jobEn);
@@ -5870,8 +5884,8 @@ async function impBuildPreview(aoa) {
   const byCode = new Map(), byName = new Map();
   (existingEmps||[]).forEach(e => {
     if (e.employee_code) byCode.set(impKey(e.employee_code), e);
-    if (e.full_name)    byName.set(impKey(e.full_name), e);
-    if (e.full_name_th) byName.set(impKey(e.full_name_th), e);
+    if (e.full_name)    byName.set(impNameKey(e.full_name), e);
+    if (e.full_name_th) byName.set(impNameKey(e.full_name_th), e);
   });
   const posByTitle = new Map();
   (positions||[]).forEach(p => { const k = impKey(p.title); if (!posByTitle.has(k)) posByTitle.set(k, []); posByTitle.get(k).push(p); });
@@ -5889,6 +5903,8 @@ async function impBuildPreview(aoa) {
       statusRaw: get('status'), posTitle: posCol == null ? '' : impTrim(raw[posCol]),
       emp: null, empIsNew: true, empId: null, position: null
     };
+    // คอลัมน์ชื่อรวม (ไม่ระบุภาษา) → ดูว่าค่าในแถวเป็นอักษรไทยหรือไม่ แล้วโยนเข้าช่องที่ถูก
+    if (!r.nameTh && !r.nameEn) { const any = get('nameAny'); if (any) { if (impHasThai(any)) r.nameTh = any; else r.nameEn = any; } }
     if (!r.nameTh && !r.nameEn) continue;   // แถวว่าง — ข้ามเงียบๆ
 
     // วันเริ่มงาน
@@ -5897,8 +5913,8 @@ async function impBuildPreview(aoa) {
     if (impTrim(rawDate) && !r.startDate) r.errors.push('วันเริ่มงานอ่านไม่ออก: "' + impTrim(rawDate) + '"');
     else if (!r.startDate && target !== 'org') r.errors.push('ต้องมีวันเริ่มงาน (เพราะนำเข้าเข้าระบบพนักงานใหม่ด้วย)');
 
-    // ซ้ำกันเองภายในไฟล์
-    const nk = impKey(r.nameTh || r.nameEn);
+    // ซ้ำกันเองภายในไฟล์ (เทียบแบบตัดคำนำหน้าออก — "Mr. Somchai" กับ "Somchai" คือคนเดียวกัน)
+    const nk = impNameKey(r.nameTh || r.nameEn);
     if (r.code) {
       const ck = impKey(r.code);
       if (seenCode.has(ck)) r.errors.push('รหัสพนักงานซ้ำกับแถวที่ ' + seenCode.get(ck) + ' ในไฟล์นี้');
@@ -5907,9 +5923,16 @@ async function impBuildPreview(aoa) {
     if (seenName.has(nk)) r.errors.push('ชื่อซ้ำกับแถวที่ ' + seenName.get(nk) + ' ในไฟล์นี้');
     else seenName.set(nk, r.line);
 
-    // มีอยู่ในผังแล้วหรือยัง (รหัสก่อน แล้วค่อยชื่อ)
-    const found = (r.code && byCode.get(impKey(r.code))) || byName.get(impKey(r.nameTh)) || byName.get(impKey(r.nameEn));
-    if (found) { r.emp = found; r.empIsNew = false; r.empId = found.id; }
+    // มีอยู่ในผังแล้วหรือยัง (รหัสก่อน แล้วค่อยชื่อแบบตัดคำนำหน้า)
+    const found = (r.code && byCode.get(impKey(r.code)))
+      || (r.nameTh && byName.get(impNameKey(r.nameTh)))
+      || (r.nameEn && byName.get(impNameKey(r.nameEn)));
+    if (found) {
+      r.emp = found; r.empIsNew = false; r.empId = found.id;
+      const shown = found.full_name || found.full_name_th || '';
+      if (shown && impKey(shown) !== impKey(r.nameEn) && impKey(shown) !== impKey(r.nameTh))
+        r.warns.push('จับคู่กับ "' + shown + '" ที่มีอยู่ในผัง (ชื่อในไฟล์เขียนต่างกันเล็กน้อย) — ชื่อเดิมในผังจะไม่ถูกแก้');
+    }
     else { r.empId = ocUuid(); }
 
     // จับคู่ตำแหน่งในผัง (เฉพาะเมื่อนำเข้าเข้าผังองค์กรด้วย)
@@ -5994,18 +6017,23 @@ async function impRun() {
 
   // เตรียม payload ทุกชุดก่อน แล้วค่อยยิงเป็นก้อน (เร็วกว่ายิงทีละแถว)
   const toOrg = target !== 'new';
+  // คนใหม่ในผัง — เก็บชื่อแบบตัดคำนำหน้า ให้ตรงแบบเดียวกับพนักงานที่มีอยู่เดิมในผัง
   const newEmpRows = toOrg ? rows.filter(r => r.empIsNew).map(r => ({
-    id: r.empId, full_name: r.nameEn || r.nameTh, full_name_th: r.nameTh || null,
+    id: r.empId, full_name: impStripTitle(r.nameEn || r.nameTh), full_name_th: impStripTitle(r.nameTh) || null,
     employee_code: r.code || null, is_active: true
   })) : [];
-  // เติมชื่อที่ขาดให้พนักงานเดิมในผัง (เช่น เคยมีแต่ชื่อไทย ไฟล์มีชื่ออังกฤษมาด้วย)
-  const heals = toOrg ? rows.filter(r => !r.empIsNew).map(r => {
-    const patch = {};
-    if (r.nameEn && r.emp.full_name !== r.nameEn) patch.full_name = r.nameEn;
-    if (r.nameTh && r.emp.full_name_th !== r.nameTh) patch.full_name_th = r.nameTh;
-    if (r.code && !r.emp.employee_code) patch.employee_code = r.code;
-    return Object.keys(patch).length ? { id: r.empId, patch } : null;
-  }).filter(Boolean) : [];
+  // คนเดิมในผัง — "เติมช่องที่ว่างเท่านั้น" ไม่เขียนทับค่าที่มีอยู่แล้ว
+  // (ไฟล์ทะเบียนมักมีคำนำหน้าติดมา ถ้าเขียนทับจะกลายเป็นเปลี่ยนชื่อคนทั้งผังโดยไม่ตั้งใจ)
+  // ส่งเป็น upsert ก้อนใหญ่ (ค่าเดิมถูกส่งกลับไปเหมือนเดิม) แทนการยิง PATCH ทีละคนหลายร้อยครั้ง
+  const heals = toOrg ? rows.filter(r => !r.empIsNew).filter(r =>
+    (r.nameEn && !r.emp.full_name) || (r.nameTh && !r.emp.full_name_th) || (r.code && !r.emp.employee_code)
+  ).map(r => ({
+    id: r.empId,
+    full_name:     r.emp.full_name    || impStripTitle(r.nameEn || r.nameTh),
+    full_name_th:  r.emp.full_name_th || impStripTitle(r.nameTh) || null,
+    employee_code: r.emp.employee_code || r.code || null,
+    is_active: true
+  })) : [];
   const assignRows = toOrg ? rows.filter(r => r.position).map(r => ({
     position_id: r.position.position_id, employee_id: r.empId, status: 'filled', is_current: true
   })) : [];
@@ -6019,7 +6047,7 @@ async function impRun() {
   })) : [];
 
   const steps = impChunk(newEmpRows, 200).map(c => ['พนักงานในผังองค์กร', () => sbFetch('employees', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })])
-    .concat(heals.map(h => ['อัปเดตชื่อพนักงานเดิม', () => sbFetch('employees?id=eq.' + h.id, { method:'PATCH', prefer:'return=minimal', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(h.patch) })]))
+    .concat(impChunk(heals, 200).map(c => ['เติมข้อมูลพนักงานเดิม', () => sbFetch('employees', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })]))
     .concat(impChunk(obRows, 200).map(c => ['รายการพนักงานใหม่', () => sbFetch('new_employees?on_conflict=id', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', body: JSON.stringify(c) })]))
     .concat(impChunk(assignRows, 100).map(c => ['ผูกตำแหน่งในผัง', () => sbFetch('position_assignments', { method:'POST', prefer:'return=minimal', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })]));
 
@@ -6046,7 +6074,7 @@ async function impRun() {
       <h3 style="margin:8px 0">${failures.length ? 'นำเข้าเสร็จ แต่มีบางส่วนไม่สำเร็จ' : 'นำเข้าเรียบร้อย'}</h3>
       <div style="font-size:13.5px;color:var(--muted);line-height:1.9">
         เพิ่มพนักงานเข้าผังองค์กร <b>${newEmpRows.length}</b> คน<br>
-        อัปเดตข้อมูลพนักงานเดิม <b>${heals.length}</b> คน<br>
+        เติมข้อมูลที่ขาดให้พนักงานเดิม (รหัส/ชื่ออีกภาษา) <b>${heals.length}</b> คน<br>
         ผูกตำแหน่งในผังองค์กร <b>${assignRows.length}</b> ตำแหน่ง<br>
         เพิ่มเข้ารายการพนักงานใหม่ (Onboarding) <b>${obRows.length}</b> คน<br>
         ข้ามแถวที่มีปัญหา <b>${impRows.length - rows.length}</b> แถว
