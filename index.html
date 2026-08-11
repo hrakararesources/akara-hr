@@ -1628,6 +1628,19 @@ tbody tr:hover{background:var(--blue-lt)}
 
           <button class="btn oc-savebtn" id="oc-resBtn" style="background:var(--red);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer;margin-top:14px" onclick="ocmSubmitResign()" data-en="Confirm resignation" data-th="ยืนยันการลาออก">ยืนยันการลาออก</button>
         </div>
+
+        <!-- คืนสถานะพนักงานที่ปิดไว้ (กดลาออกผิดคน / กลับเข้าทำงานใหม่) -->
+        <div style="border-top:1px solid var(--border);margin-top:26px;padding-top:18px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <div>
+              <b data-en="Deactivated employees" data-th="พนักงานที่ปิดสถานะไว้">พนักงานที่ปิดสถานะไว้</b>
+              <div class="oc-muted" style="font-size:12.5px" data-en="Gone from the assignment pickers. Restore someone here if they were marked by mistake, or if they are rejoining." data-th="ชื่อจะไม่ขึ้นในช่องค้นหาตอนมอบหมายตำแหน่ง — คืนสถานะได้ที่นี่ ถ้ากดผิดคนหรือกลับเข้าทำงานใหม่">ชื่อจะไม่ขึ้นในช่องค้นหาตอนมอบหมายตำแหน่ง — คืนสถานะได้ที่นี่ ถ้ากดผิดคนหรือกลับเข้าทำงานใหม่</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="ocmLoadInactive()" data-en="↻ Refresh" data-th="↻ โหลดใหม่">↻ โหลดใหม่</button>
+          </div>
+          <input type="text" id="oc-inactFilter" oninput="ocmRenderInactive()" placeholder="กรองชื่อ / รหัสพนักงาน..." style="width:100%;margin-top:10px">
+          <div id="oc-inactList" style="margin-top:10px;max-height:320px;overflow:auto"></div>
+        </div>
       </div>
 
       <!-- Deactivate -->
@@ -6691,6 +6704,7 @@ function ocSwitchTab(t) {
     if (tab) { tab.style.borderBottomColor = on?'var(--gold)':'transparent'; tab.style.color = on?'var(--blue)':'var(--muted)'; tab.style.fontWeight = on?'600':'500'; }
     if (view) view.style.display = on?'block':'none';
   });
+  if (t === 'resign') ocmLoadInactive();   // โหลดรายชื่อคนที่ปิดสถานะไว้ทุกครั้งที่เปิดแท็บ
 }
 
 function ocEsc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -7168,6 +7182,51 @@ async function ocmSubmitResign(){
     await ocmReload();
   }catch(e){ toast(ocT('บันทึกไม่สำเร็จ: ','Failed: ')+e.message); }
   btn.disabled=false;
+}
+
+// ---------- คืนสถานะพนักงานที่ปิดไว้ ----------
+// จำเป็นเพราะช่องค้นหาผู้ดำรงตำแหน่งกรอง is_active=true — คนที่ถูกปิดสถานะจะเลือกไม่ได้อีกเลย
+// ถ้าไม่มีทางคืนในหน้าเว็บ กดลาออกผิดคนหรือพนักงานกลับเข้าทำงานใหม่จะต้องแก้ด้วย SQL ทุกครั้ง
+let ocmInactive = [];
+async function ocmLoadInactive(){
+  const box=document.getElementById('oc-inactList'); if(!box) return;
+  box.innerHTML=`<div class="oc-muted">${ocT('กำลังโหลด...','Loading...')}</div>`;
+  try{
+    ocmInactive = await sbFetch('employees?select=id,full_name,full_name_th,employee_code&is_active=eq.false&order=full_name&limit=500',{headers:{'Accept-Profile':'orgchart'}}) || [];
+  }catch(e){
+    ocmInactive=[]; box.innerHTML=`<div class="oc-empty" style="color:var(--red)">${ocT('โหลดไม่สำเร็จ','Failed to load')}: ${ocEsc(e.message)}</div>`; return;
+  }
+  ocmRenderInactive();
+}
+function ocmRenderInactive(){
+  const box=document.getElementById('oc-inactList'); if(!box) return;
+  const q=(document.getElementById('oc-inactFilter').value||'').trim().toLowerCase();
+  const rows=ocmInactive.filter(e=>!q
+    || (e.full_name||'').toLowerCase().includes(q)
+    || (e.full_name_th||'').toLowerCase().includes(q)
+    || (e.employee_code||'').toLowerCase().includes(q));
+  if(!ocmInactive.length){ box.innerHTML=`<div class="oc-empty">${ocT('ไม่มีพนักงานที่ปิดสถานะไว้','No deactivated employees')}</div>`; return; }
+  if(!rows.length){ box.innerHTML=`<div class="oc-empty">${ocT('ไม่พบชื่อที่ตรงกับคำค้นหา','No match')}</div>`; return; }
+  box.innerHTML = rows.map(e=>`<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--gray);border-radius:8px;padding:8px 12px;margin-bottom:6px">
+      <div style="min-width:0">
+        <b>${ocEsc(e.full_name||e.full_name_th||'—')}</b>${e.full_name_th&&e.full_name_th!==e.full_name?` <span class="oc-muted" style="font-size:12.5px">${ocEsc(e.full_name_th)}</span>`:''}
+        ${e.employee_code?`<div class="oc-muted" style="font-size:12px">${ocEsc(e.employee_code)}</div>`:''}
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="ocmReactivate('${e.id}')">${ocT('คืนสถานะ','Restore')}</button>
+    </div>`).join('');
+}
+async function ocmReactivate(id){
+  const e=ocmInactive.find(x=>x.id===id); if(!e) return;
+  const nm=e.full_name||e.full_name_th||'';
+  if(!confirm(ocT('คืนสถานะ "'+nm+'" ?\n\nชื่อจะกลับมาขึ้นในช่องค้นหาตอนมอบหมายตำแหน่ง\nจากนั้นไปมอบหมายตำแหน่งได้ที่แท็บ "ย้าย / มอบหมาย"',
+                  'Restore "'+nm+'"?\n\nThe name will appear in the assignment pickers again.\nAssign a position from the "Assign / Move" tab afterwards.'))) return;
+  try{
+    await ocmPatch('employees','id=eq.'+id,{ is_active:true });
+    ocmInactive = ocmInactive.filter(x=>x.id!==id);
+    ocmRenderInactive();
+    toast(ocT('คืนสถานะ "'+nm+'" แล้ว — ไปมอบหมายตำแหน่งได้ที่แท็บ "ย้าย / มอบหมาย"',
+              'Restored "'+nm+'" — assign a position from the "Assign / Move" tab'));
+  }catch(err){ toast(ocT('คืนสถานะไม่สำเร็จ: ','Restore failed: ')+err.message); }
 }
 
 async function ocmSubmitDeactivate(){
