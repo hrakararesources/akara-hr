@@ -1485,6 +1485,7 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="oc-subtab" id="oc-subtab-add" onclick="ocSwitchTab('add')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">➕ <span data-en="Add Position" data-th="เพิ่มตำแหน่ง">เพิ่มตำแหน่ง</span></div>
         <div class="oc-subtab" id="oc-subtab-assign" onclick="ocSwitchTab('assign')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🔄 <span data-en="Assign / Move" data-th="ย้าย / มอบหมาย">ย้าย / มอบหมาย</span></div>
         <div class="oc-subtab" id="oc-subtab-reports" onclick="ocSwitchTab('reports')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🔗 <span data-en="Reporting line" data-th="สายบังคับบัญชา">สายบังคับบัญชา</span></div>
+        <div class="oc-subtab" id="oc-subtab-resign" onclick="ocSwitchTab('resign')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🚪 <span data-en="Resignation" data-th="พนักงานลาออก">พนักงานลาออก</span></div>
         <div class="oc-subtab" id="oc-subtab-deactivate" onclick="ocSwitchTab('deactivate')" style="padding:10px 18px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">🚫 <span data-en="Deactivate" data-th="ปิดใช้งาน">ปิดใช้งาน</span></div>
       </div>
 
@@ -1595,6 +1596,37 @@ tbody tr:hover{background:var(--blue-lt)}
           </div>
           <div class="oc-chain" id="oc-repChain" style="display:none"></div>
           <button class="btn btn-gold oc-savebtn" onclick="ocmSubmitReports()" data-en="Save reporting line" data-th="บันทึกสายบังคับบัญชา">บันทึกสายบังคับบัญชา</button>
+        </div>
+      </div>
+
+      <!-- Resignation -->
+      <div id="oc-view-resign" class="oc-form" style="display:none;max-width:760px">
+        <p class="oc-muted" style="margin-bottom:12px" data-en="Use when someone leaves the company — their seat opens up and their name stops appearing in the pickers. Nothing is deleted; the history stays." data-th="ใช้เมื่อพนักงานลาออก — ตำแหน่งที่นั่งอยู่จะว่างลง และชื่อจะไม่ขึ้นในช่องค้นหาอีก ข้อมูลไม่ถูกลบ ประวัติยังอยู่ครบ">ใช้เมื่อพนักงานลาออก — ตำแหน่งที่นั่งอยู่จะว่างลง และชื่อจะไม่ขึ้นในช่องค้นหาอีก ข้อมูลไม่ถูกลบ ประวัติยังอยู่ครบ</p>
+        <label data-en="Employee who is leaving" data-th="พนักงานที่ลาออก">พนักงานที่ลาออก</label>
+        <div class="oc-acwrap"><input type="text" id="oc-resEmpSearch" placeholder="ค้นหาชื่อ (ไทย/อังกฤษ) หรือรหัสพนักงาน..."><div class="oc-ac" id="oc-resEmpResults" style="display:none"></div></div>
+        <div id="oc-resEmpChip"></div>
+
+        <div id="oc-resForm" style="display:none">
+          <div id="oc-resSeats" style="margin:14px 0"></div>
+
+          <label data-en="New status for the seat(s)" data-th="สถานะของตำแหน่งหลังลาออก">สถานะของตำแหน่งหลังลาออก</label>
+          <select id="oc-resStatus" onchange="ocmResignStatusChange()">
+            <option value="vacant" data-en="Vacant" data-th="ว่าง (Vacant)">ว่าง (Vacant)</option>
+            <option value="filled_pending_name" data-en="Vacant — awaiting candidate (Pending)" data-th="ว่าง — รอชื่อผู้สมัคร (Pending)">ว่าง — รอชื่อผู้สมัคร (Pending)</option>
+          </select>
+
+          <div id="oc-resActBlock">
+            <label data-en="Acting (if any)" data-th="ผู้รักษาการ (ถ้ามี)">ผู้รักษาการ (ถ้ามี)</label>
+            <div class="oc-acwrap"><input type="text" id="oc-resActSearch" placeholder="ค้นหาชื่อพนักงาน..."><div class="oc-ac" id="oc-resActResults" style="display:none"></div></div>
+            <div id="oc-resActChip"></div>
+          </div>
+
+          <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;cursor:pointer;margin-top:14px">
+            <input type="checkbox" id="oc-resDeactivate" checked style="margin-top:3px">
+            <span data-en="Also deactivate this employee, so the name stops appearing when assigning positions" data-th="ปิดสถานะพนักงานคนนี้ด้วย เพื่อไม่ให้ชื่อขึ้นในช่องค้นหาตอนมอบหมายตำแหน่ง">ปิดสถานะพนักงานคนนี้ด้วย เพื่อไม่ให้ชื่อขึ้นในช่องค้นหาตอนมอบหมายตำแหน่ง</span>
+          </label>
+
+          <button class="btn oc-savebtn" id="oc-resBtn" style="background:var(--red);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer;margin-top:14px" onclick="ocmSubmitResign()" data-en="Confirm resignation" data-th="ยืนยันการลาออก">ยืนยันการลาออก</button>
         </div>
       </div>
 
@@ -6650,7 +6682,7 @@ async function ocInit() {
   hideLoading();
 }
 
-const OC_TABS = ['chart','vacant','add','assign','reports','deactivate'];
+const OC_TABS = ['chart','vacant','add','assign','reports','resign','deactivate'];
 function ocSwitchTab(t) {
   OC_TABS.forEach(x => {
     const tab = document.getElementById('oc-subtab-'+x);
@@ -6880,7 +6912,7 @@ function ocRenderVacTable(){
 
 // ===================== ORG CHART MANAGEMENT (add / assign / deactivate) =====================
 let ocmDivisions=[], ocmDepartments=[], ocmSetupDone=false;
-let ocmSel={ addReportsTo:null, addEmp:null, asgPos:null, asgEmp:null, asgAct:null, deacPos:null, repPos:null, repParent:null };
+let ocmSel={ addReportsTo:null, addEmp:null, asgPos:null, asgEmp:null, asgAct:null, deacPos:null, repPos:null, repParent:null, resEmp:null, resAct:null, resSeats:[] };
 
 function ocUuid(){ return (crypto.randomUUID? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16);})); }
 async function ocmPost(table,obj){ return sbFetch(table,{method:'POST',prefer:'return=minimal',headers:{'Content-Profile':'orgchart'},body:JSON.stringify(obj)}); }
@@ -6905,8 +6937,8 @@ async function ocmSearchPositions(q){ const s=encodeURIComponent(ocmSan(q)); ret
 async function ocmSearchPeople(q){
   const s=encodeURIComponent(ocmSan(q));
   const [orgEmps,newHires]=await Promise.all([
-    sbFetch(`employees?select=id,full_name,full_name_th,employee_code&or=(full_name.ilike.*${s}*,full_name_th.ilike.*${s}*)&is_active=eq.true&order=full_name&limit=8`,{headers:{'Accept-Profile':'orgchart'}}).catch(()=>[]),
-    sbFetch(`new_employees?select=id,employee_id,full_name_th,full_name_en,nickname&or=(full_name_th.ilike.*${s}*,full_name_en.ilike.*${s}*,nickname.ilike.*${s}*)&limit=8`).catch(()=>[])
+    sbFetch(`employees?select=id,full_name,full_name_th,employee_code&or=(full_name.ilike.*${s}*,full_name_th.ilike.*${s}*,employee_code.ilike.*${s}*)&is_active=eq.true&order=full_name&limit=8`,{headers:{'Accept-Profile':'orgchart'}}).catch(()=>[]),
+    sbFetch(`new_employees?select=id,employee_id,full_name_th,full_name_en,nickname&or=(full_name_th.ilike.*${s}*,full_name_en.ilike.*${s}*,nickname.ilike.*${s}*,employee_id.ilike.*${s}*)&limit=8`).catch(()=>[])
   ]);
   const list=[]; const byKey=new Map();
   (orgEmps||[]).forEach(e=>{ const o={src:'org',orgId:e.id,name:e.full_name||e.full_name_th,code:e.employee_code,nickname:null,nameTh:e.full_name_th||null,nameEn:e.full_name||null}; list.push(o); if(e.employee_code) byKey.set('c:'+e.employee_code,o); if(e.full_name) byKey.set('n:'+e.full_name,o); });
@@ -6962,6 +6994,8 @@ function ocmSetup(){
   ocmAutoEmp('oc-asgEmpSearch','oc-asgEmpResults','oc-asgEmpChip',(e)=>{ ocmSel.asgEmp=e; }, ()=>{ ocmSel.asgEmp=null; });
   ocmAutoEmp('oc-asgActSearch','oc-asgActResults','oc-asgActChip',(e)=>{ ocmSel.asgAct=e; }, ()=>{ ocmSel.asgAct=null; });
   ocmAutoPos('oc-deacPosSearch','oc-deacPosResults','oc-deacPosChip',(p)=>{ ocmSel.deacPos=p; document.getElementById('oc-deacBtn').style.display='inline-block'; }, ()=>{ ocmSel.deacPos=null; document.getElementById('oc-deacBtn').style.display='none'; });
+  ocmAutoEmp('oc-resEmpSearch','oc-resEmpResults','oc-resEmpChip',(e)=>{ ocmResignPick(e); }, ()=>{ ocmSel.resEmp=null; ocmSel.resSeats=[]; document.getElementById('oc-resForm').style.display='none'; });
+  ocmAutoEmp('oc-resActSearch','oc-resActResults','oc-resActChip',(e)=>{ ocmSel.resAct=e; }, ()=>{ ocmSel.resAct=null; });
   ocmAutoPos('oc-repPosSearch','oc-repPosResults','oc-repPosChip',(p)=>{ ocmSel.repPos=p; document.getElementById('oc-repForm').style.display='block';
       document.getElementById('oc-repCurrent').textContent = ocT('ปัจจุบันรายงานต่อ','Currently reports to') + ': ' + (p.reportsToObj ? p.reportsToObj.title : ocT('— (ระดับบนสุด)','— (top level)'));
       ocmSel.repParent=null; document.getElementById('oc-repParentChip').innerHTML=''; document.getElementById('oc-repTop').checked=false; ocmRepTopToggle(); document.getElementById('oc-repChain').style.display='none';
@@ -7069,6 +7103,67 @@ async function ocmSubmitAssign(){
     ocmSel.asgPos=null; ocmSel.asgEmp=null; ocmSel.asgAct=null;
     await ocmReload();
   }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message); }
+}
+
+// ===================== พนักงานลาออก =====================
+// ปล่อยที่นั่งที่เขานั่งอยู่ให้ว่าง (trigger เก็บประวัติเดิมให้เอง) + ปิดสถานะพนักงาน
+// เพื่อไม่ให้ชื่อโผล่ในช่องค้นหาผู้ดำรงตำแหน่ง/ผู้รักษาการอีก — ไม่มีการลบข้อมูล
+function ocmResignStatusChange(){
+  const s=document.getElementById('oc-resStatus').value;
+  document.getElementById('oc-resActBlock').style.display=(s==='vacant'||s==='filled_pending_name')?'block':'none';
+}
+async function ocmResignPick(p){
+  ocmSel.resEmp=p; ocmSel.resSeats=[]; ocmSel.resAct=null;
+  document.getElementById('oc-resActChip').innerHTML='';
+  document.getElementById('oc-resForm').style.display='block';
+  document.getElementById('oc-resStatus').value='vacant'; ocmResignStatusChange();
+  const box=document.getElementById('oc-resSeats');
+  box.innerHTML=`<div class="oc-muted">${ocT('กำลังค้นหาตำแหน่งที่นั่งอยู่...','Looking up current seats...')}</div>`;
+  // คนที่เพิ่งเพิ่มจาก onboarding ยังไม่มีแถวในผัง → ไม่มีที่นั่งให้ปล่อย
+  if(p.src!=='org'||!p.orgId){
+    box.innerHTML=`<div class="oc-empty">${ocT('คนนี้ยังไม่มีตำแหน่งในผังองค์กร — จะปิดสถานะให้อย่างเดียว','Not seated in the chart — only the employee record will be deactivated')}</div>`;
+    return;
+  }
+  let seats=[];
+  try{
+    if(!ocById.size) await ocmReload();          // ผังยังไม่โหลด → โหลดก่อน ไม่งั้นหาที่นั่งไม่เจอ
+    const rows=await sbFetch('position_assignments?select=position_id&is_current=is.true&employee_id=eq.'+p.orgId,{headers:{'Accept-Profile':'orgchart'}})||[];
+    seats=rows.map(r=>ocById.get(r.position_id)).filter(Boolean);
+  }catch(e){
+    box.innerHTML=`<div class="oc-empty" style="color:var(--red)">${ocT('อ่านตำแหน่งไม่สำเร็จ','Failed to read seats')}: ${ocEsc(e.message)}</div>`;
+    return;
+  }
+  ocmSel.resSeats=seats;
+  box.innerHTML = seats.length
+    ? `<div class="oc-muted" style="margin-bottom:6px">${ocT('ตำแหน่งที่จะว่างลง','Seats that will open up')} (${seats.length})</div>`
+      + seats.map(s=>`<div style="background:var(--gray);border-radius:8px;padding:9px 12px;margin-bottom:6px"><b>${ocEsc(s.title)}</b>${s.grade?` <span class="oc-badge">${ocEsc(s.grade)}</span>`:''}<div class="oc-muted" style="font-size:12.5px">${ocEsc(s.division)} / ${ocEsc(s.department)}</div></div>`).join('')
+    : `<div class="oc-empty">${ocT('ไม่พบตำแหน่งที่คนนี้นั่งอยู่ — จะปิดสถานะให้อย่างเดียว','No seat found — only the employee record will be deactivated')}</div>`;
+}
+async function ocmSubmitResign(){
+  const p=ocmSel.resEmp;
+  if(!p){ toast(ocT('กรุณาเลือกพนักงานก่อน','Pick an employee first')); return; }
+  const seats=ocmSel.resSeats||[];
+  const deact=document.getElementById('oc-resDeactivate').checked;
+  const status=document.getElementById('oc-resStatus').value;
+  if(!seats.length && !deact){ toast(ocT('ไม่มีอะไรให้บันทึก','Nothing to save')); return; }
+  const what=[seats.length?ocT('ปล่อย '+seats.length+' ตำแหน่งให้ว่าง','vacate '+seats.length+' seat(s)'):'',
+              deact?ocT('ปิดสถานะพนักงาน','deactivate the employee'):''].filter(Boolean).join(' + ');
+  if(!confirm(ocT('ยืนยันว่า "'+p.name+'" ลาออก?\n\nระบบจะ: '+what+'\nประวัติเดิมยังถูกเก็บไว้ทั้งหมด',
+                  'Confirm "'+p.name+'" has resigned?\n\nThis will: '+what+'\nAll history is kept.'))) return;
+  const btn=document.getElementById('oc-resBtn'); btn.disabled=true;
+  try{
+    const actId=(seats.length&&ocmSel.resAct)?(await ocmResolvePerson(ocmSel.resAct)).id:null;
+    if(seats.length){
+      await ocmPost('position_assignments', seats.map(s=>({ position_id:s.position_id, employee_id:null, acting_employee_id:actId, status, is_current:true })));
+    }
+    if(deact && p.src==='org' && p.orgId) await ocmPatch('employees','id=eq.'+p.orgId,{ is_active:false });
+    toast(ocT('บันทึกการลาออกเรียบร้อย','Resignation recorded'));
+    document.getElementById('oc-resEmpChip').innerHTML=''; document.getElementById('oc-resActChip').innerHTML='';
+    document.getElementById('oc-resForm').style.display='none';
+    ocmSel.resEmp=null; ocmSel.resSeats=[]; ocmSel.resAct=null;
+    await ocmReload();
+  }catch(e){ toast(ocT('บันทึกไม่สำเร็จ: ','Failed: ')+e.message); }
+  btn.disabled=false;
 }
 
 async function ocmSubmitDeactivate(){
