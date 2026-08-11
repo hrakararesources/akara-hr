@@ -6061,7 +6061,7 @@ async function impRun() {
   const toOrg = target !== 'new';
   // คนใหม่ในผัง — เก็บชื่อแบบตัดคำนำหน้า ให้ตรงแบบเดียวกับพนักงานที่มีอยู่เดิมในผัง
   const newEmpRows = toOrg ? rows.filter(r => r.empIsNew).map(r => ({
-    id: r.empId, full_name: impStripTitle(r.nameEn || r.nameTh), full_name_th: impStripTitle(r.nameTh) || null,
+    id: r.empId, full_name: ocCleanName(r.nameEn || r.nameTh), full_name_th: ocCleanName(r.nameTh) || null,
     employee_code: r.code || null, is_active: true
   })) : [];
   // คนเดิมในผัง — "เติมช่องที่ว่างเท่านั้น" ไม่เขียนทับค่าที่มีอยู่แล้ว
@@ -6071,8 +6071,8 @@ async function impRun() {
     (r.nameEn && !r.emp.full_name) || (r.nameTh && !r.emp.full_name_th) || (r.code && !r.emp.employee_code)
   ).map(r => ({
     id: r.empId,
-    full_name:     r.emp.full_name    || impStripTitle(r.nameEn || r.nameTh),
-    full_name_th:  r.emp.full_name_th || impStripTitle(r.nameTh) || null,
+    full_name:     r.emp.full_name    || ocCleanName(r.nameEn || r.nameTh),
+    full_name_th:  r.emp.full_name_th || ocCleanName(r.nameTh) || null,
     employee_code: r.emp.employee_code || r.code || null,
     is_active: true
   })) : [];
@@ -6744,6 +6744,8 @@ function ocPopulateDept(){
 }
 function ocDeptChange(){ ocDeptFilter=document.getElementById('oc-dept').value; if(ocDeptFilter){ ocSetMode('cards'); } else { ocRenderDrill(); } }
 // เลือกชื่อแสดงตามภาษา (มี fallback ไปอีกภาษาถ้าไม่มี)
+// ชื่อที่เก็บลงผังต้องไม่มีคำนำหน้าและไม่มีช่องว่างซ้ำ — ใช้ทั้งตอนมอบหมายตำแหน่งและตอนนำเข้า Excel
+function ocCleanName(s){ return impStripTitle(String(s==null?'':s)).replace(/\s+/g,' ').trim(); }
 function ocNm(n){ if(!n) return ''; return lang==='th' ? (n.incumbent_th||n.incumbent||'') : (n.incumbent||n.incumbent_th||''); }
 function ocActNm(n){ if(!n) return ''; return lang==='th' ? (n.acting_coverage_th||n.acting_coverage||'') : (n.acting_coverage||n.acting_coverage_th||''); }
 // รหัสพนักงาน — แสดงคู่กับชื่อ (ถ้าตำแหน่งว่างและมีผู้รักษาการ ใช้รหัสของผู้รักษาการ)
@@ -7063,31 +7065,33 @@ function ocmAssignStatusChange(){
 //   src=new  → พนักงานใหม่จาก onboarding → หาแถวในผังด้วยรหัส/ชื่อ ถ้าไม่มีค่อยสร้างจากข้อมูลจริง
 async function ocmResolvePerson(p){
   if(!p) throw new Error('no person');
+  const C = ocCleanName;                         // ล้างคำนำหน้า + ช่องว่างซ้ำ ก่อนบันทึกลงผังเสมอ
   if(p.src==='org' && p.orgId){
     // ถ้ามีชื่อ 2 ภาษาจาก onboarding แนบมา → heal ชื่อในผังให้ (EN เป็นหลัก + เก็บ TH)
     if(p.nameEn || p.nameTh){
-      const st = p.nameEn || p.name;
-      const patch={}; if(st && st!==p.name) patch.full_name=st; if(p.nameTh) patch.full_name_th=p.nameTh;
+      const st = C(p.nameEn || p.name);
+      const patch={}; if(st && st!==C(p.name)) patch.full_name=st; if(p.nameTh) patch.full_name_th=C(p.nameTh);
       if(Object.keys(patch).length){ try{ await ocmPatch('employees','id=eq.'+p.orgId,patch); }catch(e){} }
-      return { id:p.orgId, full_name:st||p.name };
+      return { id:p.orgId, full_name:st||C(p.name) };
     }
-    return { id:p.orgId, full_name:p.name };
+    return { id:p.orgId, full_name:C(p.name) };
   }
   // ชื่อที่เก็บในผัง = ภาษาอังกฤษก่อน (ให้ตรงกับพนักงานที่เหลือ) แล้วค่อย fallback เป็นไทย
-  const store = p.nameEn || p.nameTh || p.name;
+  const store = C(p.nameEn || p.nameTh || p.name);
   const code = p.code||null;
-  const names=[...new Set([store, p.nameTh, p.nameEn, p.name].filter(Boolean))];
+  // ค้นหาแถวเดิมด้วยทั้งชื่อที่ล้างแล้วและชื่อดิบ เผื่อในผังยังมีของเก่าที่ยังไม่ได้ล้าง
+  const names=[...new Set([store, C(p.nameTh), C(p.nameEn), p.nameTh, p.nameEn, p.name].filter(Boolean))];
   let found=[];
   if(code){ found=(await sbFetch('employees?select=id,full_name&employee_code=eq.'+encodeURIComponent(code)+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
   for(let i=0;i<names.length && !found.length;i++){ found=(await sbFetch('employees?select=id,full_name&full_name=eq.'+encodeURIComponent(names[i])+'&limit=1',{headers:{'Accept-Profile':'orgchart'}}))||[]; }
   if(found.length){
     // self-heal: ให้ชื่ออังกฤษ (full_name) + ชื่อไทย (full_name_th) ตรงกับข้อมูล onboarding ล่าสุด
-    const patch={}; if(found[0].full_name!==store) patch.full_name=store; if(p.nameTh) patch.full_name_th=p.nameTh;
+    const patch={}; if(found[0].full_name!==store) patch.full_name=store; if(p.nameTh) patch.full_name_th=C(p.nameTh);
     if(Object.keys(patch).length){ try{ await ocmPatch('employees','id=eq.'+found[0].id,patch); }catch(e){} }
     return { id:found[0].id, full_name:store };
   }
   const id=ocUuid();
-  await ocmPost('employees',{ id, full_name:store, full_name_th:p.nameTh||null, employee_code:code });
+  await ocmPost('employees',{ id, full_name:store, full_name_th:C(p.nameTh)||null, employee_code:code });
   return { id, full_name:store };
 }
 async function ocmSubmitAssign(){
