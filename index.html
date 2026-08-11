@@ -5815,7 +5815,10 @@ const IMP_HEADER_MAP = [
   ['dept',      ['ฝ่ายdepartment','ฝ่าย','แผนก','department','division','dept']],
   ['status',    ['สถานะ','status']],
   ['note',      ['หมายเหตุ','note','remark','remarks','comment']],
-  ['jobTh',     ['ตำแหน่ง','jobtitle','position','title']],
+  // "Title" ในไฟล์ทะเบียนพนักงานคือ "คำนำหน้าชื่อ" (Mr./Mrs.) ไม่ใช่ชื่อตำแหน่ง —
+  // ต้องจับไว้ตรงนี้ก่อน ไม่งั้นจะถูกเข้าใจผิดเป็นตำแหน่งแล้วเอาไปจับคู่กับผังองค์กร
+  ['prefix',    ['คำนำหน้าชื่อ','คำนำหน้า','nametitle','honorific','prefix','title']],
+  ['jobTh',     ['ตำแหน่ง','jobtitle','position']],
   // คอลัมน์ชื่อแบบไม่ระบุภาษา (เช่น "พนักงาน") — เดาภาษาจากตัวอักษรในแต่ละแถวเอง
   ['nameAny',   ['ชื่อพนักงาน','พนักงาน','ชื่อสกุล','ชื่อ','employeename','staffname','employee','staff']],
 ];
