@@ -6876,7 +6876,9 @@ function ocRenderChart(focus){
     const blockLeft=xs.get(leaves[0].position_id), blockTop=rowY[cd], busY=blockTop-18, Px=xpx(P)+BW/2, Pb=yOf(P)+BH;
     const colX=cc=>PADL+(blockLeft+cc)*SLOT+BW/2, cols0=Math.min(c,cnt);
     paths+=`<path d="M${Px} ${Pb} V${busY}" fill="none" stroke="#b9c2d6" stroke-width="1.5"/>`;
-    paths+=`<path d="M${colX(0)} ${busY} H${colX(cols0-1)}" fill="none" stroke="#b9c2d6" stroke-width="1.5"/>`;
+    // บัสต้องคร่อมถึงก้านของหัวหน้าด้วย — บล็อกตารางถูกวางไว้ขวาสุดเสมอ (ต่อจากสาขาอื่น)
+    // ถ้าลากแค่ช่วงคอลัมน์ ก้านที่ห้อยจาก Px จะไม่แตะบัส แล้วทั้งบล็อกจะดูลอยไม่มีเส้นเชื่อม
+    paths+=`<path d="M${Math.min(Px,colX(0))} ${busY} H${Math.max(Px,colX(cols0-1))}" fill="none" stroke="#b9c2d6" stroke-width="1.5"/>`;
     for(let cc=0;cc<cols0;cc++){ const lastRow=Math.floor((cnt-1-cc)/c), bottom=blockTop+lastRow*(BH+GVGAP)+BH; paths+=`<path d="M${colX(cc)} ${busY} V${bottom}" fill="none" stroke="#e0e5ee" stroke-width="1.2"/>`; }
   });
   cv.innerHTML=`<div class="oc-zoombar"><button class="oc-btn" onclick="ocDepthBy(-1)">− ${ocT('ชั้น','level')}</button><span class="oc-muted" id="oc-depth" style="min-width:54px;text-align:center">${ocT('ชั้น','Levels')} ${ocChartDepth}</span><button class="oc-btn" onclick="ocDepthBy(1)">+ ${ocT('ชั้น','level')}</button><span style="display:inline-block;width:10px"></span><button class="oc-btn" onclick="ocZoomBy(-0.1)">−</button><span class="oc-muted" id="oc-zoomPct" style="min-width:44px;text-align:center">100%</span><button class="oc-btn" onclick="ocZoomBy(0.1)">+</button><button class="oc-btn" onclick="ocZoomFit()">${ocT('พอดีหน้าจอ','Fit')}</button><span class="oc-muted">· ${ocT('ทีมใหญ่จัดเป็นตาราง · คลิกกล่องเพื่อเจาะลง','Big teams shown as grid · click a box to drill in')}</span></div><div class="oc-scroll" id="oc-ocScroll"><div class="oc-zoom" id="oc-ocZoom" style="position:relative;width:${W}px;height:${H}px"><svg class="oc-svg" width="${W}" height="${H}">${paths}</svg>${boxes}</div></div>`;
