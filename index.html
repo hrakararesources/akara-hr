@@ -5903,8 +5903,14 @@ async function impBuildPreview(aoa) {
       statusRaw: get('status'), posTitle: posCol == null ? '' : impTrim(raw[posCol]),
       emp: null, empIsNew: true, empId: null, position: null
     };
-    // คอลัมน์ชื่อรวม (ไม่ระบุภาษา) → ดูว่าค่าในแถวเป็นอักษรไทยหรือไม่ แล้วโยนเข้าช่องที่ถูก
-    if (!r.nameTh && !r.nameEn) { const any = get('nameAny'); if (any) { if (impHasThai(any)) r.nameTh = any; else r.nameEn = any; } }
+    // คอลัมน์ชื่อรวม (ไม่ระบุภาษา เช่น "พนักงาน") → ดูอักษรในแถวนั้นแล้วเติมเฉพาะช่องภาษาที่ยังว่าง
+    // เติมแบบแยกช่อง ไม่ใช่ "เติมเมื่อว่างทั้งคู่" ไม่งั้นไฟล์ที่มีทั้งคอลัมน์ชื่อไทยและคอลัมน์ชื่อรวม
+    // (ที่เป็นชื่ออังกฤษ) จะโดนทิ้งชื่ออังกฤษไป แล้วจับคู่กับคนในผังไม่ได้
+    const anyName = get('nameAny');
+    if (anyName) {
+      if (impHasThai(anyName)) { if (!r.nameTh) r.nameTh = anyName; }
+      else if (!r.nameEn) r.nameEn = anyName;
+    }
     if (!r.nameTh && !r.nameEn) continue;   // แถวว่าง — ข้ามเงียบๆ
 
     // วันเริ่มงาน
