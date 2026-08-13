@@ -2172,6 +2172,8 @@ tbody tr:hover{background:var(--blue-lt)}
         <div class="fg full"><label>ชื่อ-นามสกุล (TH) *</label><input id="ne-name-th" placeholder="คุณ สมชาย ใจดี"></div>
         <div class="fg full"><label>ชื่อ-นามสกุล (EN)</label><input id="ne-name-en" placeholder="Khun Somchai Jaidee"></div>
         <div class="fg"><label>ชื่อเล่น</label><input id="ne-nickname" placeholder="ชาย"></div>
+        <div class="fg"><label>วันเกิด</label><input id="ne-birthdate" type="date">
+          <span style="font-size:11.5px;color:var(--muted)">ใส่ไว้เพื่อให้ขึ้นในปฏิทินวันเกิด (ต้องกรอกรหัสพนักงานด้วย)</span></div>
         <div class="fg"><label>ระยะทดลองงาน (วัน)</label><input id="ne-probdays" type="number" value="119"></div>
         <div class="fg full"><label>ตำแหน่ง (TH)</label><input id="ne-pos-th" placeholder="เจ้าหน้าที่..."></div>
         <div class="fg full"><label>ตำแหน่ง (EN)</label><input id="ne-pos-en" placeholder="Officer..."></div>
@@ -4864,6 +4866,12 @@ function nameInitials(n) {
   return s.slice(0, 2) || '?';   // ชื่อคำเดียว — ใช้สองอักษรแรกไปก่อน
 }
 
+// ชื่อแผนกในทะเบียนมีทั้งแบบ "ผลิต" และ "ผลิต - ซ่อมบำรุง" (ฝ่าย - ส่วนงาน) แล้วแต่แหล่งข้อมูล
+// ตัวกรองกับการจัดกลุ่มจึงยึดที่ระดับ "ฝ่าย" อย่างเดียว ไม่งั้นคนในส่วนงานย่อยจะไม่ขึ้น
+// เมื่อกรองด้วยชื่อฝ่ายของตัวเอง
+function deptTop(v) { return String(v == null ? '' : v).split(/\s+-\s+/)[0].trim(); }
+const DEPT_NONE = '__no_dept__';
+
 async function loadBirthdayData() {
   try {
     const emps = await sbFetch('employees?select=*&order=full_name_th&status=eq.active');
@@ -4929,15 +4937,17 @@ function renderBirthday() {
   const deptSel = document.getElementById('bday-dept-filter');
   const selectedDept = deptSel ? deptSel.value : '';
   if (deptSel) {
-    const depts = [...new Set(employees_bday.map(e=>e.dept).filter(Boolean))].sort();
+    const depts = [...new Set(employees_bday.map(e=>deptTop(e.dept)).filter(Boolean))].sort();
+    const anyBlank = employees_bday.some(e=>!deptTop(e.dept));
     deptSel.innerHTML = `<option value="">${th?'ทุกแผนก':'All Departments'}</option>`
-      + depts.map(d=>`<option value="${d}" ${d===selectedDept?'selected':''}>${d}</option>`).join('');
+      + depts.map(d=>`<option value="${d}" ${d===selectedDept?'selected':''}>${d}</option>`).join('')
+      + (anyBlank ? `<option value="${DEPT_NONE}" ${selectedDept===DEPT_NONE?'selected':''}>${th?'ไม่ระบุแผนก':'No department'}</option>` : '');
   }
 
   // Filter by dept
-  const filteredEmps = selectedDept
-    ? employees_bday.filter(e=>e.dept===selectedDept)
-    : employees_bday;
+  const filteredEmps = !selectedDept ? employees_bday
+    : selectedDept === DEPT_NONE ? employees_bday.filter(e=>!deptTop(e.dept))
+    : employees_bday.filter(e=>deptTop(e.dept)===selectedDept);
 
   // Update page header
   document.getElementById('h-birthday').textContent = th ? '🎂 วันเกิด' : '🎂 Birthdays';
@@ -5431,7 +5441,7 @@ function renderGiftSummary(monthIdx) {
   // Group by department
   const byDept = {};
   monthEmps.forEach(e => {
-    const dept = e.dept || (th?'ไม่ระบุแผนก':'No Department');
+    const dept = deptTop(e.dept) || (th?'ไม่ระบุแผนก':'No Department');
     if (!byDept[dept]) byDept[dept] = [];
     byDept[dept].push(e);
   });
@@ -5903,7 +5913,7 @@ function renderObAlerts() {
 
 function openAddNewEmp() {
   document.getElementById('new-emp-modal-title').textContent = lang==='th'?'เพิ่มพนักงานใหม่':'Add New Employee';
-  ['ne-empid','ne-name-th','ne-name-en','ne-nickname','ne-pos-th','ne-pos-en','ne-dept-th','ne-dept-en','ne-note'].forEach(id=>{
+  ['ne-empid','ne-name-th','ne-name-en','ne-nickname','ne-birthdate','ne-pos-th','ne-pos-en','ne-dept-th','ne-dept-en','ne-note'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('ne-startdate').value = new Date().toISOString().slice(0,10);
@@ -6299,7 +6309,7 @@ async function impRun() {
           id,
           full_name_th: impFullNameTh(r) || null, full_name_en: impFullNameEn(r) || null,
           nickname: r.nickname || null,
-          department_en: impDeptEn(r) || null,
+          department_en: impDeptEn(r) || null, department_th: impDeptTh(r) || null,
           job_title_th: job.th, job_title_en: job.en,
           birthdate: r.birthdate, start_date: r.startDate, status: 'active'
         });
@@ -6396,6 +6406,15 @@ function impDeptEn(r) {
   if (!d) return s;
   return (!s || impKey(s) === impKey(d)) ? d : d + ' - ' + s;
 }
+// ชื่อฝ่ายภาษาไทย — ไฟล์ทะเบียนมีแต่ภาษาอังกฤษ จึงเทียบกับตารางฝ่ายเอา
+// ถ้าไม่เติมช่องนี้ คนใหม่จะไปโผล่เป็นกลุ่มแผนกภาษาอังกฤษแยกจากคนอื่นในตัวกรองหน้าวันเกิด
+function impDeptTh(r) {
+  const d = impTrim(r.dept);
+  if (!d) return '';
+  const k = impKey(d);
+  const m = (orgDepts || []).find(x => impKey(x.name_th) === k || impKey(x.name_en) === k);
+  return m ? (m.name_th || '') : '';
+}
 
 function impMapObStatus(s) {
   const k = impNorm(s);
@@ -6413,6 +6432,16 @@ function openEditNewEmp(id) {
   const delBtn = document.getElementById('ne-btn-delete');
   if (delBtn) delBtn.style.display = '';
   document.getElementById('ne-empid').value = e.employee_id||'';
+  // วันเกิดไม่ได้เก็บใน new_employees แต่อยู่ในทะเบียนพนักงาน — ดึงมาแสดงถ้ามีรหัสพนักงาน
+  const bEl = document.getElementById('ne-birthdate');
+  if (bEl) {
+    bEl.value = '';
+    if (e.employee_id) {
+      sbFetch('employees?select=birthdate&limit=1&id=eq.' + encodeURIComponent(String(e.employee_id).trim()))
+        .then(rows => { if (rows && rows[0] && rows[0].birthdate) bEl.value = rows[0].birthdate; })
+        .catch(()=>{});
+    }
+  }
   document.getElementById('ne-name-th').value = e.full_name_th||'';
   document.getElementById('ne-name-en').value = e.full_name_en||'';
   document.getElementById('ne-nickname').value = e.nickname||'';
@@ -6456,7 +6485,21 @@ async function saveNewEmp() {
 
   try {
     await sbFetch('new_employees?on_conflict=id', {method:'POST', prefer:'resolution=merge-duplicates', body:JSON.stringify(row)});
-    if (editNewEmpId) {
+
+    // เขียนลงทะเบียนพนักงานด้วย ไม่งั้นคนใหม่จะไม่โผล่ในปฏิทินวันเกิด/สรุปของขวัญเลย
+    let regNote = '';
+    try {
+      const synced = await syncEmployeeRegister(row, document.getElementById('ne-birthdate')?.value || null);
+      if (!synced) regNote = th ? ' (ยังไม่ขึ้นปฏิทินวันเกิด — ไม่ได้กรอกรหัสพนักงาน)'
+                                : ' (not on the birthday calendar — no employee ID)';
+      else if (!document.getElementById('ne-birthdate')?.value)
+        regNote = th ? ' (ยังไม่ขึ้นปฏิทินวันเกิด — ไม่ได้กรอกวันเกิด)' : ' (not on the birthday calendar — no birth date)';
+    } catch(err) {
+      regNote = (th ? ' (บันทึกลงทะเบียนพนักงานไม่สำเร็จ: ' : ' (employee register failed: ') + err.message + ')';
+    }
+
+    const wasEdit = !!editNewEmpId;
+    if (wasEdit) {
       const idx = newEmployees.findIndex(e=>e.id===editNewEmpId);
       if (idx>=0) newEmployees[idx] = {...newEmployees[idx], ...row};
       else newEmployees.unshift(row);
@@ -6466,8 +6509,33 @@ async function saveNewEmp() {
     editNewEmpId = null;
     closeModal('modal-new-emp');
     renderNewEmpList(); renderObKpi();
-    toast(th?(editNewEmpId?'อัปเดตแล้ว':'เพิ่มพนักงานใหม่แล้ว'):(editNewEmpId?'Updated':'New employee added'));
+    toast((th ? (wasEdit?'อัปเดตแล้ว':'เพิ่มพนักงานใหม่แล้ว') : (wasEdit?'Updated':'New employee added')) + regNote);
   } catch(e) { toast('❌ '+e.message); }
+}
+
+// เขียนคนคนหนึ่งลง "ทะเบียนพนักงาน" (ตารางที่ปฏิทินวันเกิด/สรุปของขวัญใช้ · id = รหัสพนักงาน)
+// ส่งเฉพาะช่องที่กรอกมาจริง เพราะ upsert จะเขียน null ทับค่าเดิมถ้าส่งคีย์ที่ว่างไปด้วย
+// และแตะ status เฉพาะตอนสร้างใหม่ ไม่งั้นการแก้ข้อมูลคนที่ลาออกไปแล้วจะดึงเขากลับมาขึ้นปฏิทิน
+async function syncEmployeeRegister(row, birthdate) {
+  const id = String(row.employee_id || '').trim();
+  if (!id) return null;
+  const body = { id };
+  const put = (k, v) => { if (v) body[k] = v; };
+  put('full_name_th', row.full_name_th);
+  put('full_name_en', row.full_name_en);
+  put('nickname', row.nickname);
+  put('job_title_th', row.job_title_th);
+  put('job_title_en', row.job_title_en);
+  const dept = (orgDepts || []).find(d => d.id === row.department_id);
+  if (dept) { put('department_th', dept.name_th || dept.name_en); put('department_en', dept.name_en || dept.name_th); }
+  put('birthdate', birthdate);
+  put('start_date', row.start_date);
+  const found = await sbFetch('employees?select=id&limit=1&id=eq.' + encodeURIComponent(id)).catch(()=>null);
+  if (!found || !found.length) body.status = 'active';
+  await sbFetch('employees?on_conflict=id', {
+    method:'POST', prefer:'return=minimal,resolution=merge-duplicates', body: JSON.stringify(body)
+  });
+  return id;
 }
 
 // ── ORG STRUCTURE SETTINGS ──
@@ -7456,6 +7524,16 @@ async function ocmLoadInactive(){
   }catch(e){
     ocmInactive=[]; box.innerHTML=`<div class="oc-empty" style="color:var(--red)">${ocT('โหลดไม่สำเร็จ','Failed to load')}: ${ocEsc(e.message)}</div>`; return;
   }
+  // คนที่ถูกปิดสถานะไว้ "ก่อน" ที่ระบบจะปิดทะเบียนพนักงานให้ด้วย จะยังค้างอยู่ในปฏิทินวันเกิด
+  // ดึงสถานะในทะเบียนมาเทียบ เพื่อชี้เป้าให้ปิดตามได้ในหน้าเดียว
+  try{
+    const codes=ocmInactive.map(e=>e.employee_code).filter(Boolean);
+    if(codes.length){
+      const reg=await sbFetch('employees?select=id,status&id=in.('+codes.map(c=>encodeURIComponent(c)).join(',')+')') || [];
+      const stillActive=new Set(reg.filter(r=>r.status==='active').map(r=>String(r.id).trim()));
+      ocmInactive.forEach(e=>{ e.regActive = !!(e.employee_code && stillActive.has(String(e.employee_code).trim())); });
+    }
+  }catch(e){ /* อ่านทะเบียนไม่ได้ก็แสดงรายการตามปกติ */ }
   ocmRenderInactive();
 }
 function ocmRenderInactive(){
@@ -7471,9 +7549,24 @@ function ocmRenderInactive(){
       <div style="min-width:0">
         <b>${ocEsc(e.full_name||e.full_name_th||'—')}</b>${e.full_name_th&&e.full_name_th!==e.full_name?` <span class="oc-muted" style="font-size:12.5px">${ocEsc(e.full_name_th)}</span>`:''}
         ${e.employee_code?`<div class="oc-muted" style="font-size:12px">${ocEsc(e.employee_code)}</div>`:''}
+        ${e.regActive?`<div style="font-size:12px;color:var(--orange)">⚠ ${ocT('ยังมีชื่ออยู่ในปฏิทินวันเกิด','Still listed in the birthday calendar')}</div>`:''}
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="ocmReactivate('${e.id}')">${ocT('คืนสถานะ','Restore')}</button>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        ${e.regActive?`<button class="btn btn-ghost btn-sm" style="color:var(--orange)" onclick="ocmCloseRegister('${e.id}')">${ocT('ปิดในปฏิทินวันเกิด','Remove from calendar')}</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="ocmReactivate('${e.id}')">${ocT('คืนสถานะ','Restore')}</button>
+      </div>
     </div>`).join('');
+}
+// ปิดสถานะในทะเบียนพนักงานตามหลัง สำหรับคนที่กดลาออกไว้ก่อนที่ระบบจะปิดให้ทั้งสองที่
+async function ocmCloseRegister(id){
+  const e=ocmInactive.find(x=>x.id===id); if(!e||!e.employee_code) return;
+  const nm=e.full_name||e.full_name_th||e.employee_code;
+  if(!confirm(ocT('เอา "'+nm+'" ออกจากปฏิทินวันเกิดและสรุปของขวัญ?\n\nข้อมูลไม่ถูกลบ ถ้ากดผิดกดคืนสถานะได้',
+                  'Remove "'+nm+'" from the birthday calendar and gift summary?\n\nNothing is deleted — use Restore to undo.'))) return;
+  const ok=await setEmployeeRegisterStatus(e.employee_code,'resigned');
+  if(ok){ e.regActive=false; ocmRenderInactive(); }
+  toast(ok?ocT('เอา "'+nm+'" ออกจากปฏิทินวันเกิดแล้ว','Removed "'+nm+'" from the birthday calendar')
+          :ocT('ปิดสถานะในทะเบียนไม่สำเร็จ','Could not update the employee register'));
 }
 async function ocmReactivate(id){
   const e=ocmInactive.find(x=>x.id===id); if(!e) return;
