@@ -4843,9 +4843,25 @@ async function loadOrgStructure() {
 // (คำนำหน้าอังกฤษบังคับให้มีจุดหรือช่องว่างตามหลัง กันไปตัดชื่อจริงที่ขึ้นต้นว่า Mr… โดยบังเอิญ)
 const NAME_PREFIX_RE = /^\s*(?:ว่าที่\s*ร\.?\s*ต\.?|นางสาว|นาง|นาย|น\.\s*ส\.|ดร\.|ด\.\s*[ชญ]\.|(?:Mrs|Miss|Mr|Ms|Dr)(?:\.\s*|\s+))\s*/i;
 function stripNamePrefix(n) { return String(n == null ? '' : n).replace(NAME_PREFIX_RE, '').trim(); }
+// อักษรย่อบนวงกลม = ตัวแรกของชื่อ + ตัวแรกของนามสกุล
+// สระหน้า (เ แ โ ใ ไ) เขียนนำหน้าพยัญชนะ แต่ไม่ใช่ตัวอักษรที่คนอ่านเป็นตัวแรก
+// เช่น "เชาว์ลิต" ต้องได้ "ช" ไม่ใช่ "เ" — จึงข้ามสระหน้าไปหยิบพยัญชนะถัดไป
+const THAI_LEAD_VOWEL_RE = /^[เแโใไ]/;
+function firstLetter(word) {
+  const w = String(word || '').trim();
+  if (!w) return '';
+  const c = THAI_LEAD_VOWEL_RE.test(w) ? w.slice(1, 2) : w.slice(0, 1);
+  return /[a-z]/i.test(c) ? c.toUpperCase() : c;
+}
 function nameInitials(n) {
-  const s = stripNamePrefix(n);
-  return (s || String(n == null ? '' : n)).slice(0, 2) || '?';
+  const s = stripNamePrefix(n) || String(n == null ? '' : n).trim();
+  if (!s) return '?';
+  const parts = s.split(/\s+/).filter(Boolean);
+  if (parts.length > 1) {
+    const ini = firstLetter(parts[0]) + firstLetter(parts[parts.length - 1]);
+    if (ini.length > 1) return ini;
+  }
+  return s.slice(0, 2) || '?';   // ชื่อคำเดียว — ใช้สองอักษรแรกไปก่อน
 }
 
 async function loadBirthdayData() {
