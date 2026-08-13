@@ -5379,9 +5379,14 @@ async function exportGiftList() {
   if (!monthEmps.length) { toast(th?'ไม่มีข้อมูลที่จะ export':'No data to export'); return; }
 
   // Create CSV
-  const headers = th ? ['รหัสพนักงาน','ชื่อ-นามสกุล (TH)','ชื่อ-นามสกุล (EN)','ชื่อเล่น','ตำแหน่ง','แผนก/ฝ่าย','วันเกิด','รับของขวัญแล้ว'] : ['Employee ID','Full Name (TH)','Full Name (EN)','Nickname','Position','Department','Birthday','Gift Received'];
+  // หัวตารางต้องมีจำนวนคอลัมน์เท่ากับข้อมูลเป๊ะๆ — เดิมหัวมี 8 แต่เขียนข้อมูล 9 ค่า
+  // (ตำแหน่งถูกเขียนทั้ง TH และ EN แต่หัวมีช่อง "ตำแหน่ง" เดียว) ทำให้ตั้งแต่คอลัมน์ที่ 6 เลื่อนไปหมด
+  const headers = th
+    ? ['รหัสพนักงาน','ชื่อ-นามสกุล (TH)','ชื่อ-นามสกุล (EN)','ชื่อเล่น','ตำแหน่ง (TH)','ตำแหน่ง (EN)','แผนก/ฝ่าย','วันเกิด','รับของขวัญแล้ว']
+    : ['Employee ID','Full Name (TH)','Full Name (EN)','Nickname','Position (TH)','Position (EN)','Department','Birthday','Gift Received'];
   const rows = monthEmps.map(e => [
-    e.id, e.display_name_th, e.display_name_en, e.nickname||'', e.pos_th||'', e.pos_en||'', e.dept_th||'', e.birthdate, ''
+    e.id, e.display_name_th, e.display_name_en, e.nickname||'', e.pos_th||'', e.pos_en||'', e.dept_th||'', e.birthdate,
+    gift_records[e.id]?.received ? (th?'รับแล้ว':'Yes') : (th?'ยังไม่รับ':'No')
   ]);
 
   const csvContent = '﻿' + [headers, ...rows]
