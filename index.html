@@ -4649,6 +4649,7 @@ function renderHelp() {
           </div>
         </div></div>
         <div class="help-tip">💡 ${th?'พนักงานทุกคนเห็นปฏิทินวันเกิดได้ ไม่จำกัดเฉพาะ HR':'All employees can view the birthday calendar, not just HR'}</div>
+        <div class="help-tip">🚪 ${th?'คนลาออกหรือไม่ผ่านทดลองงาน ให้ปิดสถานะที่ ผังองค์กร → แท็บ "พนักงานลาออก" (ติ๊ก "ปิดสถานะพนักงาน") ชื่อจะหายจากทั้งผังองค์กรและปฏิทินวันเกิดพร้อมกัน · ถ้ากดผิดคนหรือกลับเข้าทำงานใหม่ กดคืนสถานะได้ในแท็บเดียวกัน · ส่วนคนที่กด "ไม่ผ่านทดลองงาน" ในหน้า Onboarding ระบบจะถามให้เองว่าจะปิดสถานะด้วยไหม':'For leavers or failed probation, deactivate them in Org Chart → "Resignation" tab (tick "deactivate the employee"). The name disappears from both the chart and the birthday calendar. Restore from the same tab if needed. Marking someone as failed probation on the Onboarding page prompts to deactivate as well'}</div>
       </div>
     </div>
 
@@ -4837,6 +4838,16 @@ async function loadOrgStructure() {
   } catch(e) { orgDepts=[]; orgSections=[]; orgTeams=[]; }
 }
 
+// คำนำหน้าชื่อในทะเบียนพนักงานเขียนติดกับชื่อเลย ("นายสมชาย ใจดี") ไม่มีช่องว่างคั่น
+// ต้องตัดออกทั้งตอนแสดงชื่อและตอนย่อเป็นอักษรบน avatar ไม่งั้นวงกลมจะขึ้น "นา" เหมือนกันหมดทุกคน
+// (คำนำหน้าอังกฤษบังคับให้มีจุดหรือช่องว่างตามหลัง กันไปตัดชื่อจริงที่ขึ้นต้นว่า Mr… โดยบังเอิญ)
+const NAME_PREFIX_RE = /^\s*(?:ว่าที่\s*ร\.?\s*ต\.?|นางสาว|นาง|นาย|น\.\s*ส\.|ดร\.|ด\.\s*[ชญ]\.|(?:Mrs|Miss|Mr|Ms|Dr)(?:\.\s*|\s+))\s*/i;
+function stripNamePrefix(n) { return String(n == null ? '' : n).replace(NAME_PREFIX_RE, '').trim(); }
+function nameInitials(n) {
+  const s = stripNamePrefix(n);
+  return (s || String(n == null ? '' : n)).slice(0, 2) || '?';
+}
+
 async function loadBirthdayData() {
   try {
     const emps = await sbFetch('employees?select=*&order=full_name_th&status=eq.active');
@@ -4846,15 +4857,16 @@ async function loadBirthdayData() {
       name_en: e.full_name_en || e.id,
       get name() { return lang==='th' ? (this.name_th||this.name_en) : (this.name_en||this.name_th); },
       get display_name_th() {
-        // Strip Thai prefixes and replace with คุณ
+        // ตัดคำนำหน้าออกแล้วใช้ "คุณ" แทน
         const n = this.name_th || this.name_en || this.id;
-        return n.replace(/^(นาย|นาง(?:สาว)?|ดร\.|Mr\.|Mrs\.|Miss|Ms\.)\s*/i, 'คุณ ');
+        return 'คุณ ' + (stripNamePrefix(n) || n);
       },
       get display_name_en() {
-        // Strip EN prefixes and replace with Khun
         const n = this.name_en || this.name_th || this.id;
-        return n.replace(/^(Mr\.|Mrs\.|Miss|Ms\.|Dr\.)\s*/i, 'Khun ');
+        return 'Khun ' + (stripNamePrefix(n) || n);
       },
+      // อักษรย่อบนวงกลม avatar — ต้องตัดคำนำหน้าก่อน
+      get initials() { return nameInitials(this.name); },
       pos_th: e.job_title_th || e.job_title_en || '',
       pos_en: e.job_title_en || e.job_title_th || '',
       get pos() { return lang==='th' ? this.pos_th : this.pos_en; },
@@ -4874,6 +4886,22 @@ async function loadBirthdayData() {
     console.error('loadBirthdayData error:', e);
     employees_bday = [];
   }
+}
+
+// ปิด/เปิดสถานะใน "ทะเบียนพนักงาน" (ตารางที่ปฏิทินวันเกิดกับสรุปของขวัญใช้ · id = รหัสพนักงาน)
+// คนละตารางกับ orgchart.employees.is_active ที่ผังองค์กรใช้ ต้องสั่งทั้งคู่ ไม่งั้นคนลาออก
+// จะหายจากผังแต่ยังโผล่ในปฏิทินวันเกิดตลอดไป
+async function setEmployeeRegisterStatus(code, status) {
+  const id = String(code || '').trim();
+  if (!id) return false;
+  try {
+    await sbFetch('employees?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH', prefer: 'return=minimal', body: JSON.stringify({ status })
+    });
+    const i = employees_bday.findIndex(e => e.id === id);
+    if (i >= 0) { if (status === 'active') employees_bday[i].status = status; else employees_bday.splice(i, 1); }
+    return true;
+  } catch(e) { return false; }
 }
 
 function renderBirthday() {
@@ -4995,7 +5023,7 @@ function renderBirthday() {
 
       return `<div class="birthday-card ${isToday?'is-today':isUpcoming?'is-upcoming':''}">
         <div class="birthday-avatar-wrap">
-          <div class="birthday-avatar" style="background:${avatarColor(m.name_th||m.name_en||'')}">${m.name.slice(0,2)}</div>
+          <div class="birthday-avatar" style="background:${avatarColor(stripNamePrefix(m.name_th)||m.name_en||'')}">${m.initials}</div>
           ${isToday?'<div class="birthday-today-badge">🎂</div>':''}
         </div>
         <div class="birthday-info">
@@ -5637,7 +5665,7 @@ function renderNewEmpList() {
 
     return `<div class="ob-card">
       <div class="ob-card-header" onclick="toggleObCard('${e.id}')">
-        <div class="avatar" style="background:${avatarColor(e.full_name_th||'')};width:44px;height:44px;font-size:15px;flex-shrink:0">${(e.full_name_th||'?').slice(0,2)}</div>
+        <div class="avatar" style="background:${avatarColor(stripNamePrefix(e.full_name_th))};width:44px;height:44px;font-size:15px;flex-shrink:0">${nameInitials(e.full_name_th)}</div>
         <div class="ob-info">
           <div class="ob-name">${name}${e.nickname?' ('+e.nickname+')':''}</div>
           <div class="ob-meta">
@@ -5786,6 +5814,19 @@ async function updateProbationStatus(empId, status) {
     if (idx>=0) newEmployees[idx].status = status;
     renderNewEmpList(); renderObKpi();
     toast(label);
+
+    // ไม่ผ่านทดลองงาน = ส่วนใหญ่ออกจากบริษัท — ถามก่อนปิดสถานะในทะเบียนพนักงาน
+    // ถ้าไม่ปิด ชื่อจะยังขึ้นในปฏิทินวันเกิดต่อไป (สรุปของขวัญกันไว้ให้แล้ว แต่ปฏิทินไม่รู้)
+    const code = idx>=0 ? newEmployees[idx].employee_id : null;
+    if (status==='failed' && code) {
+      const name = (idx>=0 ? (newEmployees[idx].full_name_th || newEmployees[idx].full_name_en) : '') || code;
+      if (confirm(th ? (name + ' ออกจากบริษัทแล้วใช่ไหม?\n\nถ้าใช่ ระบบจะปิดสถานะในทะเบียนพนักงาน ชื่อจะหายจากปฏิทินวันเกิดและสรุปของขวัญ\n(ยังกู้คืนได้ที่ ผังองค์กร → พนักงานลาออก)')
+                            : (name + ' has left the company?\n\nThis deactivates the employee register entry, removing them from the birthday calendar and gift summary.'))) {
+        const ok = await setEmployeeRegisterStatus(code, 'resigned');
+        toast(ok ? (th?'ปิดสถานะในทะเบียนพนักงานแล้ว':'Employee register deactivated')
+                 : (th?'❌ ปิดสถานะในทะเบียนพนักงานไม่สำเร็จ':'❌ Could not update the employee register'));
+      }
+    }
   } catch(e) { toast('❌ '+e.message); }
 }
 
@@ -7361,7 +7402,8 @@ async function ocmSubmitResign(){
   const status=document.getElementById('oc-resStatus').value;
   if(!seats.length && !deact){ toast(ocT('ไม่มีอะไรให้บันทึก','Nothing to save')); return; }
   const what=[seats.length?ocT('ปล่อย '+seats.length+' ตำแหน่งให้ว่าง','vacate '+seats.length+' seat(s)'):'',
-              deact?ocT('ปิดสถานะพนักงาน','deactivate the employee'):''].filter(Boolean).join(' + ');
+              deact?ocT('ปิดสถานะพนักงาน (ชื่อจะหายจากผังองค์กรและปฏิทินวันเกิด/สรุปของขวัญ)',
+                        'deactivate the employee (removed from the chart and the birthday/gift lists)'):''].filter(Boolean).join(' + ');
   if(!confirm(ocT('ยืนยันว่า "'+p.name+'" ลาออก?\n\nระบบจะ: '+what+'\nประวัติเดิมยังถูกเก็บไว้ทั้งหมด',
                   'Confirm "'+p.name+'" has resigned?\n\nThis will: '+what+'\nAll history is kept.'))) return;
   const btn=document.getElementById('oc-resBtn'); btn.disabled=true;
@@ -7371,7 +7413,13 @@ async function ocmSubmitResign(){
       await ocmPost('position_assignments', seats.map(s=>({ position_id:s.position_id, employee_id:null, acting_employee_id:actId, status, is_current:true })));
     }
     if(deact && p.src==='org' && p.orgId) await ocmPatch('employees','id=eq.'+p.orgId,{ is_active:false });
-    toast(ocT('บันทึกการลาออกเรียบร้อย','Resignation recorded'));
+    // ปิดในทะเบียนพนักงานด้วย (คนละตารางกับผัง) — คนที่ยังไม่มีที่นั่งในผังก็ต้องปิด
+    let regWarn=false;
+    if(deact){ if(p.code) regWarn=!(await setEmployeeRegisterStatus(p.code,'resigned')); else regWarn=true; }
+    toast(regWarn
+      ? ocT('บันทึกการลาออกแล้ว แต่ปิดสถานะในทะเบียนพนักงานไม่สำเร็จ — ชื่ออาจยังขึ้นในปฏิทินวันเกิด'+(p.code?'':' (ไม่มีรหัสพนักงาน)'),
+            'Resignation recorded, but the employee register was not updated — the name may still appear in the birthday calendar')
+      : ocT('บันทึกการลาออกเรียบร้อย','Resignation recorded'));
     document.getElementById('oc-resEmpChip').innerHTML=''; document.getElementById('oc-resActChip').innerHTML='';
     document.getElementById('oc-resForm').style.display='none';
     ocmSel.resEmp=null; ocmSel.resSeats=[]; ocmSel.resAct=null;
@@ -7418,6 +7466,7 @@ async function ocmReactivate(id){
                   'Restore "'+nm+'"?\n\nThe name will appear in the assignment pickers again.\nAssign a position from the "Assign / Move" tab afterwards.'))) return;
   try{
     await ocmPatch('employees','id=eq.'+id,{ is_active:true });
+    if(e.employee_code) await setEmployeeRegisterStatus(e.employee_code,'active');   // ให้กลับมาขึ้นปฏิทินวันเกิดด้วย
     ocmInactive = ocmInactive.filter(x=>x.id!==id);
     ocmRenderInactive();
     toast(ocT('คืนสถานะ "'+nm+'" แล้ว — ไปมอบหมายตำแหน่งได้ที่แท็บ "ย้าย / มอบหมาย"',
