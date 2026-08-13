@@ -2234,7 +2234,8 @@ tbody tr:hover{background:var(--blue-lt)}
               <span><b>ทั้งสองที่</b> — ผังองค์กร + รายการพนักงานใหม่ (Onboarding)</span></label>
             <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-weight:400">
               <input type="radio" name="imp-target" value="org" style="margin-top:3px">
-              <span><b>ผังองค์กรอย่างเดียว</b> — พนักงานปัจจุบัน ไม่ต้องติดตาม Probation</span></label>
+              <span><b>ผังองค์กรอย่างเดียว</b> — พนักงานปัจจุบัน ไม่ต้องติดตาม Probation<br>
+                <span style="font-size:12px;color:var(--muted)">ถ้าไฟล์มีคอลัมน์วันเกิด/วันเริ่มงาน ระบบจะอัปเดตทะเบียนพนักงานให้เสมอไม่ว่าเลือกข้อไหน</span></span></label>
             <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-weight:400">
               <input type="radio" name="imp-target" value="new" style="margin-top:3px">
               <span><b>พนักงานใหม่อย่างเดียว</b> — เข้าระบบ Onboarding/Probation</span></label>
@@ -2273,7 +2274,7 @@ tbody tr:hover{background:var(--blue-lt)}
           <table class="imp-table" style="width:100%;border-collapse:collapse;font-size:12.5px">
             <thead><tr>
               <th>#</th><th>สถานะ</th><th>รหัส</th><th>ชื่อ (TH)</th><th>ชื่อ (EN)</th>
-              <th>วันเริ่มงาน</th><th>ตำแหน่งในผัง</th><th>หมายเหตุตรวจสอบ</th>
+              <th>วันเกิด</th><th>วันเริ่มงาน</th><th>ตำแหน่งในผัง</th><th>หมายเหตุตรวจสอบ</th>
             </tr></thead>
             <tbody id="imp-rows"></tbody>
           </table>
@@ -3019,7 +3020,8 @@ function switchSidebar(page) {
         Promise.all([loadNewEmployees(), loadOrgStructure()]).then(()=>{ renderObKpi(); renderNewEmpList(); });
       }
       if (page==='birthday') {
-        loadBirthdayData().then(()=>{
+        // โหลด new_employees ด้วย เพราะหน้าสรุปของขวัญต้องรู้ว่าใครยังไม่ผ่านทดลองงาน
+        Promise.all([loadBirthdayData(), loadNewEmployees()]).then(()=>{
           renderBirthday();
           renderGiftMonthSelector();
         });
@@ -4681,6 +4683,7 @@ function renderHelp() {
           <div class="help-step-title">${th?'Export รายชื่อ':'Export List'}</div>
           <div class="help-step-desc">${th?'กดปุ่ม ⬇ Export Excel มุมขวาบน ดาวน์โหลดเป็นไฟล์ CSV มีทั้งชื่อ TH/EN รหัสพนักงาน แผนก และวันเกิด นำไปใช้งานต่อได้เลย':'Click ⬇ Export Excel at top right. Downloads CSV with TH/EN names, employee ID, department and birthday'}</div>
         </div></div>
+        <div class="help-tip">🔒 ${th?'พนักงานที่ยังไม่ผ่านทดลองงาน ณ วันเกิดของปีนี้ จะขึ้นป้าย "ยังไม่ผ่านโปรฯ" แถวเป็นสีเทา และติ๊กช่องรับของขวัญไม่ได้ ระบบคำนวณจากวันเริ่มงาน + จำนวนวันทดลองงาน ในหน้า Onboarding เทียบกับวันเกิดปีนี้ ยอด "ต้องเตรียมทั้งหมด" จะไม่นับคนกลุ่มนี้ · ถ้าไม่มีรายการใน Onboarding ระบบจะใช้วันเริ่มงานในทะเบียนพนักงานแทน ซึ่งอัปเดตได้จากการนำเข้าไฟล์ Excel ที่มีคอลัมน์ "วันเกิด" และ "วันเริ่มงาน"':'Employees still in probation on their birthday this year show an "In probation" badge, a grey row, and a locked checkbox. Calculated from start date + probation days on the Onboarding page vs. this year\'s birthday. The "Total to prepare" count excludes them'}</div>
         <div class="help-tip">⚠️ ${th?'เฉพาะ HR ที่ Login อยู่ในระบบเท่านั้นที่จะถูกบันทึกว่าเป็นผู้แจกของขวัญ':'Only the HR currently logged in will be recorded as the gift giver'}</div>
       </div>
     </div>
@@ -4861,7 +4864,11 @@ async function loadBirthdayData() {
       nickname: e.nickname || null,
       birthdate: e.birthdate || null,
       email: e.email || null,
-      status: e.status || 'active'
+      status: e.status || 'active',
+      // ใช้ตัดสินสิทธิ์รับของขวัญ สำหรับคนที่ไม่มีรายการใน Onboarding
+      // (คอลัมน์นี้มาจากไฟล์ทะเบียนพนักงาน Akara_Employee_ReportTo)
+      start_date: e.start_date || null,
+      probation_days: e.probation_days || null
     }));
   } catch(e) {
     console.error('loadBirthdayData error:', e);
@@ -5029,6 +5036,64 @@ function scrollToCurrentMonth() {
 // ── BIRTHDAY GIFT SUMMARY ──
 let currentGiftMonth = new Date().getMonth(); // 0-indexed
 
+// ── สิทธิ์รับของขวัญวันเกิด ──
+// เกณฑ์: ต้องครบกำหนดทดลองงาน "ก่อนหรือตรงกับ" วันเกิดของปีนั้น ถ้าวันเกิดมาถึงก่อน = ยังไม่ได้รับปีนี้
+// ข้อมูลทดลองงานอยู่ตาราง new_employees (คนละตารางกับ employees ที่หน้าวันเกิดใช้)
+// จับคู่ด้วยรหัสพนักงานก่อน ถ้าไม่มีรหัส (เช่น แถวที่นำเข้าจาก Excel โดยไม่กรอกรหัส)
+// ค่อยเทียบด้วยชื่อแบบตัดคำนำหน้า (impNameKey) เพราะไฟล์ Excel มักมี "นาย/นางสาว/Mr." ติดมา
+function findProbationRecord(emp) {
+  if (!Array.isArray(newEmployees) || !newEmployees.length) return null;
+  const empId = String(emp.id||'').trim();
+  if (empId) {
+    const byId = newEmployees.find(n => String(n.employee_id||'').trim() === empId);
+    if (byId) return byId;
+  }
+  const keyTh = emp.name_th ? impNameKey(emp.name_th) : '';
+  const keyEn = emp.name_en ? impNameKey(emp.name_en) : '';
+  if (!keyTh && !keyEn) return null;
+  return newEmployees.find(n =>
+    (keyTh && n.full_name_th && impNameKey(n.full_name_th) === keyTh) ||
+    (keyEn && n.full_name_en && impNameKey(n.full_name_en) === keyEn)
+  ) || null;
+}
+
+// หา "วันเริ่มงาน + ระยะทดลองงาน" ของพนักงานคนหนึ่ง
+// 1) จากรายการ Onboarding (new_employees) ถ้ามี
+// 2) ถ้าไม่มี ใช้วันเริ่มงานที่ติดมากับตาราง employees เอง (กรณีนำเข้า Excel เข้าผังอย่างเดียว)
+function getProbationSource(emp) {
+  const ne = findProbationRecord(emp);
+  if (ne && ne.start_date) return { startDate: ne.start_date, days: ne.probation_days || 119, status: ne.status, from: 'onboarding' };
+  if (emp.start_date) return { startDate: emp.start_date, days: emp.probation_days || 119, status: null, from: 'employees' };
+  return null;
+}
+
+// คืน null = มีสิทธิ์รับของขวัญตามปกติ / คืน object = ยังไม่มีสิทธิ์ในปีนั้น
+function giftProbationBlock(emp, year) {
+  if (!emp.birthdate) return null;
+  const src = getProbationSource(emp);
+  if (!src) return null;                    // ไม่มีข้อมูลวันเริ่มงานเลย = ถือว่าเป็นพนักงานเดิม มีสิทธิ์
+  const end = new Date(src.startDate);
+  if (isNaN(end.getTime())) return null;
+  end.setDate(end.getDate() + src.days);
+  if (src.status === 'failed') return { endDate: end, startDate: src.startDate, status: 'failed', from: src.from };
+  const parts = emp.birthdate.split('-').map(Number);
+  const bday = new Date(year, parts[1]-1, parts[2]);
+  if (end <= bday) return null;             // ครบโปรฯ ก่อนวันเกิดแล้ว
+  return { endDate: end, startDate: src.startDate, status: src.status, from: src.from };
+}
+
+// ข้อความสั้นบอกเหตุผลที่ยังไม่ได้รับ
+function giftBlockLabel(block, th) {
+  if (block.status === 'failed') return th ? 'ไม่ผ่านทดลองงาน' : 'Failed probation';
+  const d = block.endDate.toLocaleDateString(th?'th-TH':'en-GB', {day:'numeric',month:'short',year:'numeric'});
+  return th ? ('ยังไม่ผ่านโปรฯ · ครบ ' + d) : ('In probation · ends ' + d);
+}
+
+// จำนวนคนที่ยังไม่มีสิทธิ์ในกลุ่มที่ส่งมา
+function countGiftBlocked(emps, year) {
+  return emps.filter(e => giftProbationBlock(e, year)).length;
+}
+
 function switchBdayTab(tab) {
   document.querySelectorAll('.bday-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('bday-tab-'+tab).classList.add('active');
@@ -5123,6 +5188,18 @@ async function toggleGiftReceived(empId, monthIdx, checkbox) {
   const empName = emp ? (lang==='th' ? emp.display_name_th : emp.display_name_en) : empId;
   const months = th ? MONTHS_TH : MONTHS_EN;
 
+  // กันไว้อีกชั้น เผื่อ checkbox ถูกติ๊กทั้งที่ยังไม่ผ่านทดลองงาน
+  if (received && emp) {
+    const block = giftProbationBlock(emp, year);
+    if (block) {
+      checkbox.checked = false;
+      toast(th
+        ? ('⚠️ ' + empName + ' ยังไม่ผ่านทดลองงาน (' + giftBlockLabel(block, th) + ') จึงยังไม่ได้รับของขวัญในปีนี้')
+        : ('⚠️ ' + empName + ' is still in probation (' + giftBlockLabel(block, th) + ') — not eligible this year'));
+      return;
+    }
+  }
+
   // Confirmation dialog
   if (received) {
     const confirmed = await showGiftConfirm(empName, months[monthIdx], th);
@@ -5201,8 +5278,10 @@ function updateGiftCounter(monthIdx) {
     if (!e.birthdate) return false;
     return parseInt(e.birthdate.split('-')[1])-1 === monthIdx;
   });
+  const year = new Date().getFullYear();
   const receivedCount = monthEmps.filter(e => gift_records[e.id]?.received).length;
-  const totalCount = monthEmps.length;
+  // ตัวหารนับเฉพาะคนที่มีสิทธิ์รับปีนี้ (คนที่ยังไม่ผ่านโปรฯ ไม่นับ)
+  const totalCount = monthEmps.filter(e => gift_records[e.id]?.received || !giftProbationBlock(e, year)).length;
   const counterEl = document.getElementById('gift-counter');
   if (counterEl) {
     const th = lang === 'th';
@@ -5212,6 +5291,7 @@ function updateGiftCounter(monthIdx) {
 }
 
 function buildEmpRows(emps, todayMonth, todayDay, th, monthIdx) {
+  const year = new Date().getFullYear();
   return emps.map((e,i) => {
     const parts = e.birthdate.split('-').map(Number);
     const mm = parts[1]; const dd = parts[2];
@@ -5219,31 +5299,42 @@ function buildEmpRows(emps, todayMonth, todayDay, th, monthIdx) {
     const dateStr = dd + ' ' + (th ? MONTHS_SHORT_TH[mm-1] : MONTHS_SHORT_EN[mm-1]);
     const record = gift_records[e.id];
     const received = record ? record.received : false;
+    // ยังไม่ผ่านทดลองงาน ณ วันเกิดปีนี้ → ยังไม่มีสิทธิ์ (ล็อกช่องติ๊ก เว้นแต่เคยบันทึกว่าแจกไปแล้ว)
+    const block = received ? null : giftProbationBlock(e, year);
     const giver = received ? members.find(m=>m.id===record.given_by) : null;
     const receivedAt = (received && record.received_at)
       ? new Date(record.received_at).toLocaleDateString(th?'th-TH':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
       : '';
-    const rowBg = received ? 'background:var(--green-lt)' : isToday ? 'background:var(--gold-lt)' : '';
-    const dateColor = isToday ? '#a07800' : 'var(--text)';
+    const rowBg = received ? 'background:var(--green-lt)' : block ? 'background:var(--gray);color:var(--muted)' : isToday ? 'background:var(--gold-lt)' : '';
+    const dateColor = (isToday && !block) ? '#a07800' : 'var(--text)';
+    const blockBadge = block
+      ? '<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;background:var(--blue-lt);color:var(--blue);font-size:10.5px;font-weight:600;white-space:nowrap">'
+        + (block.status==='failed' ? (th?'ไม่ผ่านทดลองงาน':'Failed probation') : (th?'ยังไม่ผ่านโปรฯ':'In probation'))
+        + '</span>'
+      : '';
     const empName = lang==='th' ? e.display_name_th : e.display_name_en;
     const giverName = giver ? giver.name : '—';
     const statusHtml = received
       ? '<span style="color:var(--green)">\u2713 ' + (th?'แจกโดย ':'By ') + giverName + (receivedAt ? '<br><span style="opacity:.7">' + receivedAt + '</span>' : '') + '</span>'
+      : block
+      ? '<span style="color:var(--muted)">' + (th?'ยังไม่ได้รับปีนี้':'Not eligible this year')
+        + '<br><span style="opacity:.8">' + giftBlockLabel(block, th) + '</span></span>'
       : '';
     return [
       '<tr id="gift-row-' + e.id + '" style="border-bottom:1px solid var(--border);' + rowBg + '">',
       '<td style="padding:10px 14px;color:var(--muted);font-size:12px">' + (i+1) + '</td>',
       '<td style="padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--blue)">' + e.id + '</td>',
-      '<td style="padding:10px 14px;font-weight:600">' + empName + (isToday?' \uD83C\uDF82':'') + '</td>',
+      '<td style="padding:10px 14px;font-weight:600">' + empName + (isToday?' \uD83C\uDF82':'') + blockBadge + '</td>',
       '<td style="padding:10px 14px;color:var(--muted)">' + (e.nickname||'\u2014') + '</td>',
       '<td style="padding:10px 14px;font-size:12px;color:var(--muted)">' + (e.pos||'\u2014') + '</td>',
       '<td style="padding:10px 14px;text-align:center;font-weight:600;color:' + dateColor + '">' + dateStr + '</td>',
       '<td style="padding:10px 14px;text-align:center">',
         '<input type="checkbox"',
         (received ? ' checked' : ''),
+        (block ? ' disabled title="' + (th?'ยังไม่ผ่านทดลองงาน จึงยังไม่ได้รับของขวัญในปีนี้':'Still in probation — not eligible for a gift this year') + '"' : ''),
         ' data-empid="' + e.id + '" data-monthidx="' + monthIdx + '"',
         ' class="gift-checkbox"',
-        ' style="width:18px;height:18px;accent-color:var(--green);cursor:pointer">',
+        ' style="width:18px;height:18px;accent-color:var(--green);cursor:' + (block?'not-allowed':'pointer') + (block?';opacity:.4':'') + '">',
       '</td>',
       '<td id="gift-status-' + e.id + '" style="padding:6px 14px;font-size:11px">' + statusHtml + '</td>',
       '</tr>'
@@ -5304,6 +5395,11 @@ function renderGiftSummary(monthIdx) {
   const today = new Date();
   const todayMonth = today.getMonth();
   const todayDay = today.getDate();
+  const year = today.getFullYear();
+
+  // คนที่ยังไม่ผ่านทดลองงาน ณ วันเกิดปีนี้ → ไม่นับในยอดของขวัญที่ต้องเตรียม
+  const blockedCount = monthEmps.filter(e => !gift_records[e.id]?.received && giftProbationBlock(e, year)).length;
+  const eligibleCount = monthEmps.length - blockedCount;
 
   let html_content = `
     <div class="gift-summary-bar" style="margin-bottom:16px;border-radius:var(--radius)">
@@ -5313,13 +5409,14 @@ function renderGiftSummary(monthIdx) {
       </div>
       <div style="margin-left:24px">
         <div class="gift-summary-num" style="color:var(--gold)" id="gift-counter">
-          <span style="color:var(--green)">${Object.values(gift_records).filter(r=>r.received).length}</span>/${monthEmps.length} ${th?'คนรับแล้ว':'received'}
+          <span style="color:var(--green)">${Object.values(gift_records).filter(r=>r.received).length}</span>/${eligibleCount} ${th?'คนรับแล้ว':'received'}
         </div>
         <div class="gift-summary-lbl">${th?'สถานะการรับของขวัญ':'Gift Status'}</div>
       </div>
       <div style="margin-left:auto;text-align:right;font-size:13px;opacity:.9">
         ${th?'ต้องเตรียมทั้งหมด':'Total to prepare'}<br>
-        <strong style="font-size:22px;font-family:var(--mono)">${monthEmps.length} ${th?'ชิ้น':'items'}</strong>
+        <strong style="font-size:22px;font-family:var(--mono)">${eligibleCount} ${th?'ชิ้น':'items'}</strong>
+        ${blockedCount ? `<div style="font-size:11.5px;opacity:.85;margin-top:2px">${th?`ยังไม่ผ่านโปรฯ ${blockedCount} คน (ไม่ต้องเตรียม)`:`${blockedCount} in probation (excluded)`}</div>` : ''}
       </div>
     </div>`;
 
@@ -5381,13 +5478,19 @@ async function exportGiftList() {
   // Create CSV
   // หัวตารางต้องมีจำนวนคอลัมน์เท่ากับข้อมูลเป๊ะๆ — เดิมหัวมี 8 แต่เขียนข้อมูล 9 ค่า
   // (ตำแหน่งถูกเขียนทั้ง TH และ EN แต่หัวมีช่อง "ตำแหน่ง" เดียว) ทำให้ตั้งแต่คอลัมน์ที่ 6 เลื่อนไปหมด
+  const year = new Date().getFullYear();
   const headers = th
-    ? ['รหัสพนักงาน','ชื่อ-นามสกุล (TH)','ชื่อ-นามสกุล (EN)','ชื่อเล่น','ตำแหน่ง (TH)','ตำแหน่ง (EN)','แผนก/ฝ่าย','วันเกิด','รับของขวัญแล้ว']
-    : ['Employee ID','Full Name (TH)','Full Name (EN)','Nickname','Position (TH)','Position (EN)','Department','Birthday','Gift Received'];
-  const rows = monthEmps.map(e => [
-    e.id, e.display_name_th, e.display_name_en, e.nickname||'', e.pos_th||'', e.pos_en||'', e.dept_th||'', e.birthdate,
-    gift_records[e.id]?.received ? (th?'รับแล้ว':'Yes') : (th?'ยังไม่รับ':'No')
-  ]);
+    ? ['รหัสพนักงาน','ชื่อ-นามสกุล (TH)','ชื่อ-นามสกุล (EN)','ชื่อเล่น','ตำแหน่ง (TH)','ตำแหน่ง (EN)','แผนก/ฝ่าย','วันเกิด','สิทธิ์รับของขวัญปีนี้','รับของขวัญแล้ว']
+    : ['Employee ID','Full Name (TH)','Full Name (EN)','Nickname','Position (TH)','Position (EN)','Department','Birthday','Eligible This Year','Gift Received'];
+  const rows = monthEmps.map(e => {
+    const received = !!gift_records[e.id]?.received;
+    const block = received ? null : giftProbationBlock(e, year);
+    return [
+      e.id, e.display_name_th, e.display_name_en, e.nickname||'', e.pos_th||'', e.pos_en||'', e.dept_th||'', e.birthdate,
+      block ? (th?('ไม่มีสิทธิ์ · '+giftBlockLabel(block, th)):('No · '+giftBlockLabel(block, th))) : (th?'มีสิทธิ์':'Yes'),
+      received ? (th?'รับแล้ว':'Yes') : (th?'ยังไม่รับ':'No')
+    ];
+  });
 
   const csvContent = '﻿' + [headers, ...rows]
     .map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
@@ -5804,13 +5907,13 @@ function impLoadXLSX() {
   return impXlsxPromise;
 }
 
-const IMP_TEMPLATE_HEADERS = ['รหัสพนักงาน','ชื่อ-นามสกุล (TH)','ชื่อ-นามสกุล (EN)','ชื่อเล่น','วันเริ่มงาน','ระยะทดลองงาน (วัน)','ตำแหน่ง (TH)','ตำแหน่ง (EN)','ฝ่าย','ตำแหน่งในผังองค์กร','สถานะ','หมายเหตุ'];
+const IMP_TEMPLATE_HEADERS = ['รหัสพนักงาน','ชื่อ-นามสกุล (TH)','ชื่อ-นามสกุล (EN)','ชื่อเล่น','วันเกิด','วันเริ่มงาน','ระยะทดลองงาน (วัน)','ตำแหน่ง (TH)','ตำแหน่ง (EN)','ฝ่าย','Section','ตำแหน่งในผังองค์กร','สถานะ','หมายเหตุ'];
 async function impDownloadTemplate() {
   try {
     const XLSX = await impLoadXLSX();
     const aoa = [IMP_TEMPLATE_HEADERS,
-      ['AKR25001','นาย สมชาย ใจดี','Mr. Somchai Jaidee','ชาย','2025-01-15',119,'เจ้าหน้าที่บุคคล','HR Officer','ทรัพยากรบุคคล','HR Officer','probation',''],
-      ['AKR25002','นางสาว สมหญิง รักงาน','Ms. Somying Rakngan','หญิง','2025-02-01',119,'นักบัญชี','Accountant','บัญชีและการเงิน','Accountant','probation','']];
+      ['AKR25001','นาย สมชาย ใจดี','Mr. Somchai Jaidee','ชาย','1995-03-08','2025-01-15',119,'เจ้าหน้าที่บุคคล','HR Officer','ทรัพยากรบุคคล','Human Resources','HR Officer','probation',''],
+      ['AKR25002','นางสาว สมหญิง รักงาน','Ms. Somying Rakngan','หญิง','1998-11-24','2025-02-01',119,'นักบัญชี','Accountant','บัญชีและการเงิน','Accounting','Accountant','probation','']];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = IMP_TEMPLATE_HEADERS.map(h => ({ wch: Math.max(14, h.length + 4) }));
     const wb = XLSX.utils.book_new();
@@ -5859,11 +5962,14 @@ const IMP_HEADER_MAP = [
   ['nameEn',    ['ชื่อนามสกุลen','ชื่อสกุลen','ชื่ออังกฤษ','ชื่อนามสกุลอังกฤษ','fullnameen','nameen','fullname','name']],
   ['nickname',  ['ชื่อเล่น','nickname','nick']],
   ['startDate', ['วันที่เริ่มงาน','วันเริ่มงาน','วันเข้างาน','เริ่มงาน','startdate','joindate','hiredate']],
+  ['birthdate', ['วันเดือนปีเกิด','วันเกิด','วดปเกิด','birthdate','dateofbirth','birthday','dob']],
   ['probation', ['ระยะทดลองงานวัน','ระยะทดลองงาน','probationdays','probation','ทดลองงาน']],
   ['posTitle',  ['ตำแหน่งในผังองค์กร','ตำแหน่งในผัง','ตำแหน่งผัง','positiontitle','orgposition','orgchartposition']],
   ['jobTh',     ['ตำแหน่งth','ตำแหน่งไทย','jobtitleth','positionth']],
   ['jobEn',     ['ตำแหน่งen','ตำแหน่งอังกฤษ','jobtitleen','positionen']],
   ['dept',      ['ฝ่ายdepartment','ฝ่าย','แผนก','department','division','dept']],
+  // ส่วนงาน — ใช้ต่อท้ายชื่อฝ่ายเป็น "Department - Section" ให้ตรงกับที่ใช้ในทะเบียนพนักงาน
+  ['section',   ['section','ส่วนงาน','ส่วน','sectionname']],
   ['status',    ['สถานะ','status']],
   ['note',      ['หมายเหตุ','note','remark','remarks','comment']],
   // "Title" ในไฟล์ทะเบียนพนักงานคือ "คำนำหน้าชื่อ" (Mr./Mrs.) ไม่ใช่ชื่อตำแหน่ง —
@@ -5952,7 +6058,8 @@ async function impBuildPreview(aoa) {
     const r = {
       line: i + 1, errors: [], warns: [],
       code: get('code'), nameTh: get('nameTh'), nameEn: get('nameEn'), nickname: get('nickname'),
-      startDate: null, probation: parseInt(get('probation')) || 119,
+      startDate: null, birthdate: null, probation: parseInt(get('probation')) || 119,
+      prefix: get('prefix'), section: get('section'),
       jobTh: get('jobTh'), jobEn: get('jobEn'), dept: get('dept'), note: get('note'),
       statusRaw: get('status'), posTitle: posCol == null ? '' : impTrim(raw[posCol]),
       emp: null, empIsNew: true, empId: null, position: null
@@ -5972,6 +6079,11 @@ async function impBuildPreview(aoa) {
     r.startDate = impParseDate(rawDate);
     if (impTrim(rawDate) && !r.startDate) r.errors.push('วันเริ่มงานอ่านไม่ออก: "' + impTrim(rawDate) + '"');
     else if (!r.startDate && target !== 'org') r.errors.push('ต้องมีวันเริ่มงาน (เพราะนำเข้าเข้าระบบพนักงานใหม่ด้วย)');
+
+    // วันเกิด — ใช้กับทะเบียนพนักงาน (ปฏิทินวันเกิด + สิทธิ์รับของขวัญ) ไม่บังคับ
+    const rawBday = map.birthdate == null ? '' : raw[map.birthdate];
+    r.birthdate = impParseDate(rawBday);
+    if (impTrim(rawBday) && !r.birthdate) r.warns.push('วันเกิดอ่านไม่ออก: "' + impTrim(rawBday) + '" — จะข้ามช่องนี้');
 
     // ซ้ำกันเองภายในไฟล์ (เทียบแบบตัดคำนำหน้าออก — "Mr. Somchai" กับ "Somchai" คือคนเดียวกัน)
     const nk = impNameKey(r.nameTh || r.nameEn);
@@ -6029,11 +6141,14 @@ function impRenderPreview() {
   const updates = ok.length - creates;
   const binds = ok.filter(r => r.position).length;
   const toOrg = impCtx.target !== 'new';
+  // แถวที่จะไปอัปเดตทะเบียนพนักงาน (ต้องมีรหัสพนักงาน + มีวันเกิดหรือวันเริ่มงาน)
+  const hrCount = ok.filter(r => r.code && (r.birthdate || r.startDate)).length;
 
   document.getElementById('imp-summary').innerHTML =
     `<span class="imp-stat" style="background:var(--gray);color:var(--text)">อ่านได้ ${impRows.length} แถว</span>`
     + (toOrg ? `<span class="imp-stat imp-b-new">เพิ่มเข้าผัง ${creates}</span><span class="imp-stat imp-b-upd">มีในผังแล้ว ${updates}</span><span class="imp-stat imp-b-warn">ผูกตำแหน่ง ${binds}</span>` : '')
     + (impCtx.target !== 'org' ? `<span class="imp-stat imp-b-upd">เข้า Onboarding ${ok.length}</span>` : '')
+    + (hrCount ? `<span class="imp-stat imp-b-upd">วันเกิด/วันเริ่มงาน ${hrCount}</span>` : '')
     + (bad ? `<span class="imp-stat imp-b-err">ข้าม ${bad}</span>` : '')
     + (toOrg && impCtx.usedJobAsPosition ? `<span class="imp-stat imp-b-warn">ใช้คอลัมน์ "ตำแหน่ง" จับคู่กับผังองค์กร</span>` : '');
 
@@ -6046,6 +6161,7 @@ function impRenderPreview() {
     return `<tr class="${r.errors.length?'imp-err':''}">
       <td>${r.line}</td><td>${badge}</td><td>${ocEsc(r.code)||'—'}</td>
       <td>${ocEsc(r.nameTh)||'—'}</td><td>${ocEsc(r.nameEn)||'—'}</td>
+      <td>${r.birthdate||'—'}</td>
       <td>${r.startDate||'—'}</td>
       <td>${r.position ? '✅ '+ocEsc(r.position.title) : (r.posTitle ? ocEsc(r.posTitle) : '—')}</td>
       <td class="imp-note">${notes||'—'}</td></tr>`;
@@ -6106,10 +6222,48 @@ async function impRun() {
     note: r.note || null, created_by: currentMember.id
   })) : [];
 
+  // ── ทะเบียนพนักงาน (ตาราง employees ที่หน้าวันเกิด/สรุปของขวัญใช้ · id = รหัสพนักงาน) ──
+  // ทำเมื่อไฟล์มีวันเกิดหรือวันเริ่มงานเท่านั้น และเฉพาะแถวที่มีรหัสพนักงาน
+  // คนที่มีอยู่แล้ว → แตะเฉพาะช่องวันเกิด/วันเริ่มงาน ไม่ยุ่งกับชื่อหรือแผนกที่ HR แก้ไว้
+  // คนที่ยังไม่มี → สร้างใหม่พร้อมชื่อ/แผนก/ตำแหน่ง ไม่งั้นพนักงานใหม่จะไม่โผล่ในปฏิทินวันเกิด
+  const hrCand = rows.filter(r => r.code && (r.birthdate || r.startDate));
+  let hrPatch = [], hrNew = [], hrUnmatched = 0;
+  if (hrCand.length) {
+    let known = null;
+    try { known = new Set(((await sbFetch('employees?select=id&limit=5000')) || []).map(e => String(e.id).trim())); }
+    catch(e) { known = null; }
+    if (!known) hrUnmatched = hrCand.length;   // อ่านทะเบียนไม่ได้ → ข้ามทั้งก้อน ดีกว่าเดา
+    else hrCand.forEach(r => {
+      const id = r.code.trim();
+      if (known.has(id)) hrPatch.push({ id, birthdate: r.birthdate, start_date: r.startDate });
+      else {
+        const job = impJobPair(r);
+        hrNew.push({
+          id,
+          full_name_th: impFullNameTh(r) || null, full_name_en: impFullNameEn(r) || null,
+          nickname: r.nickname || null,
+          department_en: impDeptEn(r) || null,
+          job_title_th: job.th, job_title_en: job.en,
+          birthdate: r.birthdate, start_date: r.startDate, status: 'active'
+        });
+      }
+    });
+  }
+  // upsert ต้องส่งคีย์ชุดเดียวกันทั้งก้อน และคีย์ที่ส่งไปเป็น null จะทับค่าเดิมให้ว่าง
+  // จึงแยกเป็น 3 ก้อนตามช่องที่มีจริงในไฟล์
+  const hrBoth  = hrPatch.filter(x => x.birthdate && x.start_date);
+  const hrBday  = hrPatch.filter(x => x.birthdate && !x.start_date).map(x => ({ id:x.id, birthdate:x.birthdate }));
+  const hrStart = hrPatch.filter(x => !x.birthdate && x.start_date).map(x => ({ id:x.id, start_date:x.start_date }));
+  const hrUpsert = c => () => sbFetch('employees?on_conflict=id', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', body: JSON.stringify(c) });
+
   const steps = impChunk(newEmpRows, 200).map(c => ['พนักงานในผังองค์กร', () => sbFetch('employees', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })])
     .concat(impChunk(heals, 200).map(c => ['เติมข้อมูลพนักงานเดิม', () => sbFetch('employees', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })]))
     .concat(impChunk(obRows, 200).map(c => ['รายการพนักงานใหม่', () => sbFetch('new_employees?on_conflict=id', { method:'POST', prefer:'return=minimal,resolution=merge-duplicates', body: JSON.stringify(c) })]))
-    .concat(impChunk(assignRows, 100).map(c => ['ผูกตำแหน่งในผัง', () => sbFetch('position_assignments', { method:'POST', prefer:'return=minimal', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })]));
+    .concat(impChunk(assignRows, 100).map(c => ['ผูกตำแหน่งในผัง', () => sbFetch('position_assignments', { method:'POST', prefer:'return=minimal', headers:{'Content-Profile':'orgchart'}, body: JSON.stringify(c) })]))
+    .concat(impChunk(hrBoth, 200).map(c => ['วันเกิด + วันเริ่มงาน', hrUpsert(c)]))
+    .concat(impChunk(hrBday, 200).map(c => ['วันเกิด', hrUpsert(c)]))
+    .concat(impChunk(hrStart, 200).map(c => ['วันเริ่มงาน', hrUpsert(c)]))
+    .concat(impChunk(hrNew, 200).map(c => ['เพิ่มพนักงานเข้าทะเบียน', hrUpsert(c)]));
 
   const failures = [];
   for (let i = 0; i < steps.length; i++) {
@@ -6137,6 +6291,9 @@ async function impRun() {
         เติมข้อมูลที่ขาดให้พนักงานเดิม (รหัส/ชื่ออีกภาษา) <b>${heals.length}</b> คน<br>
         ผูกตำแหน่งในผังองค์กร <b>${assignRows.length}</b> ตำแหน่ง<br>
         เพิ่มเข้ารายการพนักงานใหม่ (Onboarding) <b>${obRows.length}</b> คน<br>
+        อัปเดตวันเกิด/วันเริ่มงานในทะเบียนพนักงาน <b>${hrPatch.length}</b> คน<br>
+        เพิ่มพนักงานเข้าทะเบียน (ปฏิทินวันเกิด) <b>${hrNew.length}</b> คน<br>
+        ${hrUnmatched ? `<span style="color:var(--gold)">อ่านทะเบียนพนักงานไม่ได้ จึงข้ามวันเกิด/วันเริ่มงาน <b>${hrUnmatched}</b> แถว</span><br>` : ''}
         ข้ามแถวที่มีปัญหา <b>${impRows.length - rows.length}</b> แถว
       </div>
       ${failures.length ? `<div style="margin-top:14px;text-align:left;background:var(--red-lt);color:var(--red);padding:12px;border-radius:8px;font-size:12.5px">
@@ -6151,6 +6308,38 @@ function impMatchDeptId(name) {
   const d = orgDepts.find(x => impKey(x.name_th) === k || impKey(x.name_en) === k);
   return d ? d.id : null;
 }
+// ── ประกอบค่าให้ตรงรูปแบบที่ใช้อยู่ในทะเบียนพนักงาน ──
+// ชื่อไทยในทะเบียนเขียนติดคำนำหน้า ("นายสมชาย ใจดี") ส่วนไฟล์แยกคอลัมน์ Title ไว้ต่างหาก
+const IMP_PREFIX_TH = { mr:'นาย', mrs:'นาง', miss:'นางสาว', ms:'นางสาว' };
+// คำนำหน้าไทยมักเขียนติดชื่อ ("นายสมชาย") ซึ่ง IMP_TITLE_RE ที่ต้องการตัวคั่นจะจับไม่ได้
+const IMP_PREFIX_TH_RE = /^(?:นางสาว|นาง|นาย|ว่าที่|คุณ|ดร\.?|ด\.?[ชญ]\.?)/;
+function impFullNameTh(r) {
+  const name = r.nameTh || '';
+  if (!name) return r.nameEn || '';
+  if (IMP_TITLE_RE.test(name) || IMP_PREFIX_TH_RE.test(name)) return name;   // มีคำนำหน้าติดมาแล้ว
+  const pre = IMP_PREFIX_TH[impNorm(r.prefix)];
+  return pre ? pre + name : name;
+}
+// ไฟล์ทะเบียนมักมีคอลัมน์ตำแหน่งเดียวและเป็นภาษาอังกฤษ — แยกไทย/อังกฤษจากตัวอักษรที่เจอจริง
+function impJobPair(r) {
+  const a = impTrim(r.jobTh), b = impTrim(r.jobEn);
+  const th = impHasThai(a) ? a : (impHasThai(b) ? b : '');
+  const en = (a && !impHasThai(a)) ? a : ((b && !impHasThai(b)) ? b : '');
+  return { th: th || null, en: en || null };
+}
+function impFullNameEn(r) {
+  const name = r.nameEn || '';
+  if (!name || IMP_TITLE_RE.test(name)) return name;
+  const t = impTrim(r.prefix);
+  return t && !impHasThai(t) ? t + ' ' + name : name;
+}
+// ทะเบียนเก็บชื่อฝ่ายแบบ "Department - Section" เมื่อส่วนงานไม่ได้ชื่อเดียวกับฝ่าย
+function impDeptEn(r) {
+  const d = impTrim(r.dept), s = impTrim(r.section);
+  if (!d) return s;
+  return (!s || impKey(s) === impKey(d)) ? d : d + ' - ' + s;
+}
+
 function impMapObStatus(s) {
   const k = impNorm(s);
   if (['passed','ผ่าน','ผ่านทดลองงาน','pass'].includes(k)) return 'passed';
