@@ -4915,8 +4915,8 @@ async function loadBirthdayData() {
 // ปิด/เปิดสถานะใน "ทะเบียนพนักงาน" (ตารางที่ปฏิทินวันเกิดกับสรุปของขวัญใช้ · id = รหัสพนักงาน)
 // คนละตารางกับ orgchart.employees.is_active ที่ผังองค์กรใช้ ต้องสั่งทั้งคู่ ไม่งั้นคนลาออก
 // จะหายจากผังแต่ยังโผล่ในปฏิทินวันเกิดตลอดไป
-async function setEmployeeRegisterStatus(code, status) {
-  const id = String(code || '').trim();
+async function setEmployeeRegisterStatus(regId, status) {
+  const id = String(regId || '').trim();
   if (!id) return false;
   try {
     await sbFetch('employees?id=eq.' + encodeURIComponent(id), {
@@ -7498,11 +7498,17 @@ async function ocmSubmitResign(){
     }
     if(deact && p.src==='org' && p.orgId) await ocmPatch('employees','id=eq.'+p.orgId,{ is_active:false });
     // ปิดในทะเบียนพนักงานด้วย (คนละตารางกับผัง) — คนที่ยังไม่มีที่นั่งในผังก็ต้องปิด
+    // จับคู่ด้วยรหัสพนักงานก่อน ถ้าแถวในผังไม่มีรหัสค่อยเทียบชื่อ
     let regWarn=false;
-    if(deact){ if(p.code) regWarn=!(await setEmployeeRegisterStatus(p.code,'resigned')); else regWarn=true; }
+    if(deact){
+      await ocmLoadRegister(true);
+      const r=ocmRegFind(p);
+      regWarn = r ? !(await setEmployeeRegisterStatus(r.id,'resigned')) : true;
+      if(r) r.status='resigned';
+    }
     toast(regWarn
-      ? ocT('บันทึกการลาออกแล้ว แต่ปิดสถานะในทะเบียนพนักงานไม่สำเร็จ — ชื่ออาจยังขึ้นในปฏิทินวันเกิด'+(p.code?'':' (ไม่มีรหัสพนักงาน)'),
-            'Resignation recorded, but the employee register was not updated — the name may still appear in the birthday calendar')
+      ? ocT('บันทึกการลาออกแล้ว แต่ยังไม่ได้ปิดชื่อในปฏิทินวันเกิด — หาคนนี้ในทะเบียนพนักงานไม่เจอ (ไม่มีรหัสพนักงานหรือชื่อไม่ตรงกัน)',
+            'Resignation recorded, but the name is still on the birthday calendar — no matching employee register entry (missing code or the names differ)')
       : ocT('บันทึกการลาออกเรียบร้อย','Resignation recorded'));
     document.getElementById('oc-resEmpChip').innerHTML=''; document.getElementById('oc-resActChip').innerHTML='';
     document.getElementById('oc-resForm').style.display='none';
@@ -7510,6 +7516,28 @@ async function ocmSubmitResign(){
     await ocmReload();
   }catch(e){ toast(ocT('บันทึกไม่สำเร็จ: ','Failed: ')+e.message); }
   btn.disabled=false;
+}
+
+// ---------- จับคู่คนในผังองค์กรกับแถวในทะเบียนพนักงาน ----------
+// ผูกด้วยรหัสพนักงานก่อน แต่แถวเก่าในผังหลายแถวไม่มีรหัส (สร้างไว้ก่อนจะเก็บช่องนี้)
+// ถ้าไม่มีทางถอยไปเทียบชื่อ คนกลุ่มนั้นจะปิดสถานะในปฏิทินวันเกิดไม่ได้เลย
+let ocmRegister = null;
+async function ocmLoadRegister(force){
+  if(ocmRegister && !force) return ocmRegister;
+  try{ ocmRegister = await sbFetch('employees?select=id,full_name_th,full_name_en,status&limit=5000') || []; }
+  catch(e){ ocmRegister = null; }
+  return ocmRegister;
+}
+function ocmRegKey(n){ return impNameKey(stripNamePrefix(n || '')); }
+function ocmRegFind(person){
+  if(!ocmRegister) return null;
+  const code=String(person.employee_code||person.code||'').trim();
+  if(code){ const hit=ocmRegister.find(r=>String(r.id).trim()===code); if(hit) return hit; }
+  const keys=[person.full_name_th,person.full_name,person.nameTh,person.nameEn,person.name]
+    .filter(Boolean).map(ocmRegKey).filter(k=>k.length>2);
+  if(!keys.length) return null;
+  const found=ocmRegister.filter(r=>keys.includes(ocmRegKey(r.full_name_th))||keys.includes(ocmRegKey(r.full_name_en)));
+  return found.length===1 ? found[0] : null;      // ชื่อซ้ำกันหลายคน → ไม่เดา
 }
 
 // ---------- คืนสถานะพนักงานที่ปิดไว้ ----------
@@ -7525,15 +7553,9 @@ async function ocmLoadInactive(){
     ocmInactive=[]; box.innerHTML=`<div class="oc-empty" style="color:var(--red)">${ocT('โหลดไม่สำเร็จ','Failed to load')}: ${ocEsc(e.message)}</div>`; return;
   }
   // คนที่ถูกปิดสถานะไว้ "ก่อน" ที่ระบบจะปิดทะเบียนพนักงานให้ด้วย จะยังค้างอยู่ในปฏิทินวันเกิด
-  // ดึงสถานะในทะเบียนมาเทียบ เพื่อชี้เป้าให้ปิดตามได้ในหน้าเดียว
-  try{
-    const codes=ocmInactive.map(e=>e.employee_code).filter(Boolean);
-    if(codes.length){
-      const reg=await sbFetch('employees?select=id,status&id=in.('+codes.map(c=>encodeURIComponent(c)).join(',')+')') || [];
-      const stillActive=new Set(reg.filter(r=>r.status==='active').map(r=>String(r.id).trim()));
-      ocmInactive.forEach(e=>{ e.regActive = !!(e.employee_code && stillActive.has(String(e.employee_code).trim())); });
-    }
-  }catch(e){ /* อ่านทะเบียนไม่ได้ก็แสดงรายการตามปกติ */ }
+  // เทียบกับทะเบียน (รหัสก่อน ไม่มีรหัสค่อยเทียบชื่อ) เพื่อชี้เป้าให้ปิดตามได้ในหน้าเดียว
+  await ocmLoadRegister(true);
+  ocmInactive.forEach(e=>{ const r=ocmRegFind(e); e.regId=r?r.id:null; e.regActive=!!(r&&r.status==='active'); });
   ocmRenderInactive();
 }
 function ocmRenderInactive(){
@@ -7559,12 +7581,12 @@ function ocmRenderInactive(){
 }
 // ปิดสถานะในทะเบียนพนักงานตามหลัง สำหรับคนที่กดลาออกไว้ก่อนที่ระบบจะปิดให้ทั้งสองที่
 async function ocmCloseRegister(id){
-  const e=ocmInactive.find(x=>x.id===id); if(!e||!e.employee_code) return;
-  const nm=e.full_name||e.full_name_th||e.employee_code;
+  const e=ocmInactive.find(x=>x.id===id); if(!e||!e.regId) return;
+  const nm=e.full_name||e.full_name_th||e.regId;
   if(!confirm(ocT('เอา "'+nm+'" ออกจากปฏิทินวันเกิดและสรุปของขวัญ?\n\nข้อมูลไม่ถูกลบ ถ้ากดผิดกดคืนสถานะได้',
                   'Remove "'+nm+'" from the birthday calendar and gift summary?\n\nNothing is deleted — use Restore to undo.'))) return;
-  const ok=await setEmployeeRegisterStatus(e.employee_code,'resigned');
-  if(ok){ e.regActive=false; ocmRenderInactive(); }
+  const ok=await setEmployeeRegisterStatus(e.regId,'resigned');
+  if(ok){ e.regActive=false; const r=ocmRegFind(e); if(r) r.status='resigned'; ocmRenderInactive(); }
   toast(ok?ocT('เอา "'+nm+'" ออกจากปฏิทินวันเกิดแล้ว','Removed "'+nm+'" from the birthday calendar')
           :ocT('ปิดสถานะในทะเบียนไม่สำเร็จ','Could not update the employee register'));
 }
@@ -7575,7 +7597,7 @@ async function ocmReactivate(id){
                   'Restore "'+nm+'"?\n\nThe name will appear in the assignment pickers again.\nAssign a position from the "Assign / Move" tab afterwards.'))) return;
   try{
     await ocmPatch('employees','id=eq.'+id,{ is_active:true });
-    if(e.employee_code) await setEmployeeRegisterStatus(e.employee_code,'active');   // ให้กลับมาขึ้นปฏิทินวันเกิดด้วย
+    if(e.regId){ await setEmployeeRegisterStatus(e.regId,'active'); const r=ocmRegFind(e); if(r) r.status='active'; }   // ให้กลับมาขึ้นปฏิทินวันเกิดด้วย
     ocmInactive = ocmInactive.filter(x=>x.id!==id);
     ocmRenderInactive();
     toast(ocT('คืนสถานะ "'+nm+'" แล้ว — ไปมอบหมายตำแหน่งได้ที่แท็บ "ย้าย / มอบหมาย"',
